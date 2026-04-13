@@ -1,0 +1,140 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  role      Role     @default(CLIENT)  // ← LIGNE AJOUTÉE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart      Cart?
+  orders    Order[]
+  quizzes   QuizResponse[]
+}
+
+model PerfumeHouse {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  perfumes Perfume[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  perfumes  PerfumeCategory[]
+}
+
+model Perfume {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  category    String   // Garde pour la compatibilité (Homme/Femme/Unisexe)
+  imageUrl    String?
+  style       String[] // Les styles olfactifs (Boisé, Floral, etc.)
+  houseId     Int
+  house       PerfumeHouse @relation(fields: [houseId], references: [id])
+  stock       Int      @default(100)
+
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  categories  PerfumeCategory[] // Nouvelle relation many-to-many
+}
+
+// Table de liaison pour la relation many-to-many
+model PerfumeCategory {
+  id         String   @id @default(uuid())
+  perfumeId  Int
+  categoryId String
+  perfume    Perfume  @relation(fields: [perfumeId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([perfumeId, categoryId])
+  @@index([perfumeId])
+  @@index([categoryId])
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        Int     @id @default(autoincrement())
+  cartId    String
+  perfumeId Int
+  quantity  Int     @default(1)
+
+  cart      Cart    @relation(fields: [cartId], references: [id])
+  perfume   Perfume @relation(fields: [perfumeId], references: [id])
+
+  @@unique([cartId, perfumeId])
+}
+
+model Order {
+  id             String          @id @default(uuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id])
+  totalAmount    Float
+  status         OrderStatus     @default(PENDING)
+  deliveryMethod DeliveryMethod
+  createdAt      DateTime        @default(now())
+
+  items          OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   String
+  perfumeId Int
+  quantity  Int
+  price     Float
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  perfume   Perfume @relation(fields: [perfumeId], references: [id])
+}
+
+model QuizResponse {
+  id                Int      @id @default(autoincrement())
+  userId            String?
+  user              User?    @relation(fields: [userId], references: [id])
+  preferences       Json
+  suggestedPerfumes Int[]
+  createdAt         DateTime @default(now())
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryMethod {
+  PICKUP      // Sur place
+  DELIVERY    // Livraison à domicile
+}
