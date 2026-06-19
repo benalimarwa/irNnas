@@ -1,27 +1,35 @@
+// app/admin/profile/page.tsx
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import ProfileClient from "../../../components/ClientProfileEditForm";
+import { Prisma } from "@prisma/client";
+
+const userWithOrdersArgs = {
+  include: {
+    orders: {
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: {
+        items: {
+          include: {
+            product: { select: { name: true } },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.UserDefaultArgs;
+
+type UserWithOrders = Prisma.UserGetPayload<typeof userWithOrdersArgs>;
 
 export default async function ProfilePage() {
   const clerkUser = await currentUser();
   if (!clerkUser) redirect("/sign-in");
 
-  const dbUser = await prisma.user.findUnique({
+  const dbUser: UserWithOrders | null = await prisma.user.findUnique({
     where: { clerkId: clerkUser.id },
-    include: {
-      orders: {
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        include: {
-          items: {
-            include: {
-              product: { select: { name: true } },
-            },
-          },
-        },
-      },
-    },
+    ...userWithOrdersArgs,
   });
 
   if (!dbUser) redirect("/sign-in");
@@ -43,7 +51,7 @@ export default async function ProfilePage() {
         orders: dbUser.orders.map((o) => ({
           id: o.id.toString(),
           status: o.status,
-          totalAmount: o.total,
+          totalAmount: Number(o.total),
           createdAt: o.createdAt.toISOString(),
           items: o.items.map((item) => ({
             id: item.id,
