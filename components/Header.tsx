@@ -17,26 +17,12 @@ export function Header() {
           <div className="flex items-center space-x-2">
             <div className="text-3xl">💐</div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Parfumerie Élégance
+              IRNAS
             </h1>
           </div>
           
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <a href="/parfums" className="text-gray-700 hover:text-purple-600 transition">
-              Parfums
-            </a>
-            <a href="/maisons" className="text-gray-700 hover:text-purple-600 transition">
-              Maisons
-            </a>
-            <a href="/quiz" className="text-gray-700 hover:text-purple-600 transition flex items-center gap-1">
-              <span className="text-xl">✨</span>
-              Quiz IA
-            </a>
-            <a href="/nouveautes" className="text-gray-700 hover:text-purple-600 transition">
-              Nouveautés
-            </a>
-          </nav>
+          
+          
 
           {/* Actions */}
           <div className="flex items-center space-x-4">

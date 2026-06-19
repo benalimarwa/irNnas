@@ -1,21 +1,14 @@
 // app/perfumes/page.tsx
 import { PerfumeCard } from "@/components/ParfumCard";
+import type { Product } from "@prisma/client";
 
-// Types Prisma générés automatiquement (à importer depuis @prisma/client)
-import type { Perfume, PerfumeHouse } from "@prisma/client";
-
-type PerfumeWithHouse = Perfume & {
-  house: Pick<PerfumeHouse, "name">;
-};
-type GroupedPerfumes = Record<string, PerfumeWithHouse[]>;
+type GroupedPerfumes = Record<string, Product[]>;
 
 // ON APPELLE DIRECTEMENT LA FONCTION, PAS VIA HTTP !
 import { getAllPerfumesGrouped } from "@/lib/perfumes";
 
 export default async function PerfumesPage() {
   const groupedPerfumes: GroupedPerfumes = await getAllPerfumesGrouped();
-
-  
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -30,10 +23,10 @@ export default async function PerfumesPage() {
           </p>
         ) : (
           <div className="space-y-16">
-            {Object.entries(groupedPerfumes).map(([houseName, perfumes]) => (
-              <section key={houseName}>
+            {Object.entries(groupedPerfumes).map(([groupName, perfumes]) => (
+              <section key={groupName}>
                 <h2 className="text-3xl font-bold mb-8 border-b-2 border-black pb-2 inline-block">
-                  {houseName}
+                  {groupName}
                   <span className="ml-4 text-lg font-normal text-gray-600">
                     ({perfumes.length})
                   </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
 import {
   Card,
   CardContent,
@@ -9,12 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import {
   Select,
   SelectContent,
@@ -49,33 +44,26 @@ export function MouvementStock() {
     async function fetchData() {
       setLoading(true);
       setError(null);
-      
+
       try {
-        console.log("🔄 Fetching data for timeRange:", timeRange);
-        
         const response = await fetch(
           `/api/admin/dashboard/stock?timeRange=${timeRange}`
         );
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `Erreur HTTP ${response.status}`
-          );
+          throw new Error(errorData.error || `Erreur HTTP ${response.status}`);
         }
 
         const data = await response.json();
-        console.log("📊 Data received:", data);
 
         if (!Array.isArray(data) || data.length === 0) {
-          console.warn("⚠️ No data or empty array");
           setChartData([]);
           setError("Aucune donnée disponible");
           setLoading(false);
           return;
         }
 
-        // Extraire tous les produits (toutes les clés sauf "month")
         const products = Array.from(
           new Set(
             data.flatMap((item: any) =>
@@ -84,32 +72,22 @@ export function MouvementStock() {
           )
         ) as string[];
 
-        console.log("🏷️ Products found:", products);
-
         if (products.length === 0) {
-          console.warn("⚠️ No products found in data");
           setError("Aucun produit trouvé");
           setLoading(false);
           return;
         }
 
-        // Construire la config avec couleurs
         const newConfig: ChartConfig = {};
         products.forEach((product, index) => {
           newConfig[product] = {
-            label: product,
             color: productColors[index % productColors.length],
           };
         });
 
-        console.log("🎨 Chart config:", newConfig);
-        console.log("📈 Chart data:", data);
-
         setChartConfig(newConfig);
         setChartData(data);
-        
       } catch (err: any) {
-        console.error("❌ Error fetching data:", err);
         setError(err.message || "Erreur lors de la récupération des données");
       } finally {
         setLoading(false);
@@ -118,6 +96,25 @@ export function MouvementStock() {
 
     fetchData();
   }, [timeRange]);
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    return (
+      <div className="rounded-lg border bg-background p-3 shadow-md text-sm">
+        <p className="font-semibold mb-1">{label}</p>
+        {payload.map((entry: any) => (
+          <div key={entry.dataKey} className="flex items-center gap-2">
+            <span
+              className="inline-block w-2.5 h-2.5 rounded-sm"
+              style={{ backgroundColor: entry.fill }}
+            />
+            <span className="text-muted-foreground">{entry.dataKey}:</span>
+            <span className="font-medium">{entry.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -220,8 +217,8 @@ export function MouvementStock() {
 
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <BarChart 
-            data={chartData} 
+          <BarChart
+            data={chartData}
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -231,17 +228,13 @@ export function MouvementStock() {
               axisLine={false}
               tickMargin={8}
             />
-            <YAxis 
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-            />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+            <Tooltip content={<CustomTooltip />} />
             {products.map((product) => (
               <Bar
                 key={product}
                 dataKey={product}
-                fill={chartConfig[product]?.color || "#8884d8"}
+                fill={chartConfig[product]?.color as string}
                 radius={[4, 4, 0, 0]}
                 stackId="stack"
               />
