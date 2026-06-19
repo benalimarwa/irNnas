@@ -1,77 +1,99 @@
-// app/api/webhooks/clerk/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
-import { headers } from "next/headers";
-import { WebhookEvent } from "@clerk/nextjs/server";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { prisma } from "@/lib/prisma";
+import { clerkClient } from "@clerk/nextjs/server";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
-  if (!WEBHOOK_SECRET) throw new Error("CLERK_WEBHOOK_SECRET manquant");
 
-  // ✅ Fix 1: await headers() pour Next.js 15
-  const headerPayload = await headers();
-  const svix_id = headerPayload.get("svix-id");
-  const svix_timestamp = headerPayload.get("svix-timestamp");
-  const svix_signature = headerPayload.get("svix-signature");
+  if (!WEBHOOK_SECRET) {
+    console.error("CLERK_WEBHOOK_SECRET manquant");
+    return NextResponse.json({ error: "Config manquante" }, { status: 500 });
+  }
+
+  const svix_id        = req.headers.get("svix-id");
+  const svix_timestamp = req.headers.get("svix-timestamp");
+  const svix_signature = req.headers.get("svix-signature");
 
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response("Headers manquants", { status: 400 });
+    return NextResponse.json({ error: "Headers svix manquants" }, { status: 400 });
   }
 
-  const payload = await req.json();
-  const body = JSON.stringify(payload);
-
+  const body = await req.text();
   const wh = new Webhook(WEBHOOK_SECRET);
-  let evt: WebhookEvent;
+  let event: any;
 
   try {
-    evt = wh.verify(body, {
-      "svix-id": svix_id,
+    event = wh.verify(body, {
+      "svix-id":        svix_id,
       "svix-timestamp": svix_timestamp,
       "svix-signature": svix_signature,
-    }) as WebhookEvent;
-  } catch (err) {
-    return new Response("Signature invalide", { status: 400 });
-  }
-
-  const eventType = evt.type;
-
-  if (eventType === "user.created") {
-    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
-
-    // ✅ Fix 2: ne pas passer 'id' manuellement, serial est auto-incrémenté
-    await db.insert(users).values({
-      clerkId: id,
-      email: email_addresses[0]?.email_address ?? "",
-      firstName: first_name ?? "",
-      lastName: last_name ?? "",
-      imageUrl: image_url ?? "",
     });
+  } catch (err) {
+    console.error("Signature webhook invalide:", err);
+    return NextResponse.json({ error: "Signature invalide" }, { status: 400 });
   }
 
-  if (eventType === "user.updated") {
-    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+  const { type, data } = event;
+  console.log("Webhook recu:", type);
 
-    await db
-      .update(users)
-      .set({
-        email: email_addresses[0]?.email_address ?? "",
-        firstName: first_name ?? "",
-        lastName: last_name ?? "",
-        imageUrl: image_url ?? "",
-        updatedAt: new Date(),
-      })
-      .where(eq(users.clerkId, id));
-  }
+  if (type === "user.created") {
+    const clerkId   = data.id;
+    const email     = data.email_addresses?.[0]?.email_address ?? "";
+    const firstName = data.first_name ?? "";
+    const lastName  = data.last_name  ?? "";
+    const rawRole   = (data.unsafe_metadata as { role?: string })?.role;
+    const role: "ADMIN" | "CLIENT" =
+      rawRole?.toUpperCase() === "ADMIN" ? "ADMIN" : "CLIENT";
 
-  if (eventType === "user.deleted") {
-    const { id } = evt.data;
-    if (id) {
-      await db.delete(users).where(eq(users.clerkId, id));
+    try {
+      const user = await prisma.user.upsert({
+        where:  { clerkId },
+        update: { email, firstName, lastName, role },
+        create: { clerkId, email, firstName, lastName, role },
+      });
+      console.log("User cree en DB:", user.email, "| Role:", user.role);
+
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(clerkId, {
+        publicMetadata: { role },
+      });
+      console.log("public_metadata mis a jour, role:", role);
+
+    } catch (err) {
+      console.error("Erreur creation user:", err);
+      return NextResponse.json({ error: "Erreur DB" }, { status: 500 });
     }
   }
 
-  return new Response("OK", { status: 200 });
+  if (type === "user.updated") {
+    const clerkId   = data.id;
+    const email     = data.email_addresses?.[0]?.email_address ?? "";
+    const firstName = data.first_name ?? "";
+    const lastName  = data.last_name  ?? "";
+    const role      = (data.public_metadata as { role?: string })?.role?.toUpperCase() as
+      "ADMIN" | "CLIENT" | undefined;
+
+    try {
+      await prisma.user.update({
+        where: { clerkId },
+        data: { email, firstName, lastName, ...(role ? { role } : {}) },
+      });
+      console.log("User mis a jour en DB:", email);
+    } catch (err) {
+      console.error("Erreur mise a jour user:", err);
+    }
+  }
+
+  if (type === "user.deleted") {
+    const clerkId = data.id;
+    try {
+      await prisma.user.delete({ where: { clerkId } });
+      console.log("User supprime:", clerkId);
+    } catch (err) {
+      console.error("Erreur suppression user:", err);
+    }
+  }
+
+  return NextResponse.json({ received: true });
 }

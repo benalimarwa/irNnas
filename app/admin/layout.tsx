@@ -43,21 +43,37 @@ export default async function AdminLayout({
       redirect("/sign-in");
     }
 
-    const name = [clerkUser.firstName, clerkUser.lastName]
-      .filter(Boolean)
-      .join(" ")
-      .trim() || null;
-
-    dbUser = await prisma.user.create({
-      data: {
-        clerkId: clerkUser.id,
-        email,
-        name,
-        role: "CLIENT", // Par défaut CLIENT
-      },
+    // Vérifier si un user existe déjà avec cet email (ex: seed avec un clerkId différent/placeholder)
+    const existingByEmail = await prisma.user.findUnique({
+      where: { email },
     });
 
-    console.log(`ℹ️ Utilisateur créé en fallback: ${dbUser.email}`);
+    if (existingByEmail) {
+      // Mettre à jour le clerkId pour le faire correspondre à l'utilisateur Clerk actuel
+      dbUser = await prisma.user.update({
+        where: { email },
+        data: {
+          clerkId: clerkUser.id,
+          firstName: clerkUser.firstName || existingByEmail.firstName,
+          lastName: clerkUser.lastName || existingByEmail.lastName,
+        },
+      });
+
+      console.log(`ℹ️ Utilisateur existant mis à jour (clerkId synchronisé): ${dbUser.email}`);
+    } else {
+      // Correction ici : utiliser firstName + lastName au lieu de name
+      dbUser = await prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email,
+          firstName: clerkUser.firstName || null,
+          lastName: clerkUser.lastName || null,
+          role: "CLIENT", // Par défaut CLIENT (tu peux le changer plus tard via admin)
+        },
+      });
+
+      console.log(`ℹ️ Utilisateur créé en fallback: ${dbUser.email}`);
+    }
   }
 
   // 5. Vérification finale du rôle dans la DB

@@ -1,13 +1,14 @@
 // app/layout.tsx
-import "../app/globals.css";
+import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from "@/components/AdminNavbar";
 import { frFR } from '@clerk/localizations';
 import ClientNavbar from "@/components/ClientNavbar";
 import AdminNavbar from "@/components/AdminNavbar";
+import SyncUser from "@/components/SyncUser";
 export const metadata = {
-  title: "ParfumIA - Votre parfum parfait en 60 secondes",
-  description: "Quiz IA + boutique de parfums de luxe en Tunisie",
+  title: "IRNAS",
+  description: "Boutique de luxe en Tunisie",
 };
 
 export default function RootLayout({
@@ -19,7 +20,7 @@ export default function RootLayout({
      <ClerkProvider localization={frFR}>
       <html lang="fr">
         <body className="min-h-screen">
-         
+         <SyncUser />
           <main className="pt-20 bg-black">{children}</main>
         </body>
       </html>

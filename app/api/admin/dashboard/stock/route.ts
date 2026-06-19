@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     try {
       const { prisma } = await import("@/lib/prisma");
 
-      const realPerfumes = await prisma.perfume.findMany({
+      const realPerfumes = await prisma.product.findMany({
         select: {
           name: true,
           stock: true,

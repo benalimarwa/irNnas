@@ -5,19 +5,18 @@ import { auth } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const { userId: clerkId } = await auth();
 
-    if (!userId) {
+    if (!clerkId) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    // Récupérer tous les utilisateurs avec leurs commandes
     const users = await prisma.user.findMany({
       include: {
         orders: {
           select: {
             id: true,
-            totalAmount: true,
+            total: true,
             status: true,
             createdAt: true,
           },
@@ -36,17 +35,18 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Formater les données
     const formattedUsers = users.map((user) => ({
       id: user.id,
       clerkId: user.clerkId,
       email: user.email,
-      name: user.name,
+      name: [user.firstName, user.lastName].filter(Boolean).join(" ") || "Sans nom",
+      firstName: user.firstName,
+      lastName: user.lastName,
       createdAt: user.createdAt.toISOString(),
       _count: user._count,
       orders: user.orders.map((order) => ({
         id: order.id,
-        totalAmount: order.totalAmount,
+        totalAmount: order.total,
         status: order.status,
         createdAt: order.createdAt.toISOString(),
       })),

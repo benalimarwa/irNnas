@@ -25,51 +25,43 @@ export default clerkMiddleware(async (auth, req) => {
     return redirectToSignIn({ returnBackUrl: req.url });
   }
 
-  // 1️⃣ Lecture depuis sessionClaims (JWT token)
+  // Step 1: Try sessionClaims first (fast path — works if JWT template is configured)
   const rawRoleFromClaims = (sessionClaims?.public_metadata as { role?: string })?.role;
   let userRole = rawRoleFromClaims?.toUpperCase();
 
-  console.log("🔐 SessionClaims public_metadata:", sessionClaims?.public_metadata);
-
-  // 2️⃣ Fallback : lecture directe depuis Clerk si sessionClaims ne contient pas le rôle
-  //    Cela se produit quand le JWT template Clerk n'inclut pas public_metadata,
-  //    ou quand la session a été créée avant que les métadonnées soient ajoutées.
+  // Step 2: Always fall back to clerkClient if claims don't have role
+  // This is the reliable source of truth
   if (!userRole) {
     try {
       const client = await clerkClient();
       const clerkUser = await client.users.getUser(userId);
-      const fallbackRole = (clerkUser.publicMetadata as { role?: string })?.role;
-      userRole = fallbackRole?.toUpperCase();
-      console.log(`⚠️ Fallback clerkClient utilisé → publicMetadata.role: ${userRole ?? "non défini"}`);
+      userRole = (clerkUser.publicMetadata as { role?: string })?.role?.toUpperCase();
     } catch (err) {
-      console.error("❌ Erreur lecture clerkClient dans middleware:", err);
+      console.error("❌ clerkClient error in middleware:", err);
     }
   }
 
-  // 3️⃣ Valeur par défaut si toujours undefined
-  if (!userRole) {
-    userRole = "CLIENT";
-    console.warn("⚠️ Aucun rôle trouvé, rôle par défaut appliqué: CLIENT");
-  }
+  // Step 3: Default to CLIENT only as last resort
+  userRole = userRole ?? "CLIENT";
 
-  console.log(`🔐 Middleware - User: ${userId} | Role final: ${userRole}`);
+  console.log(`🔐 User: ${userId} | Role: ${userRole} | Path: ${req.nextUrl.pathname}`);
 
-  // 4️⃣ Redirection depuis la racine "/"
+  // Step 4: Root redirect — skip for public routes other than "/"
   if (req.nextUrl.pathname === "/") {
     const redirectPath = userRole === "ADMIN" ? "/admin" : "/client";
-    console.log(`➡️ Redirection depuis / vers : ${redirectPath}`);
     return NextResponse.redirect(new URL(redirectPath, req.url));
   }
 
-  // 5️⃣ Protection des routes Admin
+  // Step 5: Public routes pass through (after root is handled above)
+  if (isPublicRoute(req)) return NextResponse.next();
+
+  // Step 6: Admin route protection
   if (isAdminRoute(req) && userRole !== "ADMIN") {
-    console.warn(`🚫 Accès admin refusé pour rôle: ${userRole}`);
     return NextResponse.redirect(new URL("/client", req.url));
   }
 
-  // 6️⃣ Empêcher un Admin d'accéder aux routes client-only
+  // Step 7: Prevent admin accessing client-only routes
   if (isClientOnlyRoute(req) && userRole === "ADMIN") {
-    console.log(`🔄 Admin détecté sur route client → redirection /admin`);
     return NextResponse.redirect(new URL("/admin", req.url));
   }
 

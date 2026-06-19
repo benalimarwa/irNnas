@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 // GET - Récupérer toutes les maisons
 export async function GET() {
   try {
-    const houses = await prisma.perfumeHouse.findMany({
+    const houses = await prisma.product.findMany({
       orderBy: { name: "asc" },
     });
 
@@ -31,23 +31,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Vérifier si la maison existe déjà
-    const existing = await prisma.perfumeHouse.findUnique({
-      where: { name: name.trim() },
-    });
 
-    if (existing) {
-      return NextResponse.json(
-        { error: "Cette maison existe déjà" },
-        { status: 400 }
-      );
-    }
+   
 
-    const house = await prisma.perfumeHouse.create({
-      data: { name: name.trim() },
-    });
 
-    return NextResponse.json(house, { status: 201 });
+   
   } catch (error) {
     console.error("Erreur lors de la création de la maison:", error);
     return NextResponse.json(

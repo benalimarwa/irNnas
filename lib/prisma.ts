@@ -1,30 +1,20 @@
 // lib/prisma.ts
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pkg from "pg";
+const { Pool } = pkg;
 
-const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: false,
+});
 
-if (!connectionString) {
-  throw new Error("DATABASE_URL n'est pas défini dans .env");
-}
-
-const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
-export const prisma = new PrismaClient({ adapter })
-  .$extends({
-    name: "perfume-with-house",
-    query: {
-      perfume: {
-        async findMany({ args, query }) {
-          args.include = { ...(args.include || {}), house: true };
-          return query(args);
-        },
-        async findUnique({ args, query }) {
-          args.include = { ...(args.include || {}), house: true };
-          return query(args);
-        },
-      },
-    },
-  });
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({ adapter, log: ["error"] });
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

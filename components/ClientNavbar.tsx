@@ -2,185 +2,197 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs";
-import { ShoppingBag, User, Home, Sparkles, Package, Moon, Sun, Receipt, Menu, X, LogOut, LogIn } from "lucide-react";
+import { ShoppingBag, Home, Package, Receipt, Menu, X, LogOut, LogIn, Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 export default function ClientNavbar() {
   const { isSignedIn, user } = useUser();
   const pathname = usePathname();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(3); // À remplacer par la vraie valeur du panier
+  const [cartCount, setCartCount] = useState(0); // À connecter plus tard avec le vrai panier
 
+  // Gestion du thème global
   useEffect(() => {
-    const theme = localStorage.getItem("theme");
-    const isDark = theme === "dark";
+    const savedTheme = localStorage.getItem("theme");
+    const isDark = savedTheme !== "light";
+    
     setIsDarkMode(isDark);
     if (isDark) {
       document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
     }
   }, []);
 
   const toggleDarkMode = () => {
-    const newTheme = isDarkMode ? "light" : "dark";
-    localStorage.setItem("theme", newTheme);
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle("dark");
+    const newIsDark = !isDarkMode;
+    setIsDarkMode(newIsDark);
+    
+    if (newIsDark) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
   };
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => 
+    pathname === path || pathname?.startsWith(path);
 
   return (
-    <nav className="sticky top-0 z-50 w-full backdrop-blur-md bg-white/80 dark:bg-gray-900/80 shadow-md transition-all duration-300 border-b border-gray-200 dark:border-gray-700">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/70 backdrop-blur-2xl border-b border-white/10">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex justify-between items-center h-20">
+
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            <Sparkles className="h-8 w-8 text-purple-600 dark:text-purple-400 group-hover:rotate-12 transition-transform duration-300" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-              ParfumIA
-            </span>
+          <Link href="/client" className="flex items-center gap-3 group">
+            <Image
+              src="/llogo.png"
+              alt="IRNAS"
+              width={140}
+              height={50}
+              className="object-contain h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+              priority
+            />
+            <div className="hidden sm:block">
+              <span className="text-3xl font-bold tracking-tighter bg-gradient-to-r from-[#D4AF37] via-white to-[#D4AF37] bg-clip-text text-transparent">
+                IRNAS
+              </span>
+            </div>
           </Link>
 
-          {/* Liens Desktop */}
-          <div className="hidden md:flex items-center space-x-2">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-2">
             <Link
-              href="/"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                isActive("/")
-                  ? "bg-purple-600 dark:bg-purple-500 text-white shadow-lg"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-800"
+              href="/client"
+              className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
+                isActive("/client")
+                  ? "bg-white/10 text-white"
+                  : "text-white/70 hover:bg-white/5 hover:text-white"
               }`}
             >
               <Home className="h-5 w-5" />
-              <span className="font-medium">Accueil</span>
+              Accueil
             </Link>
-
-            <Link
-              href="/client/quiz"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                isActive("/client/quiz")
-                  ? "bg-purple-600 dark:bg-purple-500 text-white shadow-lg"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-800"
+          <Link
+              href="/client/favoris"
+              className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
+                isActive("/client/favoris")
+                  ? "bg-white/10 text-white"
+                  : "text-white/70 hover:bg-white/5 hover:text-white"
               }`}
             >
-              <Sparkles className="h-5 w-5" />
-              <span className="font-medium">Quiz Parfum</span>
+              <Package className="h-5 w-5" />
+            Favoris
             </Link>
 
             <Link
               href="/client/catalog"
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
+              className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
                 isActive("/client/catalog")
-                  ? "bg-purple-600 dark:bg-purple-500 text-white shadow-lg"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-800"
+                  ? "bg-white/10 text-white"
+                  : "text-white/70 hover:bg-white/5 hover:text-white"
               }`}
             >
               <Package className="h-5 w-5" />
-              <span className="font-medium">Catalogue</span>
+              Collection
             </Link>
 
             {isSignedIn && (
               <Link
                 href="/client/orders"
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
-                  isActive("/client/orders")
-                    ? "bg-purple-600 dark:bg-purple-500 text-white shadow-lg"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-800"
-                }`}
+                className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
+                  isActive("/orders")
+                    ? "bg-white/10 text-white"
+                    : "text-white/70 hover:bg-white/5 hover:text-white"
+              }`}
               >
                 <Receipt className="h-5 w-5" />
-                <span className="font-medium">Mes Commandes</span>
+                Commandes
               </Link>
+              
             )}
           </div>
 
-          {/* Actions Desktop */}
-          <div className="hidden md:flex items-center space-x-4">
-            {/* Bouton Mode Sombre */}
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-4">
+            {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 shadow-md hover:scale-105"
-              aria-label="Toggle dark mode"
+              className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 border border-white/10 hover:border-white/20"
+              aria-label="Changer le mode"
             >
-              {isDarkMode ? (
-                <Sun className="h-5 w-5 text-yellow-400" />
-              ) : (
-                <Moon className="h-5 w-5 text-gray-600" />
-              )}
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
 
-            {/* Panier */}
+            {/* Cart */}
             <Link
-              href="/client/cart"
-              className="relative p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 shadow-md hover:scale-105"
+              href="/client/panier"
+              className="relative p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all duration-300 border border-white/10 hover:border-white/20"
             >
-              <ShoppingBag className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-[#D4AF37] text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                   {cartCount}
                 </span>
               )}
             </Link>
 
-            {/* Profil et Auth */}
+            {/* Auth Section */}
             {isSignedIn ? (
-              <div className="flex items-center space-x-3">
-                {/* Bouton Profil */}
+              <div className="flex items-center gap-3">
                 <Link
                   href="/client/profile"
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 shadow-md ${
-                    isActive("/profile")
-                      ? "bg-purple-600 text-white"
-                      : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                  }`}
-                  title="Mon Profil"
+                  className="flex items-center gap-3 pl-4 pr-6 py-2 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 hover:border-[#D4AF37]/30 transition-all group"
                 >
-                  <User className="h-5 w-5" />
-                  <span className="font-medium">{user.firstName || "Profil"}</span>
+                  <div className="w-9 h-9 bg-gradient-to-br from-[#D4AF37] to-white rounded-xl flex items-center justify-center text-black font-semibold">
+                    {user?.firstName?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm group-hover:text-[#D4AF37] transition-colors">
+                      {user?.firstName}
+                    </p>
+                  </div>
                 </Link>
-                
-                {/* Bouton Déconnexion */}
+
                 <SignOutButton>
-                  <button 
-                    className="p-2 rounded-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 shadow-md hover:scale-105"
-                    title="Se déconnecter"
-                  >
+                  <button className="p-3 rounded-2xl bg-white/5 hover:bg-red-500/10 hover:text-red-400 text-white/70 hover:border-red-500/30 border border-white/10 transition-all">
                     <LogOut className="h-5 w-5" />
                   </button>
                 </SignOutButton>
               </div>
             ) : (
               <SignInButton mode="modal">
-                <button className="flex items-center space-x-2 px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all duration-300 shadow-md font-medium">
+                <button className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-[#D4AF37] to-white hover:brightness-110 text-black font-semibold rounded-2xl transition-all active:scale-95">
                   <LogIn className="h-5 w-5" />
-                  <span>Se connecter</span>
+                  Se connecter
                 </button>
               </SignInButton>
             )}
           </div>
 
-          {/* Menu Mobile Button */}
-          <div className="md:hidden flex items-center space-x-2">
-            {/* Panier Mobile */}
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center gap-3">
             <Link
-              href="/client/cart"
-              className="relative p-2 rounded-lg text-gray-700 dark:text-gray-300"
+              href="/client/panier"
+              className="relative p-3 rounded-2xl bg-white/5 text-white/70"
             >
               <ShoppingBag className="h-6 w-6" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-[#D4AF37] text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                   {cartCount}
                 </span>
               )}
             </Link>
 
-            {/* Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300"
+              className="p-3 rounded-2xl bg-white/5 text-white/70"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -188,122 +200,84 @@ export default function ClientNavbar() {
         </div>
       </div>
 
-      {/* Menu Mobile */}
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-          <div className="px-4 py-3 space-y-2">
-            {/* Profil Mobile - En haut du menu si connecté */}
+        <div className="md:hidden bg-black/95 backdrop-blur-2xl border-t border-white/10 py-8">
+          <div className="px-6 space-y-2">
             {isSignedIn && (
               <Link
                 href="/client/profile"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-800 rounded-lg mb-3 hover:from-purple-100 hover:to-pink-100 dark:hover:bg-gray-700 transition-all duration-300 border-2 border-purple-200 dark:border-purple-800"
+                className="flex items-center gap-4 p-5 bg-white/5 rounded-3xl mb-8 border border-white/10"
               >
-                <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold shadow-lg">
-                  {user.firstName?.[0]?.toUpperCase() || "U"}
+                <div className="w-14 h-14 bg-gradient-to-br from-[#D4AF37] to-white rounded-2xl flex items-center justify-center text-3xl text-black font-semibold">
+                  {user?.firstName?.[0]?.toUpperCase() || "U"}
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {user.firstName || "Mon compte"}
-                  </p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">
-                    Voir mon profil →
-                  </p>
+                <div>
+                  <p className="font-semibold text-lg">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-[#D4AF37] text-sm">Mon profil</p>
                 </div>
-                <User className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </Link>
             )}
 
-            {/* Liens Navigation */}
             <Link
+              href="/client"
               onClick={() => setMobileMenuOpen(false)}
-              href="/"
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                isActive("/")
-                  ? "bg-purple-600 dark:bg-purple-500 text-white"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-800"
-              }`}
+              className={`flex items-center gap-4 px-6 py-5 rounded-3xl ${isActive("/client") ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"}`}
             >
-              <Home className="h-5 w-5" />
+              <Home className="h-6 w-6" />
               <span className="font-medium">Accueil</span>
             </Link>
 
             <Link
-              onClick={() => setMobileMenuOpen(false)}
-              href="/client/quiz"
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                isActive("/client/quiz")
-                  ? "bg-purple-600 dark:bg-purple-500 text-white"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-800"
-              }`}
-            >
-              <Sparkles className="h-5 w-5" />
-              <span className="font-medium">Quiz Parfum</span>
-            </Link>
-
-            <Link
-              onClick={() => setMobileMenuOpen(false)}
               href="/client/catalog"
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                isActive("/client/catalog")
-                  ? "bg-purple-600 dark:bg-purple-500 text-white"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-800"
-              }`}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-4 px-6 py-5 rounded-3xl ${isActive("/catalog") ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"}`}
             >
-              <Package className="h-5 w-5" />
-              <span className="font-medium">Catalogue</span>
+              <Package className="h-6 w-6" />
+              <span className="font-medium">Collection</span>
             </Link>
 
             {isSignedIn && (
               <Link
-                onClick={() => setMobileMenuOpen(false)}
                 href="/client/orders"
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                  isActive("/client/orders")
-                    ? "bg-purple-600 dark:bg-purple-500 text-white"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-800"
-                }`}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-4 px-6 py-5 rounded-3xl ${isActive("/orders") ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"}`}
               >
-                <Receipt className="h-5 w-5" />
+                <Receipt className="h-6 w-6" />
                 <span className="font-medium">Mes Commandes</span>
               </Link>
             )}
 
-            {/* Mode Sombre Mobile */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-              <span className="text-gray-700 dark:text-gray-300 font-medium">Mode Sombre</span>
-              <button
+            {/* Theme Toggle in Mobile */}
+            <div className="pt-6 px-6 flex items-center justify-between">
+              <span className="text-white/60">Thème</span>
+              <button 
                 onClick={toggleDarkMode}
-                className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300"
+                className="p-4 bg-white/5 rounded-2xl"
               >
-                {isDarkMode ? (
-                  <Sun className="h-5 w-5 text-yellow-400" />
-                ) : (
-                  <Moon className="h-5 w-5 text-gray-600" />
-                )}
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
             </div>
 
-            {/* Auth Mobile */}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+            <div className="pt-8 px-6">
               {isSignedIn ? (
                 <SignOutButton>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center space-x-2 w-full bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg transition-all duration-300 font-medium shadow-md"
+                    className="w-full flex items-center justify-center gap-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-5 rounded-3xl font-medium transition"
                   >
                     <LogOut className="h-5 w-5" />
-                    <span>Se déconnecter</span>
+                    Se déconnecter
                   </button>
                 </SignOutButton>
               ) : (
                 <SignInButton mode="modal">
                   <button
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-3 rounded-lg transition-all duration-300 font-medium shadow-md"
+                    className="w-full bg-gradient-to-r from-[#D4AF37] to-white text-black py-5 rounded-3xl font-semibold"
                   >
-                    <LogIn className="h-5 w-5" />
-                    <span>Se connecter</span>
+                    Se connecter
                   </button>
                 </SignInButton>
               )}

@@ -1,75 +1,56 @@
-// app/profile/page.tsx
-import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
-import ProfileClient from "../../profile/_ProfileClient";
+import {prisma} from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import ProfileClient from "../../../components/ClientProfileEditForm";
 
 export default async function ProfilePage() {
   const clerkUser = await currentUser();
   if (!clerkUser) redirect("/sign-in");
 
-  const email = clerkUser.emailAddresses.find(
-    (addr) => addr.id === clerkUser.primaryEmailAddressId
-  )?.emailAddress;
-
-  if (!email) redirect("/sign-in");
-
-  const dbUser = await prisma.user.upsert({
+  const dbUser = await prisma.user.findUnique({
     where: { clerkId: clerkUser.id },
-    update: {},
-    create: {
-      clerkId: clerkUser.id,
-      email,
-      name:
-        [clerkUser.firstName, clerkUser.lastName]
-          .filter(Boolean)
-          .join(" ")
-          .trim() || null,
-      role: (clerkUser.publicMetadata?.role as "ADMIN" | "CLIENT") || "CLIENT",
-    },
     include: {
       orders: {
-        take: 5,
         orderBy: { createdAt: "desc" },
+        take: 10,
         include: {
           items: {
-            include: { perfume: { include: { house: true } } },
+            include: {
+              product: { select: { name: true } },
+            },
           },
         },
       },
-      quizzes: { take: 1, orderBy: { createdAt: "desc" } },
     },
   });
+
+  if (!dbUser) redirect("/sign-in");
 
   return (
     <ProfileClient
       clerkUser={{
         firstName: clerkUser.firstName,
-        lastName: clerkUser.lastName,
-        imageUrl: clerkUser.imageUrl,
+        lastName:  clerkUser.lastName,
+        imageUrl:  clerkUser.imageUrl,
       }}
       dbUser={{
-        id: dbUser.id,
-        email: dbUser.email,
-        name: dbUser.name,
-        role: dbUser.role as string,
+        id:        dbUser.id,
+        email:     dbUser.email,
+        firstName: dbUser.firstName,
+        lastName:  dbUser.lastName,
+        role:      dbUser.role,
         createdAt: dbUser.createdAt.toISOString(),
-        orders: dbUser.orders.map((order) => ({
-          id: order.id,
-          status: order.status,
-          totalAmount: order.totalAmount,
-          deliveryMethod: order.deliveryMethod,
-          createdAt: order.createdAt.toISOString(),
-          items: order.items.map((item) => ({
-            id: item.id,
+        orders: dbUser.orders.map((o) => ({
+          id:          o.id.toString(), // ✅ Int → string
+          status:      o.status,
+          totalAmount: o.total,
+          createdAt:   o.createdAt.toISOString(),
+          items: o.items.map((item) => ({
+            id:       item.id,
             quantity: item.quantity,
-            perfume: {
-              name: item.perfume.name,
-              house: { name: item.perfume.house.name },
-            },
+            product:  { name: item.product.name },
           })),
         })),
-        hasCompletedQuiz: dbUser.quizzes.length > 0,
       }}
     />
   );

@@ -5,51 +5,93 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // ✅ Next.js 15 : params est une Promise
 ) {
   try {
-    const authResult = await auth();
-    const userId = authResult?.userId;
-    
-    if (!userId) {
+    const { userId: clerkId } = await auth();
+
+    if (!clerkId) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const orderId = params.id;
+    // ✅ Next.js 15 : il faut await params
+    const { id: rawId } = await params;
+    const orderId = Number(rawId);
 
-    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
-    if (!user) {
-      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("params.id brut :", rawId);
+    console.log("orderId parsé  :", orderId);
+    console.log("clerkId        :", clerkId);
+
+    if (!rawId || isNaN(orderId) || orderId <= 0) {
+      return NextResponse.json(
+        { error: "ID de commande invalide", received: rawId },
+        { status: 400 }
+      );
     }
 
+    // Diagnostic : cherche sans filtre userId
+    const orderRaw = await prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    console.log(
+      "Order sans filtre userId :",
+      orderRaw
+        ? { id: orderRaw.id, userId: orderRaw.userId, status: orderRaw.status }
+        : null
+    );
+
+    if (orderRaw) {
+      console.log("clerkId actuel  :", clerkId);
+      console.log("userId en base  :", orderRaw.userId);
+      console.log("Correspondent ? :", clerkId === orderRaw.userId);
+    }
+
+    // Cherche avec filtre userId (sécurisé)
     const order = await prisma.order.findFirst({
       where: {
         id: orderId,
-        userId: user.id, // S'assurer que la commande appartient à l'utilisateur
+        userId: clerkId,
       },
       include: {
         items: {
           include: {
-            perfume: {
-              include: {
-                house: true,
-              },
-            },
+            product: true,
           },
         },
       },
     });
 
     if (!order) {
-      return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
+      console.log("❌ 404 — commande introuvable avec filtre userId");
+      return NextResponse.json(
+        {
+          error: "Commande introuvable",
+          debug: {
+            orderId,
+            clerkId,
+            orderExistsWithoutFilter: !!orderRaw,
+            storedUserId: orderRaw?.userId ?? null,
+            userIdMatch: orderRaw ? clerkId === orderRaw.userId : null,
+          },
+        },
+        { status: 404 }
+      );
     }
+
+    console.log("✅ Commande trouvée :", order.id);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     return NextResponse.json({ order });
   } catch (error: any) {
     console.error("❌ Erreur GET order:", error);
-    return NextResponse.json({
-      error: "Erreur lors de la récupération de la commande",
-      message: error.message,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Erreur lors de la récupération de la commande",
+        message: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

@@ -1,140 +1,136 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
 datasource db {
   provider = "postgresql"
 }
 
-generator client {
-  provider   = "prisma-client-js"
-  engineType = "client"
-}
-
-enum Role {
-  ADMIN
-  CLIENT
-}
-
 model User {
-  id        String   @id @default(uuid())
-  clerkId   String   @unique
-  email     String   @unique
-  name      String?
-  role      Role     @default(CLIENT)  // ← LIGNE AJOUTÉE
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id        String     @id @default(cuid())
+  clerkId   String     @unique
+  email     String     @unique
+  firstName String?
+  lastName  String?
+  createdAt DateTime   @default(now())
+  role      UserRole   @default(CLIENT)
   cart      Cart?
+  favorites Favorite[]
   orders    Order[]
-  quizzes   QuizResponse[]
 }
 
-model PerfumeHouse {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique
-  perfumes Perfume[]
-}
-
-model Category {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  perfumes  PerfumeCategory[]
-}
-
-model Perfume {
-  id          Int      @id @default(autoincrement())
+model Product {
+  id          Int         @id @default(autoincrement())
   name        String
   description String?
   price       Float
-  category    String   // Garde pour la compatibilité (Homme/Femme/Unisexe)
-  imageUrl    String?
-  style       String[] // Les styles olfactifs (Boisé, Floral, etc.)
-  houseId     Int
-  house       PerfumeHouse @relation(fields: [houseId], references: [id])
-  stock       Int      @default(100)
-
+  gender      Gender
+  color       String
+  colorHex    String      @default("#888888")
+  stock       Int         @default(0)
+  images      String[]
+  sizes       String[]
+  material    String?
+  fit         String?
+  isNew       Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  stockStatus StockStatus @default(NORMAL)
+  category    String
   cartItems   CartItem[]
+  favorites   Favorite[]
   orderItems  OrderItem[]
-  categories  PerfumeCategory[] // Nouvelle relation many-to-many
 }
 
-// Table de liaison pour la relation many-to-many
-model PerfumeCategory {
-  id         String   @id @default(uuid())
-  perfumeId  Int
-  categoryId String
-  perfume    Perfume  @relation(fields: [perfumeId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  productId Int
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [clerkId])
 
-  @@unique([perfumeId, categoryId])
-  @@index([perfumeId])
-  @@index([categoryId])
+  @@unique([userId, productId])
 }
 
 model Cart {
-  id        String     @id @default(uuid())
+  id        Int        @id @default(autoincrement())
   userId    String     @unique
-  user      User       @relation(fields: [userId], references: [id])
-  items     CartItem[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [clerkId])
+  items     CartItem[]
 }
 
 model CartItem {
   id        Int     @id @default(autoincrement())
-  cartId    String
-  perfumeId Int
+  cartId    Int
+  productId Int
   quantity  Int     @default(1)
+  size      String?
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
 
-  cart      Cart    @relation(fields: [cartId], references: [id])
-  perfume   Perfume @relation(fields: [perfumeId], references: [id])
-
-  @@unique([cartId, perfumeId])
+  @@unique([cartId, productId, size])
 }
 
 model Order {
-  id             String          @id @default(uuid())
+  id             Int         @id @default(autoincrement())
   userId         String
-  user           User            @relation(fields: [userId], references: [id])
-  totalAmount    Float
-  status         OrderStatus     @default(PENDING)
-  deliveryMethod DeliveryMethod
-  createdAt      DateTime        @default(now())
-
+  status         OrderStatus @default(pending)
+  total          Float
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deliveryMethod String      @default("PICKUP")
+  user           User        @relation(fields: [userId], references: [clerkId])
   items          OrderItem[]
 }
 
 model OrderItem {
   id        Int     @id @default(autoincrement())
-  orderId   String
-  perfumeId Int
+  orderId   Int
+  productId Int
   quantity  Int
+  size      String?
   price     Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
 
-  order     Order   @relation(fields: [orderId], references: [id])
-  perfume   Perfume @relation(fields: [perfumeId], references: [id])
+  @@unique([orderId, productId, size])
 }
 
-model QuizResponse {
-  id                Int      @id @default(autoincrement())
-  userId            String?
-  user              User?    @relation(fields: [userId], references: [id])
-  preferences       Json
-  suggestedPerfumes Int[]
-  createdAt         DateTime @default(now())
+enum UserRole {
+  CLIENT
+  ADMIN
+}
+
+enum StockStatus {
+  NORMAL
+  LOW
+  CRITICAL
+  OUT_OF_STOCK
+}
+
+enum Category {
+  pantalon
+  pull
+  veste
+  chemise
+  accessoire
+  parfum
+}
+
+enum Gender {
+  men
+  women
+  unisex
 }
 
 enum OrderStatus {
-  PENDING
-  CONFIRMED
-  PREPARING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
-
-enum DeliveryMethod {
-  PICKUP      // Sur place
-  DELIVERY    // Livraison à domicile
+  pending
+  confirmed
+  shipped
+  delivered
+  cancelled
 }

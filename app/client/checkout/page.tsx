@@ -1,56 +1,40 @@
-// app/checkout/page.tsx
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  ArrowLeft, 
-  ShoppingBag, 
-  MapPin, 
-  Truck, 
-  Store,
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  X,
-  Phone,
-  User,
-  CreditCard
+import {
+  ArrowLeft, ShoppingBag, Truck, Store, CheckCircle,
+  XCircle, AlertCircle, X, User, CreditCard, MapPin
 } from "lucide-react";
 
 type CartItem = {
   id: number;
   quantity: number;
-  perfume: {
+  size: string | null;
+  product: {
     id: number;
     name: string;
     price: number;
-    imageUrl: string | null;
-    house: { name: string };
+    images: string[];
+    category: string;
   };
-};
-
-type Cart = {
-  items: CartItem[];
-};
-
-type AlertType = {
-  show: boolean;
-  type: "success" | "error" | "warning";
-  message: string;
 };
 
 type DeliveryMethod = "PICKUP" | "DELIVERY";
 
+const DELIVERY_FEE = 7;
+
 export default function CheckoutPage() {
   const router = useRouter();
-  const [cart, setCart] = useState<Cart>({ items: [] });
+  const [cart, setCart] = useState<{ items: CartItem[] }>({ items: [] });
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [alert, setAlert] = useState<AlertType>({ show: false, type: "success", message: "" });
+  const [alert, setAlert] = useState<{ show: boolean; type: string; message: string }>({
+    show: false, type: "success", message: ""
+  });
 
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("DELIVERY");
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("PICKUP");
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -62,9 +46,7 @@ export default function CheckoutPage() {
 
   const showAlert = (type: "success" | "error" | "warning", message: string) => {
     setAlert({ show: true, type, message });
-    setTimeout(() => {
-      setAlert({ show: false, type: "success", message: "" });
-    }, 3000);
+    setTimeout(() => setAlert({ show: false, type: "success", message: "" }), 3000);
   };
 
   const fetchCart = async () => {
@@ -73,14 +55,10 @@ export default function CheckoutPage() {
       if (res.ok) {
         const data = await res.json();
         setCart(data);
-        if (!data.items || data.items.length === 0) {
-          router.push("/cart");
-        }
-      } else {
-        showAlert("error", "Erreur lors du chargement du panier");
+        if (!data.items?.length) router.push("/client/panier");
       }
-    } catch (error) {
-      showAlert("error", "Erreur réseau");
+    } catch {
+      showAlert("error", "Impossible de charger le panier");
     } finally {
       setLoading(false);
     }
@@ -90,28 +68,26 @@ export default function CheckoutPage() {
     fetchCart();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validation
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
     if (!form.name.trim() || !form.phone.trim()) {
-      showAlert("warning", "Veuillez remplir tous les champs obligatoires");
+      showAlert("warning", "Nom et téléphone sont obligatoires");
       return;
     }
-
     if (deliveryMethod === "DELIVERY" && (!form.address.trim() || !form.city.trim())) {
       showAlert("warning", "Veuillez remplir l'adresse de livraison");
       return;
     }
 
     setProcessing(true);
-
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           deliveryMethod,
+          deliveryFee: deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
           customerInfo: {
             name: form.name,
             phone: form.phone,
@@ -124,327 +100,287 @@ export default function CheckoutPage() {
       });
 
       const data = await res.json();
-
       if (res.ok) {
-        showAlert("success", "Commande passée avec succès !");
-        setTimeout(() => {
-          router.push(`/client/orders/${data.orderId}`);
-        }, 1500);
+        showAlert("success", "Commande confirmée avec succès !");
+        setTimeout(() => router.push(`/client/orders/${data.orderId}`), 1500);
       } else {
-        showAlert("error", data.error || "Erreur lors de la création de la commande");
+        showAlert("error", data.error || "Erreur lors de la commande");
       }
-    } catch (error) {
+    } catch {
       showAlert("error", "Erreur réseau");
     } finally {
       setProcessing(false);
     }
   };
 
-  const subtotal = cart.items.reduce((sum, item) => sum + item.perfume.price * item.quantity, 0);
-  const deliveryFee = deliveryMethod === "DELIVERY" ? 7 : 0;
+  const subtotal = cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const deliveryFee = deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0;
   const total = subtotal + deliveryFee;
-  const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 pt-24 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-2xl text-gray-600 dark:text-gray-400">Chargement...</p>
-        </div>
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-[#D4AF37] text-2xl">Chargement...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 pt-24 pb-20 px-6">
-      
-      {/* ALERTE */}
-      {alert.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className={`
-            relative max-w-md w-full rounded-2xl shadow-2xl p-6 
-            transform animate-in zoom-in-95 duration-300
-            ${alert.type === "success" ? "bg-gradient-to-br from-green-500 to-emerald-600" : ""}
-            ${alert.type === "error" ? "bg-gradient-to-br from-red-500 to-rose-600" : ""}
-            ${alert.type === "warning" ? "bg-gradient-to-br from-amber-500 to-orange-600" : ""}
-          `}>
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                {alert.type === "success" && <CheckCircle className="w-8 h-8 text-white" />}
-                {alert.type === "error" && <XCircle className="w-8 h-8 text-white" />}
-                {alert.type === "warning" && <AlertCircle className="w-8 h-8 text-white" />}
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-white mb-1">
-                  {alert.type === "success" && "Succès !"}
-                  {alert.type === "error" && "Erreur"}
-                  {alert.type === "warning" && "Attention"}
-                </h3>
-                <p className="text-white/90 text-base">{alert.message}</p>
-              </div>
-              <button
-                onClick={() => setAlert({ ...alert, show: false })}
-                className="flex-shrink-0 text-white/80 hover:text-white transition"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 rounded-b-2xl overflow-hidden">
-              <div className="h-full bg-white/50 animate-progress" style={{ animation: "progress 3s linear" }} />
-            </div>
+    <>
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
+
+        .checkout-page {
+          font-family: 'Instrument Sans', system-ui, sans-serif;
+          background: #0A0A0A;
+          color: #F8F6F2;
+        }
+
+        .glass-card {
+          background: rgba(17, 17, 17, 0.85);
+          backdrop-filter: blur(24px);
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .hero-title {
+          font-family: 'Syne', sans-serif;
+          font-size: clamp(2.8rem, 5vw, 4.5rem);
+          font-weight: 800;
+          letter-spacing: -0.04em;
+        }
+
+        .gradient-text {
+          background: linear-gradient(135deg, #D4AF37, #F5E6A3);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+
+        .input-field {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          transition: all 0.3s ease;
+        }
+        .input-field:focus {
+          border-color: #D4AF37;
+          box-shadow: 0 0 0 4px rgba(212,175,55,0.15);
+        }
+      `}</style>
+
+      <div className="checkout-page min-h-screen relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0" />
+
+        <div className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10">
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-12">
+            <Link href="/client/panier" className="text-[#D4AF37] hover:text-white flex items-center gap-2 transition">
+              <ArrowLeft size={22} /> Retour au panier
+            </Link>
+            <div className="h-px flex-1 bg-white/10" />
           </div>
-        </div>
-      )}
 
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Header */}
-        <div className="mb-10">
-          <Link 
-            href="/cart" 
-            className="inline-flex items-center gap-2 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-bold mb-6 transition"
-          >
-            <ArrowLeft size={20} />
-            Retour au panier
-          </Link>
-          <h1 className="text-5xl font-black bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-            Finaliser la commande
-          </h1>
-        </div>
+         
+          <div className="grid lg:grid-cols-12 gap-10 mt-16">
+            {/* Left Column - Form */}
+            <div className="lg:col-span-7 space-y-10">
+              {/* Delivery Method */}
+              <div className="glass-card rounded-3xl p-10">
+                <h2 className="text-3xl font-semibold tracking-tight mb-8 flex items-center gap-4">
+                  <Truck className="text-[#D4AF37]" size={32} />
+                  Mode de livraison
+                </h2>
 
-        <div className="grid lg:grid-cols-3 gap-10">
-          
-          {/* Formulaire */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Méthode de livraison */}
-            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8">
-              <h2 className="text-2xl font-black mb-6 text-gray-900 dark:text-gray-100 flex items-center gap-3">
-                <Truck className="text-purple-600 dark:text-purple-400" />
-                Mode de livraison
-              </h2>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <button
+                    onClick={() => setDeliveryMethod("DELIVERY")}
+                    className={`p-8 rounded-3xl border transition-all text-left group ${
+                      deliveryMethod === "DELIVERY"
+                        ? "border-[#D4AF37] bg-[#D4AF37]/10"
+                        : "border-white/10 hover:border-white/30"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <Truck size={36} className={deliveryMethod === "DELIVERY" ? "text-[#D4AF37]" : "text-white/40"} />
+                      <span className="text-sm font-semibold text-[#D4AF37]">{DELIVERY_FEE} TND</span>
+                    </div>
+                    <h3 className="text-2xl font-semibold mb-2">Livraison à domicile</h3>
+                    <p className="text-white/60">Votre commande vous sera livrée directement</p>
+                  </button>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setDeliveryMethod("DELIVERY")}
-                  className={`p-6 rounded-2xl border-2 transition text-left ${
-                    deliveryMethod === "DELIVERY"
-                      ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
-                      : "border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-700"
-                  }`}
-                >
-                  <Truck className={`w-8 h-8 mb-3 ${
-                    deliveryMethod === "DELIVERY" ? "text-purple-600 dark:text-purple-400" : "text-gray-400"
-                  }`} />
-                  <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">Livraison à domicile</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Recevez votre commande chez vous</p>
-                  <p className="text-lg font-bold text-purple-600 dark:text-purple-400">7.00 TND</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDeliveryMethod("PICKUP")}
-                  className={`p-6 rounded-2xl border-2 transition text-left ${
-                    deliveryMethod === "PICKUP"
-                      ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
-                      : "border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-700"
-                  }`}
-                >
-                  <Store className={`w-8 h-8 mb-3 ${
-                    deliveryMethod === "PICKUP" ? "text-purple-600 dark:text-purple-400" : "text-gray-400"
-                  }`} />
-                  <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">Retrait en magasin</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Récupérez votre commande sur place</p>
-                  <p className="text-lg font-bold text-green-600 dark:text-green-400">Gratuit</p>
-                </button>
+                  <button
+                    onClick={() => setDeliveryMethod("PICKUP")}
+                    className={`p-8 rounded-3xl border transition-all text-left group ${
+                      deliveryMethod === "PICKUP"
+                        ? "border-[#D4AF37] bg-[#D4AF37]/10"
+                        : "border-white/10 hover:border-white/30"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <Store size={36} className={deliveryMethod === "PICKUP" ? "text-[#D4AF37]" : "text-white/40"} />
+                      <span className="text-sm font-semibold text-emerald-400">Gratuit</span>
+                    </div>
+                    <h3 className="text-2xl font-semibold mb-2">Retrait en magasin</h3>
+                    <p className="text-white/60">Venez récupérer votre commande sur place</p>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Informations client */}
-            <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8">
-              <h2 className="text-2xl font-black mb-6 text-gray-900 dark:text-gray-100 flex items-center gap-3">
-                <User className="text-purple-600 dark:text-purple-400" />
-                Vos informations
-              </h2>
+              {/* Customer Info */}
+              <div className="glass-card rounded-3xl p-10">
+                <h2 className="text-3xl font-semibold tracking-tight mb-8 flex items-center gap-4">
+                  <User className="text-[#D4AF37]" size={32} />
+                  Informations personnelles
+                </h2>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                    Nom complet *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-purple-600 dark:focus:border-purple-400 outline-none transition bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    placeholder="Jean Dupont"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                    Téléphone *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-purple-600 dark:focus:border-purple-400 outline-none transition bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    placeholder="+216 XX XXX XXX"
-                  />
-                </div>
-
-                {deliveryMethod === "DELIVERY" && (
-                  <>
+                <div className="space-y-8">
+                  <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                        Adresse de livraison *
-                      </label>
+                      <label className="text-sm text-white/60 mb-2 block">Nom complet *</label>
                       <input
                         type="text"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        className="input-field w-full px-6 py-4 rounded-2xl text-lg"
+                        placeholder="Votre nom"
                         required
-                        value={form.address}
-                        onChange={(e) => setForm({ ...form, address: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-purple-600 dark:focus:border-purple-400 outline-none transition bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        placeholder="123 Rue Example"
                       />
                     </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                          Ville *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={form.city}
-                          onChange={(e) => setForm({ ...form, city: e.target.value })}
-                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-purple-600 dark:focus:border-purple-400 outline-none transition bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                          placeholder="Tunis"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                          Code postal
-                        </label>
-                        <input
-                          type="text"
-                          value={form.postalCode}
-                          onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
-                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-purple-600 dark:focus:border-purple-400 outline-none transition bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                          placeholder="1000"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                    Notes (optionnel)
-                  </label>
-                  <textarea
-                    value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 focus:border-purple-600 dark:focus:border-purple-400 outline-none transition resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    placeholder="Instructions de livraison, préférences..."
-                  />
-                </div>
-              </div>
-            </form>
-          </div>
-
-          {/* Résumé */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 sticky top-24">
-              <h2 className="text-2xl font-black mb-6 text-gray-900 dark:text-gray-100">Résumé</h2>
-
-              {/* Articles */}
-              <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
-                {cart.items.map((item) => (
-                  <div key={item.id} className="flex gap-3">
-                    <div className="w-16 h-16 flex-shrink-0 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600 rounded-lg overflow-hidden">
-                      {item.perfume.imageUrl ? (
-                        <img
-                          src={item.perfume.imageUrl}
-                          alt={item.perfume.name}
-                          className="w-full h-full object-contain p-2"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">💐</div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">{item.perfume.name}</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{item.perfume.house.name}</p>
-                      <p className="text-sm font-bold text-purple-600 dark:text-purple-400">
-                        {item.quantity} × {item.perfume.price.toFixed(2)} TND
-                      </p>
+                    <div>
+                      <label className="text-sm text-white/60 mb-2 block">Téléphone *</label>
+                      <input
+                        type="tel"
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        className="input-field w-full px-6 py-4 rounded-2xl text-lg"
+                        placeholder="+216 XX XXX XXX"
+                        required
+                      />
                     </div>
                   </div>
-                ))}
+
+                  {deliveryMethod === "DELIVERY" && (
+                    <>
+                      <div>
+                        <label className="text-sm text-white/60 mb-2 block">Adresse complète *</label>
+                        <input
+                          type="text"
+                          value={form.address}
+                          onChange={(e) => setForm({ ...form, address: e.target.value })}
+                          className="input-field w-full px-6 py-4 rounded-2xl text-lg"
+                          placeholder="Rue, numéro, immeuble..."
+                          required
+                        />
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="text-sm text-white/60 mb-2 block">Ville *</label>
+                          <input
+                            type="text"
+                            value={form.city}
+                            onChange={(e) => setForm({ ...form, city: e.target.value })}
+                            className="input-field w-full px-6 py-4 rounded-2xl text-lg"
+                            placeholder="Tunis"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-white/60 mb-2 block">Code postal</label>
+                          <input
+                            type="text"
+                            value={form.postalCode}
+                            onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
+                            className="input-field w-full px-6 py-4 rounded-2xl text-lg"
+                            placeholder="1000"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                    <label className="text-sm text-white/60 mb-2 block">Notes / Instructions</label>
+                    <textarea
+                      value={form.notes}
+                      onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                      rows={4}
+                      className="input-field w-full px-6 py-4 rounded-2xl text-lg resize-none"
+                      placeholder="Instructions spéciales pour la livraison..."
+                    />
+                  </div>
+                </div>
               </div>
+            </div>
 
-              {/* Totaux */}
-              <div className="space-y-3 text-gray-900 dark:text-gray-100 border-t border-gray-200 dark:border-gray-700 pt-6">
-                <div className="flex justify-between">
-                  <span>Sous-total ({totalItems} article{totalItems > 1 ? "s" : ""})</span>
-                  <span className="font-bold">{subtotal.toFixed(2)} TND</span>
+            {/* Right Column - Order Summary */}
+            <div className="lg:col-span-5">
+              <div className="glass-card rounded-3xl p-10 sticky top-8">
+                <h2 className="text-3xl font-semibold mb-8 flex items-center gap-3">
+                  <ShoppingBag className="text-[#D4AF37]" /> Résumé de la commande
+                </h2>
+
+                <div className="space-y-6 mb-10 max-h-[420px] overflow-y-auto pr-2">
+                  {cart.items.map((item) => (
+                    <div key={item.id} className="flex gap-5">
+                      <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 flex-shrink-0">
+                        <img
+                          src={item.product.images[0] || "/placeholder.jpg"}
+                          alt={item.product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-lg leading-tight">{item.product.name}</h4>
+                        {item.size && <p className="text-white/50 text-sm">Taille : {item.size}</p>}
+                        <p className="text-[#D4AF37] font-medium mt-1">
+                          {item.quantity} × {item.product.price} TND
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex justify-between">
-                  <span>Livraison</span>
-                  <span className="font-bold">{deliveryFee.toFixed(2)} TND</span>
+
+                <div className="border-t border-white/10 pt-8 space-y-4">
+                  <div className="flex justify-between text-lg">
+                    <span className="text-white/70">Sous-total</span>
+                    <span>{subtotal.toFixed(2)} TND</span>
+                  </div>
+                  <div className="flex justify-between text-lg">
+                    <span className="text-white/70">Livraison</span>
+                    <span className={deliveryFee === 0 ? "text-emerald-400" : ""}>
+                      {deliveryFee === 0 ? "Gratuit" : `${deliveryFee} TND`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-3xl font-bold pt-6 border-t border-white/10">
+                    <span>Total</span>
+                    <span className="text-[#D4AF37]">{total.toFixed(2)} TND</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-xl font-black pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <span>Total</span>
-                  <span className="text-purple-600 dark:text-purple-400">{total.toFixed(2)} TND</span>
-                </div>
+
+                <button
+                  onClick={() => handleSubmit()}
+                  disabled={processing}
+                  className="mt-10 w-full bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] text-black font-semibold py-5 rounded-2xl text-xl flex items-center justify-center gap-3 hover:brightness-110 transition disabled:opacity-70"
+                >
+                  {processing ? (
+                    <>Traitement en cours...</>
+                  ) : (
+                    <>
+                      <CreditCard size={24} />
+                      Confirmer la commande
+                    </>
+                  )}
+                </button>
+
+                <p className="text-center text-white/50 text-sm mt-6">
+                  Paiement à la livraison • Sécurisé
+                </p>
               </div>
-
-              {/* Bouton commander */}
-              <button
-                type="submit"
-                onClick={handleSubmit}
-                disabled={processing}
-                className="w-full mt-8 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black py-5 rounded-2xl text-xl hover:scale-105 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3"
-              >
-                {processing ? (
-                  <>
-                    <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Traitement...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard size={24} />
-                    Commander
-                  </>
-                )}
-              </button>
-
-              <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-                🔒 Paiement à la livraison / au retrait
-              </p>
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes progress {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
-        .animate-progress {
-          animation: progress 3s linear;
-        }
-      `}</style>
-    </div>
+    </>
   );
 }

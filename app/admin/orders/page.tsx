@@ -1,32 +1,54 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Package, Truck, Clock, CheckCircle, XCircle, MapPin, TrendingUp } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Package, Truck, Clock, CheckCircle, XCircle, MapPin, TrendingUp,
+} from "lucide-react";
+import AdminNavbar from "@/components/AdminNavbar";
 
 interface OrderItem {
   id: number;
-  perfumeName: string;
+  productName: string;
   quantity: number;
   price: number;
 }
 
 interface Order {
-  id: string;
+  id: number;
   userId: string;
   userName: string;
   userEmail: string;
-  totalAmount: number;
+  total: number;
   status: string;
   deliveryMethod: string;
   createdAt: string;
   items: OrderItem[];
 }
 
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+  pending:   { label: "En attente",  color: "bg-amber-500/10 text-amber-400 border-amber-500/30",  icon: Clock        },
+  confirmed: { label: "Confirmée",   color: "bg-blue-500/10 text-blue-400 border-blue-500/30",    icon: CheckCircle  },
+  shipped:   { label: "Expédiée",    color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/30", icon: Truck     },
+  delivered: { label: "Livrée",      color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30", icon: CheckCircle },
+  cancelled: { label: "Annulée",     color: "bg-red-500/10 text-red-400 border-red-500/30",       icon: XCircle      },
+};
+
+const FILTER_OPTIONS = ["all", "pending", "confirmed", "shipped", "delivered", "cancelled"];
+
 export default function AdminOrdersPage() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("ALL");
-  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [filter, setFilter] = useState("all");
+  const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
+
+  // Lecture automatique de la vidéo
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     fetchOrders();
@@ -34,407 +56,276 @@ export default function AdminOrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("/api/admin/orders");
-      if (!response.ok) {
-        throw new Error("Échec du chargement des commandes");
+      const res = await fetch("/api/admin/orders");
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data);
       }
-      const data = await response.json();
-      setOrders(data);
     } catch (error) {
-      console.error("Erreur lors du chargement des commandes:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+  const updateOrderStatus = async (orderId: number, newStatus: string) => {
     setUpdatingOrderId(orderId);
     try {
-      const response = await fetch("/api/admin/orders", {
+      const res = await fetch("/api/admin/orders", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, status: newStatus }),
       });
-
-      if (!response.ok) {
-        throw new Error("Échec de la mise à jour du statut");
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       }
-
-      setOrders(
-        orders.map((order) =>
-          order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      );
     } catch (error) {
-      console.error("Erreur lors de la mise à jour:", error);
+      console.error(error);
     } finally {
       setUpdatingOrderId(null);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const configs: Record<
-      string,
-      { label: string; color: string; icon: React.ElementType }
-    > = {
-      PENDING: {
-        label: "En attente",
-        color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-        icon: Clock,
-      },
-      CONFIRMED: {
-        label: "Confirmée",
-        color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-        icon: CheckCircle,
-      },
-      PREPARING: {
-        label: "Préparation",
-        color: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-        icon: Package,
-      },
-      SHIPPED: {
-        label: "Expédiée",
-        color: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
-        icon: Truck,
-      },
-      DELIVERED: {
-        label: "Livrée",
-        color: "bg-green-500/20 text-green-400 border-green-500/30",
-        icon: CheckCircle,
-      },
-      CANCELLED: {
-        label: "Annulée",
-        color: "bg-red-500/20 text-red-400 border-red-500/30",
-        icon: XCircle,
-      },
-    };
+  const filteredOrders = filter === "all" 
+    ? orders 
+    : orders.filter(o => o.status === filter);
 
-    const config = configs[status] || configs.PENDING;
-    const Icon = config.icon;
-
+  const StatusBadge = ({ status }: { status: string }) => {
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+    const Icon = cfg.icon;
     return (
-      <span
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border backdrop-blur-sm ${config.color}`}
-      >
-        <Icon className="w-3.5 h-3.5" />
-        {config.label}
+      <span className={`inline-flex items-center gap-2 px-5 py-2 rounded-2xl text-sm font-medium border ${cfg.color}`}>
+        <Icon className="w-4 h-4" />
+        {cfg.label}
       </span>
     );
   };
-
-  const getDeliveryBadge = (method: string) => {
-    return method === "PICKUP" ? (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 backdrop-blur-sm">
-        <MapPin className="w-3.5 h-3.5" />
-        Sur place
-      </span>
-    ) : (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-500/20 text-teal-400 border border-teal-500/30 backdrop-blur-sm">
-        <Truck className="w-3.5 h-3.5" />
-        Livraison
-      </span>
-    );
-  };
-
-  const filteredOrders =
-    filter === "ALL" ? orders : orders.filter((order) => order.status === filter);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-700 border-t-indigo-500 mx-auto"></div>
-            <div className="absolute inset-0 rounded-full bg-indigo-500/20 blur-xl animate-pulse"></div>
-          </div>
-          <p className="text-slate-400 text-lg mt-6 font-medium">Chargement des commandes...</p>
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-[#D4AF37] flex items-center gap-4 text-xl">
+          <div className="w-6 h-6 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
+          Chargement des commandes...
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header avec effet glassmorphism */}
-        <div className="mb-10 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 blur-3xl"></div>
-          <div className="relative">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent mb-3">
-              Gestion des Commandes
-            </h1>
-            <p className="text-slate-400 text-lg">
-              Suivez et gérez toutes les commandes en temps réel
-            </p>
+    <>
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
+
+        .admin-orders {
+          font-family: 'Instrument Sans', system-ui, sans-serif;
+          background: #0A0A0A;
+          color: #F8F6F2;
+        }
+
+        .glass-card {
+          background: rgba(17, 17, 17, 0.85);
+          backdrop-filter: blur(24px);
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .hero-title {
+          font-family: 'Syne', sans-serif;
+          font-size: clamp(2.8rem, 5vw, 4.5rem);
+          font-weight: 800;
+          letter-spacing: -0.04em;
+        }
+
+        .video-background {
+          position: fixed;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          z-index: 0;
+          overflow: hidden;
+        }
+        .video-background video {
+          width: 100%; height: 100%;
+          object-fit: cover;
+          opacity: 0.22;
+          filter: brightness(0.7) contrast(1.1);
+        }
+        .video-overlay {
+          position: fixed;
+          inset: 0;
+          background: radial-gradient(circle at 30% 20%, rgba(212,175,55,0.12), rgba(0,0,0,0.88));
+          z-index: 1;
+        }
+      `}</style>
+
+      <div className="admin-orders min-h-screen relative overflow-hidden">
+        {/* Vidéo d'arrière-plan */}
+        <div className="video-background">
+          <video ref={videoRef} autoPlay muted loop playsInline>
+            <source src="/video/mm.mp4" type="video/mp4" />
+          </video>
+        </div>
+        <div className="video-overlay" />
+
+        {/* Grille dorée subtile */}
+        <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0 pointer-events-none" />
+
+
+        <div className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10">
+          {/* Header */}
+          <div className="mb-12">
+            <div className="inline-flex items-center gap-3 text-xs uppercase tracking-[3px] bg-white/5 border border-white/10 px-6 py-2.5 rounded-full mb-6">
+              <Package size={16} className="text-[#D4AF37]" />
+              ADMINISTRATION
+            </div>
+            
           </div>
-        </div>
 
-        {/* Statistiques avec cartes glassmorphism */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {[
-            { label: "Total", count: orders.length, color: "from-indigo-500 to-purple-500", icon: Package },
-            {
-              label: "En attente",
-              count: orders.filter((o) => o.status === "PENDING").length,
-              color: "from-yellow-500 to-orange-500",
-              icon: Clock,
-            },
-            {
-              label: "En cours",
-              count: orders.filter((o) =>
-                ["CONFIRMED", "PREPARING", "SHIPPED"].includes(o.status)
-              ).length,
-              color: "from-blue-500 to-cyan-500",
-              icon: TrendingUp,
-            },
-            {
-              label: "Livrées",
-              count: orders.filter((o) => o.status === "DELIVERED").length,
-              color: "from-green-500 to-emerald-500",
-              icon: CheckCircle,
-            },
-          ].map((stat, idx) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={idx}
-                className="group relative bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 hover:border-slate-600/50 transition-all duration-300 hover:scale-105"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity duration-300" style={{background: `linear-gradient(135deg, ${stat.color})`}}></div>
-                <div className={`w-14 h-14 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
-                  <Icon className="w-7 h-7 text-white" />
-                </div>
-                <p className="text-3xl font-bold text-white mb-1">{stat.count}</p>
-                <p className="text-sm text-slate-400 font-medium">{stat.label}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Filtres avec design moderne */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 mb-8">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></span>
-            Filtrer par statut
-          </h3>
-          <div className="flex flex-wrap gap-3">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {[
-              "ALL",
-              "PENDING",
-              "CONFIRMED",
-              "PREPARING",
-              "SHIPPED",
-              "DELIVERED",
-              "CANCELLED",
-            ].map((status) => (
-              <button
-                key={status}
-                onClick={() => setFilter(status)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 {
-                  filter === status
-                    ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/50 scale-105"
-                    : "bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-600/50"
-                }`}
-              >
-                {status === "ALL" ? "Toutes" : getStatusBadge(status).props.children[1]}
-              </button>
+              { label: "Total Commandes", count: orders.length, icon: Package },
+              { label: "En Attente", count: orders.filter(o => o.status === "pending").length, icon: Clock },
+              { label: "En Cours", count: orders.filter(o => ["confirmed","shipped"].includes(o.status)).length, icon: TrendingUp },
+              { label: "Livrées", count: orders.filter(o => o.status === "delivered").length, icon: CheckCircle },
+            ].map((stat, i) => (
+              <div key={i} className="glass-card rounded-3xl p-8 hover:border-[#D4AF37]/50 transition-all">
+                <div className="w-14 h-14 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center mb-8">
+                  <stat.icon className="text-[#D4AF37]" size={32} />
+                </div>
+                <div className="text-5xl font-bold tracking-tighter mb-2">{stat.count}</div>
+                <div className="text-white/60">{stat.label}</div>
+              </div>
             ))}
           </div>
-        </div>
 
-        {/* Liste des commandes */}
-        <div className="space-y-6">
-          {filteredOrders.length === 0 ? (
-            <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-16 text-center border border-slate-700/50">
-              <div className="w-20 h-20 bg-slate-700/50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Package className="w-10 h-10 text-slate-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">
-                Aucune commande
-              </h3>
-              <p className="text-slate-400">
-                Aucune commande ne correspond à ce filtre
-              </p>
+          {/* Filtres */}
+          <div className="glass-card rounded-3xl p-8 mb-10">
+            <h3 className="text-lg font-semibold mb-6">Filtrer par statut</h3>
+            <div className="flex flex-wrap gap-3">
+              {FILTER_OPTIONS.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-6 py-3 rounded-2xl text-sm font-medium transition-all ${
+                    filter === f 
+                      ? "bg-[#D4AF37] text-black" 
+                      : "bg-white/5 border border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  {f === "all" ? `Toutes (${orders.length})` : STATUS_CONFIG[f]?.label}
+                </button>
+              ))}
             </div>
-          ) : (
-            filteredOrders.map((order) => (
-              <div
-                key={order.id}
-                className="group bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden hover:border-slate-600/50 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10"
-              >
-                <div className="p-6">
-                  {/* En-tête */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          </div>
+
+          {/* Liste des commandes */}
+          <div className="space-y-6">
+            {filteredOrders.length === 0 ? (
+              <div className="glass-card rounded-3xl p-20 text-center">
+                <Package size={80} className="mx-auto mb-8 text-white/30" />
+                <p className="text-2xl font-semibold">Aucune commande trouvée</p>
+              </div>
+            ) : (
+              filteredOrders.map((order) => (
+                <div key={order.id} className="glass-card rounded-3xl overflow-hidden">
+                  <div className="p-8">
+                    <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
+                      <div>
+                        <p className="text-white/60 text-sm">Commande #{String(order.id).padStart(6, '0')}</p>
+                        <p className="text-4xl font-bold text-[#D4AF37] mt-2">
+                          {order.total.toFixed(2)} <span className="text-xl text-white/60">TND</span>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <StatusBadge status={order.status} />
+                        <div className="text-sm text-white/60">
+                          {new Date(order.createdAt).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-8 mb-8">
+                      <div>
+                        <p className="text-white/60 text-sm mb-2">CLIENT</p>
+                        <p className="font-semibold text-lg">{order.userName}</p>
+                        <p className="text-white/60">{order.userEmail}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/60 text-sm mb-2">LIVRAISON</p>
+                        <div className="flex items-center gap-3 text-lg">
+                          {order.deliveryMethod === "DELIVERY" ? (
+                            <>🚚 Livraison à domicile</>
+                          ) : (
+                            <>🏬 Retrait en magasin</>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Articles */}
                     <div>
-                      <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
-                        <span className="text-slate-500">#</span>
-                        {order.id.slice(0, 8)}
-                      </h3>
-                      <p className="text-sm text-slate-400">
-                        {new Date(order.createdAt).toLocaleDateString("fr-FR", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                      {getStatusBadge(order.status)}
-                      {getDeliveryBadge(order.deliveryMethod)}
-                    </div>
-                  </div>
-
-                  {/* Client */}
-                  <div className="bg-slate-900/50 rounded-xl p-5 mb-6 border border-slate-700/30">
-                    <h4 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">
-                      Client
-                    </h4>
-                    <p className="text-base text-white font-semibold mb-1">
-                      {order.userName}
-                    </p>
-                    <p className="text-sm text-slate-400">{order.userEmail}</p>
-                  </div>
-
-                  {/* Articles */}
-                  <div className="mb-6">
-                    <h4 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider">
-                      Articles commandés
-                    </h4>
-                    <div className="space-y-3">
-                      {order.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex justify-between items-center bg-slate-900/50 rounded-xl p-4 border border-slate-700/30 hover:border-slate-600/50 transition-colors"
-                        >
-                          <div>
-                            <p className="font-semibold text-white mb-1">
-                              {item.perfumeName}
-                            </p>
-                            <p className="text-sm text-slate-400">
-                              Quantité: <span className="text-indigo-400 font-medium">{item.quantity}</span>
+                      <p className="text-white/60 text-sm mb-4">ARTICLES ({order.items.length})</p>
+                      <div className="space-y-4">
+                        {order.items.map((item) => (
+                          <div key={item.id} className="flex justify-between bg-white/5 rounded-2xl p-5">
+                            <div>
+                              <p className="font-medium">{item.productName}</p>
+                              <p className="text-sm text-white/60">Quantité : {item.quantity}</p>
+                            </div>
+                            <p className="font-semibold text-[#D4AF37]">
+                              {(item.price * item.quantity).toFixed(2)} TND
                             </p>
                           </div>
-                          <p className="font-bold text-lg text-white">
-                            {item.price.toFixed(2)} <span className="text-slate-400 text-sm">TND</span>
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Total et actions */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-slate-700/50">
-                    <div>
-                      <p className="text-sm text-slate-400 mb-1">Montant total</p>
-                      <p className="text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                        {order.totalAmount.toFixed(2)} <span className="text-xl text-slate-400">TND</span>
-                      </p>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex flex-wrap gap-3">
-                      {order.status === "PENDING" && (
+                    <div className="mt-10 flex flex-wrap gap-4">
+                      {order.status === "pending" && (
                         <>
                           <button
-                            onClick={() => updateOrderStatus(order.id, "CONFIRMED")}
+                            onClick={() => updateOrderStatus(order.id, "confirmed")}
                             disabled={updatingOrderId === order.id}
-                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:scale-105"
+                            className="bg-emerald-600 hover:bg-emerald-700 px-8 py-4 rounded-2xl font-semibold transition flex-1 md:flex-none"
                           >
-                            {updatingOrderId === order.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                            ) : (
-                              <CheckCircle className="w-4 h-4" />
-                            )}
-                            Confirmer
+                            Confirmer la commande
                           </button>
                           <button
-                            onClick={() => updateOrderStatus(order.id, "CANCELLED")}
+                            onClick={() => updateOrderStatus(order.id, "cancelled")}
                             disabled={updatingOrderId === order.id}
-                            className="px-6 py-3 bg-slate-700/50 text-red-400 border border-red-500/30 rounded-xl font-semibold hover:bg-red-500/20 hover:border-red-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            className="border border-red-500/30 text-red-400 hover:bg-red-500/10 px-8 py-4 rounded-2xl font-semibold transition"
                           >
-                            {updatingOrderId === order.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-400 border-t-transparent"></div>
-                            ) : (
-                              <XCircle className="w-4 h-4" />
-                            )}
                             Annuler
                           </button>
                         </>
                       )}
-
-                      {order.status === "CONFIRMED" && (
-                        <div className="flex items-center gap-3">
-                          <select
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                updateOrderStatus(order.id, "SHIPPED");
-                              }
-                            }}
-                            disabled={updatingOrderId === order.id}
-                            className="px-4 py-3 bg-slate-700/50 border-2 border-indigo-500/50 text-indigo-400 rounded-xl font-semibold hover:bg-slate-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <option value="">Société de livraison</option>
-                            <option value="aramex">Aramex</option>
-                            <option value="dhl">DHL Express</option>
-                            <option value="fedex">FedEx</option>
-                            <option value="tunisie-poste">Tunisie Poste</option>
-                            <option value="glovo">Glovo</option>
-                            <option value="yassir">Yassir Express</option>
-                          </select>
-                          <button
-                            onClick={() => updateOrderStatus(order.id, "PREPARING")}
-                            disabled={updatingOrderId === order.id}
-                            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:scale-105"
-                          >
-                            {updatingOrderId === order.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                            ) : (
-                              <Package className="w-4 h-4" />
-                            )}
-                            Préparer
-                          </button>
-                        </div>
-                      )}
-
-                      {order.status === "PREPARING" && (
+                      {order.status === "confirmed" && (
                         <button
-                          onClick={() => updateOrderStatus(order.id, "SHIPPED")}
+                          onClick={() => updateOrderStatus(order.id, "shipped")}
                           disabled={updatingOrderId === order.id}
-                          className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:scale-105"
+                          className="bg-indigo-600 hover:bg-indigo-700 px-8 py-4 rounded-2xl font-semibold transition"
                         >
-                          {updatingOrderId === order.id ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                          ) : (
-                            <Truck className="w-4 h-4" />
-                          )}
-                          Expédiée
+                          Marquer comme expédiée
                         </button>
                       )}
-
-                      {order.status === "SHIPPED" && (
+                      {order.status === "shipped" && (
                         <button
-                          onClick={() => updateOrderStatus(order.id, "DELIVERED")}
+                          onClick={() => updateOrderStatus(order.id, "delivered")}
                           disabled={updatingOrderId === order.id}
-                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:scale-105"
+                          className="bg-emerald-600 hover:bg-emerald-700 px-8 py-4 rounded-2xl font-semibold transition"
                         >
-                          {updatingOrderId === order.id ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                          ) : (
-                            <CheckCircle className="w-4 h-4" />
-                          )}
-                          Livrée
+                          Marquer comme livrée
                         </button>
                       )}
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

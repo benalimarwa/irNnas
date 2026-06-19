@@ -6,34 +6,35 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     console.log("🔍 POST /api/orders - Début");
-    
+
     const authResult = await auth();
     const userId = authResult?.userId;
-    
+
     if (!userId) {
       console.log("❌ Non authentifié");
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
     const body = await req.json();
-    const { deliveryMethod, customerInfo } = body;
+    const { customerInfo, deliveryMethod, deliveryFee = 0 } = body;
 
-    console.log("📦 Données reçues:", { deliveryMethod, customerInfo });
-
-    // Validation
-    if (!deliveryMethod || !["PICKUP", "DELIVERY"].includes(deliveryMethod)) {
-      return NextResponse.json({ error: "Méthode de livraison invalide" }, { status: 400 });
-    }
+    console.log("📦 Données reçues:", { customerInfo, deliveryMethod, deliveryFee });
 
     if (!customerInfo?.name || !customerInfo?.phone) {
-      return NextResponse.json({ error: "Informations client incomplètes" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Informations client incomplètes" },
+        { status: 400 }
+      );
     }
 
-    if (deliveryMethod === "DELIVERY" && (!customerInfo.address || !customerInfo.city)) {
-      return NextResponse.json({ error: "Adresse de livraison requise" }, { status: 400 });
+    if (!deliveryMethod || !["PICKUP", "DELIVERY"].includes(deliveryMethod)) {
+      return NextResponse.json(
+        { error: "Mode de livraison invalide" },
+        { status: 400 }
+      );
     }
 
-    // Récupérer l'utilisateur
+    // Récupérer ou créer l'utilisateur
     let user = await prisma.user.findUnique({ where: { clerkId: userId } });
     if (!user) {
       console.log("📝 Création utilisateur");
@@ -47,12 +48,10 @@ export async function POST(req: NextRequest) {
 
     // Récupérer le panier
     const cart = await prisma.cart.findUnique({
-      where: { userId: user.id },
+      where: { userId: user.clerkId },
       include: {
         items: {
-          include: {
-            perfume: true,
-          },
+          include: { product: true },
         },
       },
     });
@@ -63,50 +62,48 @@ export async function POST(req: NextRequest) {
 
     console.log("📦 Panier:", cart.items.length, "articles");
 
-    // Vérifier le stock pour chaque article
+    // Vérifier le stock
     for (const item of cart.items) {
-      if (item.perfume.stock < item.quantity) {
+      if (item.product.stock < item.quantity) {
         return NextResponse.json(
-          { error: `Stock insuffisant pour ${item.perfume.name}` },
+          { error: `Stock insuffisant pour ${item.product.name}` },
           { status: 400 }
         );
       }
     }
 
-    // Calculer le total
+    // ✅ Total = articles + frais de livraison envoyés depuis le client
     const subtotal = cart.items.reduce(
-      (sum, item) => sum + item.perfume.price * item.quantity,
+      (sum, item) => sum + item.product.price * item.quantity,
       0
     );
-    const deliveryFee = deliveryMethod === "DELIVERY" ? 7 : 0;
-    const totalAmount = subtotal + deliveryFee;
+    // ✅ On valide le deliveryFee côté serveur (ne jamais faire confiance au client seul)
+    const validatedDeliveryFee = deliveryMethod === "DELIVERY" ? 7 : 0;
+    const total = subtotal + validatedDeliveryFee;
 
-    console.log("💰 Total:", totalAmount, "TND");
+    console.log("💰 Sous-total:", subtotal, "TND");
+    console.log("🚚 Frais livraison:", validatedDeliveryFee, "TND");
+    console.log("💰 Total:", total, "TND");
 
     // Créer la commande
     const order = await prisma.order.create({
       data: {
-        userId: user.id,
-        totalAmount,
-        status: "PENDING",
-        deliveryMethod,
+        userId: user.clerkId,
+        total,                       // ✅ Inclut les frais de livraison
+        status: "pending",
+        deliveryMethod,              // ✅ PICKUP ou DELIVERY
         items: {
           create: cart.items.map((item) => ({
-            perfumeId: item.perfumeId,
+            productId: item.productId,
             quantity: item.quantity,
-            price: item.perfume.price,
+            size: item.size ?? null,
+            price: item.product.price,
           })),
         },
       },
       include: {
         items: {
-          include: {
-            perfume: {
-              include: {
-                house: true,
-              },
-            },
-          },
+          include: { product: true },
         },
       },
     });
@@ -115,28 +112,14 @@ export async function POST(req: NextRequest) {
 
     // Mettre à jour le stock
     for (const item of cart.items) {
-      await prisma.perfume.update({
-        where: { id: item.perfumeId },
-        data: {
-          stock: {
-            decrement: item.quantity,
-          },
-        },
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } },
       });
     }
 
-    console.log("✅ Stock mis à jour");
-
     // Vider le panier
-    await prisma.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
-
-    console.log("✅ Panier vidé");
-
-    // TODO: Sauvegarder les infos client (vous pouvez créer un modèle CustomerInfo si besoin)
-    // Pour l'instant, on peut les stocker dans un champ JSON de la commande
-    // ou créer une table séparée
+    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
     console.log("✅ Commande terminée avec succès");
 
@@ -148,21 +131,22 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("❌ Erreur POST orders:", error);
-    console.error("Stack:", error.stack);
-    
-    return NextResponse.json({
-      error: "Erreur lors de la création de la commande",
-      message: error.message,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Erreur lors de la création de la commande",
+        message: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
-// GET pour récupérer les commandes de l'utilisateur
+// GET — commandes de l'utilisateur connecté
 export async function GET(req: NextRequest) {
   try {
     const authResult = await auth();
     const userId = authResult?.userId;
-    
+
     if (!userId) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
@@ -173,16 +157,10 @@ export async function GET(req: NextRequest) {
     }
 
     const orders = await prisma.order.findMany({
-      where: { userId: user.id },
+      where: { userId: user.clerkId },
       include: {
         items: {
-          include: {
-            perfume: {
-              include: {
-                house: true,
-              },
-            },
-          },
+          include: { product: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -191,9 +169,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ orders });
   } catch (error: any) {
     console.error("❌ Erreur GET orders:", error);
-    return NextResponse.json({
-      error: "Erreur lors de la récupération des commandes",
-      message: error.message,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Erreur lors de la récupération des commandes",
+        message: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

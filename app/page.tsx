@@ -1,140 +1,979 @@
+// app/page.tsx
 import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { 
-  Sparkles, 
-  ArrowRight, 
-  LayoutDashboard, 
-  Package, 
-  LogIn, 
-  UserPlus, 
-  Flower2 
+  Sparkles, ArrowRight, Package, LogIn, UserPlus, Shirt, ChevronRight,
+  Gem, Shield, Truck, Star, Zap, Clock, Layers, Award, Palette, Heart, TrendingUp
 } from "lucide-react";
-import VideoBackground from "@/components/VideoBackground";
-
+import ClientAnimations from "@/components/ClientAnimations";
 
 export default async function Home() {
   const clerkUser = await currentUser();
-
-  let isAdmin = false;
-  let greeting = "Bienvenue sur ParfumIA";
-
-  if (clerkUser) {
-    greeting = `Bonjour ${clerkUser.firstName || "toi"} !`;
-    isAdmin = clerkUser.publicMetadata?.role === "ADMIN" || false;
-  }
+  const isAdmin = clerkUser?.publicMetadata?.role === "ADMIN";
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center px-6 text-center">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
 
-      {/* VIDÉO EN ARRIÈRE-PLAN */}
-      <div className="absolute inset-0 z-0">
-        <VideoBackground/>
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/55 to-black/70" />
-      </div>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
 
-      {/* Contenu principal */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen py-12">
+        :root {
+          --bg-primary: #0A0A0A;
+          --bg-secondary: #111111;
+          --bg-elevated: rgba(20, 20, 25, 0.7);
+          --border-light: rgba(255, 255, 255, 0.08);
+          --text-primary: #F8F6F2;
+          --text-secondary: rgba(248, 246, 242, 0.65);
+          --text-muted: rgba(248, 246, 242, 0.4);
+          
+          /* Couleurs principales */
+          --accent-gold: #D4AF37;
+          --accent-gold-dark: #B8942E;
+          --accent-gold-glow: rgba(212, 175, 55, 0.2);
+          
+          /* Nouvelles couleurs ajoutées */
+          --accent-coral: #FF6B6B;
+          --accent-teal: #4ECDC4;
+          --accent-violet: #9B59B6;
+          --accent-amber: #FFB347;
+          --accent-rose: #FF85A1;
+          --accent-lime: #A8E6CF;
+          --accent-indigo: #5D9BEC;
+          
+          /* Dégradés variés */
+          --gradient-gold: linear-gradient(135deg, #D4AF37 0%, #F5E6A3 50%, #D4AF37 100%);
+          --gradient-coral: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
+          --gradient-teal: linear-gradient(135deg, #4ECDC4 0%, #6EE7DE 100%);
+          --gradient-violet: linear-gradient(135deg, #9B59B6 0%, #C084FC 100%);
+          --gradient-amber: linear-gradient(135deg, #FFB347 0%, #FFCC80 100%);
+          --gradient-rose: linear-gradient(135deg, #FF85A1 0%, #FFB7C5 100%);
+          --gradient-multi: linear-gradient(135deg, #D4AF37, #FF6B6B, #4ECDC4, #9B59B6);
+          
+          --glass-bg: rgba(17, 17, 17, 0.7);
+          --glass-border: rgba(255, 255, 255, 0.05);
+        }
 
-        {/* Logo + Titre */}
-        <div className="flex items-center gap-4 mb-10">
-          <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-5 rounded-3xl shadow-2xl">
-            <Sparkles className="w-14 h-14 text-white" />
-          </div>
-          <h1 className="text-6xl md:text-8xl font-extrabold bg-gradient-to-r from-purple-300 via-pink-300 to-rose-300 bg-clip-text text-transparent drop-shadow-2xl">
-            ParfumIA
-          </h1>
-        </div>
+        body {
+          background: var(--bg-primary);
+          overflow-x: hidden;
+        }
 
-        <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 drop-shadow-md">
-          {greeting}
-        </h2>
+        .homepage {
+          position: relative;
+          min-height: 100vh;
+          background: 
+            radial-gradient(circle at 0% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+            radial-gradient(circle at 100% 30%, rgba(255, 107, 107, 0.06) 0%, transparent 40%),
+            radial-gradient(circle at 50% 80%, rgba(78, 205, 196, 0.06) 0%, transparent 40%),
+            radial-gradient(circle at 80% 50%, rgba(155, 89, 182, 0.05) 0%, transparent 40%);
+          font-family: 'Instrument Sans', sans-serif;
+          color: var(--text-primary);
+        }
 
-        <p className="text-xl md:text-2xl text-white/90 max-w-3xl mb-12 leading-relaxed">
-          {isAdmin 
-            ? "Accédez au tableau de bord pour gérer les produits, commandes et utilisateurs."
-            : clerkUser 
-            ? "Prête à trouver votre parfum idéal ? Lancez le quiz maintenant !"
-            : "Découvrez votre parfum signature grâce à notre quiz intelligent et notre collection de luxe."
+        /* Animated Background avec points colorés */
+        .homepage::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image: 
+            repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 20px);
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .color-dot {
+          position: fixed;
+          border-radius: 50%;
+          filter: blur(60px);
+          opacity: 0.4;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        /* Navbar */
+        .navbar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 100;
+          backdrop-filter: blur(20px);
+          background: rgba(10, 10, 10, 0.8);
+          border-bottom: 1px solid var(--border-light);
+          transition: all 0.3s ease;
+        }
+
+        .nav-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 2rem;
+          height: 80px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .logo {
+          font-family: 'Syne', sans-serif;
+          font-size: 32px;
+          font-weight: 800;
+          letter-spacing: -1.5px;
+          background: var(--gradient-multi);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          text-decoration: none;
+          transition: all 0.3s ease;
+          animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        .logo:hover {
+          transform: scale(1.02);
+        }
+
+        .nav-links {
+          display: flex;
+          gap: 2.5rem;
+          align-items: center;
+        }
+
+        .nav-links a {
+          font-size: 0.9rem;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+          color: var(--text-secondary);
+          text-decoration: none;
+          transition: all 0.3s ease;
+          position: relative;
+        }
+
+        .nav-links a::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: var(--gradient-gold);
+          transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+          width: 100%;
+        }
+
+        .nav-links a:hover {
+          color: var(--accent-gold);
+        }
+
+        .nav-cta {
+          padding: 0.75rem 1.75rem;
+          background: var(--gradient-gold);
+          color: #0A0A0A;
+          border-radius: 9999px;
+          font-weight: 600;
+          font-size: 0.85rem;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          text-decoration: none;
+        }
+
+        .nav-cta:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 25px -5px rgba(212, 175, 55, 0.3);
+          gap: 0.75rem;
+        }
+
+        /* Main Container */
+        .main-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+          min-height: 100vh;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          align-items: center;
+          gap: 4rem;
+          padding-top: 80px;
+          position: relative;
+        }
+
+        .hero-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.75rem;
+          background: rgba(212, 175, 55, 0.1);
+          backdrop-filter: blur(10px);
+          padding: 0.5rem 1.25rem;
+          border-radius: 9999px;
+          margin-bottom: 1.5rem;
+          border: 1px solid rgba(212, 175, 55, 0.2);
+          font-size: 0.75rem;
+          font-weight: 600;
+          letter-spacing: 2px;
+          color: var(--accent-gold);
+        }
+
+        .hero-badge span {
+          width: 8px;
+          height: 8px;
+          background: var(--accent-gold);
+          border-radius: 50%;
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .hero-title {
+          font-family: 'Syne', sans-serif;
+          font-size: clamp(3rem, 6vw, 5.5rem);
+          font-weight: 800;
+          line-height: 1.1;
+          letter-spacing: -0.02em;
+          margin-bottom: 1.5rem;
+        }
+
+        .gradient-text {
+          background: var(--gradient-multi);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          animation: shimmer 4s infinite;
+        }
+
+        .hero-description {
+          font-size: 1.1rem;
+          line-height: 1.6;
+          color: var(--text-secondary);
+          margin-bottom: 2rem;
+          max-width: 90%;
+        }
+
+        .hero-buttons {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+          margin-bottom: 2.5rem;
+        }
+
+        .btn-primary {
+          background: var(--gradient-gold);
+          color: #0A0A0A;
+          padding: 0.875rem 2rem;
+          border-radius: 9999px;
+          font-weight: 600;
+          font-size: 0.875rem;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.4s ease;
+          text-decoration: none;
+        }
+
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 20px 35px -10px rgba(212, 175, 55, 0.4);
+          gap: 0.75rem;
+        }
+
+        .btn-secondary {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+          border: 1px solid var(--border-light);
+          color: var(--text-primary);
+          padding: 0.875rem 2rem;
+          border-radius: 9999px;
+          font-weight: 600;
+          font-size: 0.875rem;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.4s ease;
+          text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+          border-color: var(--accent-coral);
+          color: var(--accent-coral);
+          transform: translateY(-2px);
+        }
+
+        .hero-stats {
+          display: flex;
+          gap: 2rem;
+          padding-top: 1rem;
+          border-top: 1px solid var(--border-light);
+        }
+
+        .hero-stat {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .hero-stat-value {
+          font-family: 'Syne', sans-serif;
+          font-size: 1.5rem;
+          font-weight: 700;
+          background: var(--gradient-gold);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+
+        .hero-stat-label {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          letter-spacing: 0.5px;
+        }
+
+        /* Hero Media avec cartes colorées */
+        .hero-media {
+          position: relative;
+          height: 500px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .floating-card {
+          position: absolute;
+          background: var(--glass-bg);
+          backdrop-filter: blur(20px);
+          border: 1px solid var(--glass-border);
+          border-radius: 1.5rem;
+          padding: 1.5rem;
+          animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-card:nth-child(1) {
+          top: 10%;
+          right: 10%;
+          animation-delay: 0s;
+          border-top-color: var(--accent-gold);
+        }
+
+        .floating-card:nth-child(2) {
+          bottom: 20%;
+          left: 10%;
+          animation-delay: 1s;
+          border-top-color: var(--accent-coral);
+        }
+
+        .floating-card:nth-child(3) {
+          top: 40%;
+          left: 30%;
+          animation-delay: 2s;
+          border-top-color: var(--accent-teal);
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+
+        .card-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 1rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 1rem;
+        }
+
+        .card-icon.gold { background: var(--gradient-gold); }
+        .card-icon.coral { background: var(--gradient-coral); }
+        .card-icon.teal { background: var(--gradient-teal); }
+
+        /* Features Section - Cartes multicolores */
+        .features-section {
+          padding: 6rem 0;
+        }
+
+        .section-header {
+          text-align: center;
+          margin-bottom: 4rem;
+        }
+
+        .section-badge {
+          display: inline-block;
+          background: rgba(212, 175, 55, 0.1);
+          color: var(--accent-gold);
+          padding: 0.25rem 1rem;
+          border-radius: 9999px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          letter-spacing: 2px;
+          margin-bottom: 1rem;
+        }
+
+        .section-title {
+          font-family: 'Syne', sans-serif;
+          font-size: clamp(2rem, 4vw, 3rem);
+          font-weight: 700;
+          letter-spacing: -0.02em;
+          background: var(--gradient-multi);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+
+        .features-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 2rem;
+        }
+
+        .feature-card {
+          background: var(--glass-bg);
+          backdrop-filter: blur(20px);
+          border: 1px solid var(--glass-border);
+          border-radius: 1.5rem;
+          padding: 2rem;
+          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .feature-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: var(--gradient-gold);
+          transform: scaleX(0);
+          transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover::before {
+          transform: scaleX(1);
+        }
+
+        .feature-card:nth-child(1):hover { border-color: rgba(212, 175, 55, 0.3); box-shadow: 0 20px 40px -20px rgba(212, 175, 55, 0.2); }
+        .feature-card:nth-child(2):hover { border-color: rgba(255, 107, 107, 0.3); box-shadow: 0 20px 40px -20px rgba(255, 107, 107, 0.2); }
+        .feature-card:nth-child(3):hover { border-color: rgba(78, 205, 196, 0.3); box-shadow: 0 20px 40px -20px rgba(78, 205, 196, 0.2); }
+
+        .feature-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 1rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 1.5rem;
+        }
+
+        .feature-card:nth-child(1) .feature-icon { background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05)); color: var(--accent-gold); }
+        .feature-card:nth-child(2) .feature-icon { background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.05)); color: var(--accent-coral); }
+        .feature-card:nth-child(3) .feature-icon { background: linear-gradient(135deg, rgba(78, 205, 196, 0.2), rgba(78, 205, 196, 0.05)); color: var(--accent-teal); }
+
+        .feature-card h3 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+          color: var(--text-secondary);
+          line-height: 1.6;
+          margin-bottom: 1.5rem;
+        }
+
+        .feature-link {
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 0.875rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: gap 0.3s ease;
+        }
+
+        .feature-card:nth-child(1) .feature-link { color: var(--accent-gold); }
+        .feature-card:nth-child(2) .feature-link { color: var(--accent-coral); }
+        .feature-card:nth-child(3) .feature-link { color: var(--accent-teal); }
+
+        .feature-link:hover {
+          gap: 0.75rem;
+        }
+
+        /* Stats Section multicolore */
+        .stats-section {
+          background: linear-gradient(135deg, 
+            rgba(212, 175, 55, 0.08), 
+            rgba(255, 107, 107, 0.05),
+            rgba(78, 205, 196, 0.05),
+            rgba(155, 89, 182, 0.05));
+          border-radius: 2rem;
+          padding: 4rem 3rem;
+          margin: 4rem 0;
+          border: 1px solid var(--glass-border);
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 2rem;
+          text-align: center;
+        }
+
+        .stat-item {
+          transition: transform 0.3s ease;
+        }
+
+        .stat-item:hover {
+          transform: translateY(-4px);
+        }
+
+        .stat-number {
+          font-family: 'Syne', sans-serif;
+          font-size: 3rem;
+          font-weight: 800;
+          background: var(--gradient-gold);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+          font-size: 0.875rem;
+          color: var(--text-secondary);
+          letter-spacing: 1px;
+        }
+
+        /* Catégories de couleurs supplémentaires */
+        .color-showcase {
+          display: flex;
+          justify-content: center;
+          gap: 1rem;
+          margin-top: 2rem;
+          flex-wrap: wrap;
+        }
+
+        .color-chip {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: transform 0.3s ease;
+        }
+
+        .color-chip:hover { transform: scale(1.1); }
+        .color-chip.gold { background: var(--accent-gold); }
+        .color-chip.coral { background: var(--accent-coral); }
+        .color-chip.teal { background: var(--accent-teal); }
+        .color-chip.violet { background: var(--accent-violet); }
+        .color-chip.amber { background: var(--accent-amber); }
+        .color-chip.rose { background: var(--accent-rose); }
+
+        /* CTA Section colorée */
+        .cta-section {
+          background: linear-gradient(135deg, 
+            rgba(212, 175, 55, 0.15), 
+            rgba(255, 107, 107, 0.1),
+            rgba(78, 205, 196, 0.1));
+          border-radius: 2rem;
+          padding: 4rem;
+          text-align: center;
+          margin: 4rem 0;
+          border: 1px solid var(--glass-border);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .cta-section::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%);
+          animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .cta-title {
+          font-family: 'Syne', sans-serif;
+          font-size: clamp(1.75rem, 3vw, 2.5rem);
+          font-weight: 700;
+          margin-bottom: 1rem;
+          position: relative;
+          z-index: 1;
+        }
+
+        .cta-description {
+          color: var(--text-secondary);
+          margin-bottom: 2rem;
+          max-width: 500px;
+          margin-left: auto;
+          margin-right: auto;
+          position: relative;
+          z-index: 1;
+        }
+
+        /* Footer */
+        .footer {
+          border-top: 1px solid var(--border-light);
+          padding: 3rem 0;
+          margin-top: 4rem;
+        }
+
+        .footer-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        .footer-links {
+          display: flex;
+          gap: 2rem;
+        }
+
+        .footer-links a {
+          color: var(--text-muted);
+          text-decoration: none;
+          font-size: 0.875rem;
+          transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+          color: var(--accent-coral);
+        }
+
+        @media (max-width: 1024px) {
+          .hero {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            padding-bottom: 3rem;
           }
-        </p>
+          
+          .hero-media {
+            height: 400px;
+          }
+          
+          .nav-container {
+            padding: 0 1rem;
+          }
+          
+          .nav-links {
+            gap: 1.5rem;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .nav-links {
+            display: none;
+          }
+          
+          .main-container {
+            padding: 0 1rem;
+          }
+          
+          .hero-description {
+            max-width: 100%;
+          }
+          
+          .stats-section,
+          .cta-section {
+            padding: 2rem;
+          }
+          
+          .footer-content {
+            flex-direction: column;
+            text-align: center;
+          }
+        }
 
-        {/* Boutons */}
-        <div className="flex flex-col sm:flex-row gap-5 w-full max-w-md sm:max-w-none justify-center">
-          {isAdmin ? (
-            <>
-              <Link
-                href="/admin/dashboard"
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg px-10 py-5 rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3"
-              >
-                Tableau de bord
-                <LayoutDashboard className="w-6 h-6" />
-              </Link>
-              <Link
-                href="/admin/catalog"
-                className="border-2 border-white/70 text-white font-bold text-lg px-10 py-5 rounded-full hover:bg-white/10 transition-all flex items-center justify-center gap-3"
-              >
-                Catalogue admin
-                <Package className="w-6 h-6" />
-              </Link>
-            </>
-          ) : clerkUser ? (
-            <Link
-              href="/client/quiz"
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg px-12 py-5 rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3"
-            >
-              Lancer le quiz
-              <ArrowRight className="w-6 h-6" />
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/sign-in"
-                className="bg-white text-purple-700 hover:bg-white/90 font-bold text-lg px-10 py-5 rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3"
-              >
-                Se connecter
-                <LogIn className="w-6 h-6" />
-              </Link>
-              <Link
-                href="/sign-up"
-                className="border-2 border-white text-white hover:bg-white/10 font-bold text-lg px-10 py-5 rounded-full transition-all flex items-center justify-center gap-3"
-              >
-                Créer un compte
-                <UserPlus className="w-6 h-6" />
-              </Link>
-              <Link
-                href="/client/quiz"
-                className="mt-4 sm:mt-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg px-10 py-5 rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3"
-              >
-                Lancer le quiz
-                <ArrowRight className="w-6 h-6" />
-              </Link>
-            </>
-          )}
-        </div>
+        .animate-on-scroll {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-        {!clerkUser && !isAdmin && (
-          <div className="mt-10">
-            <Link
-              href="/catalogue"
-              className="text-white/80 hover:text-white text-lg flex items-center gap-2 transition-colors underline-offset-4 hover:underline"
-            >
-              Voir la collection complète
-              <Flower2 className="w-5 h-5" />
-            </Link>
+        .animate-on-scroll.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      `}</style>
+
+      <div className="homepage">
+        {/* Points colorés animés en arrière-plan */}
+        <div className="color-dot" style={{ top: '20%', left: '10%', width: '300px', height: '300px', background: 'var(--accent-gold)' }}></div>
+        <div className="color-dot" style={{ bottom: '15%', right: '5%', width: '250px', height: '250px', background: 'var(--accent-coral)' }}></div>
+        <div className="color-dot" style={{ top: '60%', left: '80%', width: '200px', height: '200px', background: 'var(--accent-teal)' }}></div>
+        <div className="color-dot" style={{ top: '40%', left: '30%', width: '180px', height: '180px', background: 'var(--accent-violet)' }}></div>
+
+        <nav className="navbar">
+          <div className="nav-container">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <img
+              src="/llogo.png"
+              alt="irNas — Timeless Royalty"
+              width={140}
+              height={50}
+              className="object-contain h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+             
+            />
+            <div className="hidden sm:block">
+              <span className="text-2xl font-bold tracking-tighter bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                irNas
+              </span>
+            </div>
+          </Link>
+            
+            <div className="nav-links">
+              <Link href="/catalogue">Collection</Link>
+              <Link href="/client/quiz">Style Finder</Link>
+              {clerkUser && <Link href="/orders">Commandes</Link>}
+            </div>
+
+            {clerkUser ? (
+              <Link 
+                href={isAdmin ? "/admin/dashboard" : "/client"} 
+                className="nav-cta"
+              >
+                {isAdmin ? <Layers size={16} /> : <UserPlus size={16} />}
+                {isAdmin ? "Dashboard Admin" : "Mon Espace"}
+              </Link>
+            ) : (
+              <Link href="/sign-in" className="nav-cta">
+                <LogIn size={16} /> Se Connecter
+              </Link>
+            )}
           </div>
-        )}
+        </nav>
 
-        {/* Badges */}
-        <div className="mt-16 text-sm text-white/70 flex flex-wrap justify-center gap-x-8 gap-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-yellow-400 text-2xl">★★★★★</span>
-            <span>4.9/5</span>
+        <main className="main-container">
+          {/* Hero Section */}
+          <section className="hero">
+            <div className="hero-left animate-on-scroll">
+              <div className="hero-badge">
+                <span></span>
+                COLLECTION PRINTEMPS — ÉTÉ 2025
+              </div>
+              
+              <h1 className="hero-title">
+                Marque<br />
+                <span className="gradient-text">International</span><br />
+              
+              </h1>
+              
+             
+              <div className="hero-buttons">
+                {clerkUser ? (
+                  <>
+                    <Link href="/client/quiz" className="btn-primary">
+                      <Sparkles size={18} /> Découvrir mon style
+                    </Link>
+                    <Link href="/catalogue" className="btn-secondary">
+                      Explorer <ArrowRight size={18} />
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/sign-up" className="btn-primary">
+                      <UserPlus size={18} /> Créer mon compte
+                    </Link>
+                    <Link href="/catalogue" className="btn-secondary">
+                      Collection <ArrowRight size={18} />
+                    </Link>
+                  </>
+                )}
+              </div>
+              
+              <div className="hero-stats">
+                <div className="hero-stat">
+                  <span className="hero-stat-value">100+</span>
+                  <span className="hero-stat-label">PIÈCES EXCLUSIVES</span>
+                </div>
+                <div className="hero-stat">
+                  <span className="hero-stat-value">48H</span>
+                  <span className="hero-stat-label">LIVRAISON EXPRESS</span>
+                </div>
+                <div className="hero-stat">
+                  <span className="hero-stat-value">4.9 ★</span>
+                  <span className="hero-stat-label">NOTE MOYENNE</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="hero-media">
+              <div className="floating-card">
+                <div className="card-icon gold">
+                  <Sparkles size={24} color="#0A0A0A" />
+                </div>
+                <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Style Finder AI</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Diagnostic personnalisé</div>
+              </div>
+              <div className="floating-card">
+                <div className="card-icon coral">
+                  <Shirt size={24} color="#0A0A0A" />
+                </div>
+                <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Nouvelle Collection</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>SS 2025</div>
+              </div>
+              <div className="floating-card">
+                <div className="card-icon teal">
+                  <Gem size={24} color="#0A0A0A" />
+                </div>
+                <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Matières Nobles</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>100% durable</div>
+              </div>
+            </div>
+          </section>
+
+          {/* Features Section */}
+          <section className="features-section">
+            <div className="section-header animate-on-scroll">
+              <div className="section-badge">POURQUOI NOUS CHOISIR</div>
+              <h2 className="section-title">Une expérience unique</h2>
+            </div>
+            
+            <div className="features-grid">
+              <div className="feature-card animate-on-scroll">
+                <div className="feature-icon">
+                  <Zap size={28} />
+                </div>
+                <h3>Style Finder IA</h3>
+                <p>Un diagnostic stylistique précis basé sur votre personnalité, vos préférences et votre morphologie en moins de 2 minutes.</p>
+                <Link href="/client/quiz" className="feature-link">
+                  Découvrir <ChevronRight size={16} />
+                </Link>
+              </div>
+              
+              <div className="feature-card animate-on-scroll">
+                <div className="feature-icon">
+                  <Shield size={28} />
+                </div>
+                <h3>Qualité Premium</h3>
+                <p>Des matières nobles sourcées auprès des meilleurs artisans italiens et français. Chaque pièce est vérifiée méticuleusement.</p>
+                <Link href="/catalogue" className="feature-link">
+                  Voir la collection <ChevronRight size={16} />
+                </Link>
+              </div>
+              
+              <div className="feature-card animate-on-scroll">
+                <div className="feature-icon">
+                  <Truck size={28} />
+                </div>
+                <h3>Livraison Express</h3>
+                <p>Livraison en 48h chrono, retour sous 14 jours. Un service client dédié 7j/7 pour vous accompagner.</p>
+                <Link href="/client/quiz" className="feature-link">
+                  En savoir plus <ChevronRight size={16} />
+                </Link>
+              </div>
+            </div>
+
+            {/* Petit aperçu des couleurs de la marque */}
+            <div className="color-showcase animate-on-scroll">
+              <div className="color-chip gold" title="Or"></div>
+              <div className="color-chip coral" title="Corail"></div>
+              <div className="color-chip teal" title="Teal"></div>
+              <div className="color-chip violet" title="Violet"></div>
+              <div className="color-chip amber" title="Ambre"></div>
+              <div className="color-chip rose" title="Rose"></div>
+            </div>
+          </section>
+
+          {/* Stats Section */}
+          <div className="stats-section animate-on-scroll">
+            <div className="stats-grid">
+              <div className="stat-item">
+                <div className="stat-number">100+</div>
+                <div className="stat-label">PIÈCES EXCLUSIVES</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">48<span style={{fontSize: '1.5rem'}}>H</span></div>
+                <div className="stat-label">LIVRAISON EXPRESS</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">4.9</div>
+                <div className="stat-label">NOTE MOYENNE</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">14<span style={{fontSize: '1.5rem'}}>J</span></div>
+                <div className="stat-label">RETOUR GRATUIT</div>
+              </div>
+            </div>
           </div>
-          <div>Livraison gratuite dès 50 TND</div>
-          <div>+100 parfums de luxe</div>
-        </div>
 
+          {/* CTA Section */}
+          <div className="cta-section animate-on-scroll">
+            <div className="cta-icon" style={{ marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
+              <Award size={48} color="#D4AF37" />
+            </div>
+            <h2 className="cta-title">Prêt à révéler votre style ?</h2>
+            <p className="cta-description">
+              Rejoignez une communauté qui valorise l'élégance authentique et la qualité exceptionnelle.
+            </p>
+            {!clerkUser && (
+              <Link href="/sign-up" className="btn-primary" style={{ marginTop: '1rem', position: 'relative', zIndex: 1 }}>
+                Créer mon compte <ArrowRight size={18} />
+              </Link>
+            )}
+          </div>
+        </main>
+
+        <footer className="footer">
+          <div className="main-container">
+            <div className="footer-content">
+              <div className="logo" style={{ fontSize: '24px' }}>irNas</div>
+              <div className="footer-links">
+                <Link href="/catalogue">Collection</Link>
+                <Link href="/client/quiz">Style Finder</Link>
+                <Link href="/legal">Mentions légales</Link>
+                <Link href="/contact">Contact</Link>
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                © 2025 irNas — Tous droits réservés
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
-    </div>
+      
+      <ClientAnimations />
+    </>
   );
 }

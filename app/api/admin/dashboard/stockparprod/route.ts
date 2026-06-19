@@ -18,7 +18,7 @@ export async function GET() {
     try {
       const { prisma } = await import("@/lib/prisma");
 
-      const perfumes = await prisma.perfume.findMany({
+      const perfumes = await prisma.product.findMany({
         select: {
           name: true,
           stock: true,

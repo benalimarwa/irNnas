@@ -1,339 +1,308 @@
-require('dotenv').config();
+import { config } from 'dotenv';
+config({ path: '.env' });
 
-const { PrismaClient } = require('@prisma/client');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { Pool } = require('pg');
-
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  console.error("DATABASE_URL manquant dans .env");
-  process.exit(1);
+if (!process.env.DATABASE_URL) {
+  throw new Error('❌ DATABASE_URL manquant dans .env');
 }
 
-console.log("🔗 Connexion à PostgreSQL via Docker...");
+import pg from 'pg';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const pool = new Pool({ connectionString });
+const { Pool } = pg;
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("✨ Début du seed...\n");
+  console.log('🌱 Début du seeding...');
 
-  // 1. Maisons de parfum
-  await prisma.perfumeHouse.createMany({
-    data: [
-      { name: "Dior" },
-      { name: "Chanel" },
-      { name: "Creed" },
-      { name: "Tom Ford" },
-      { name: "Maison Francis Kurkdjian" },
-      { name: "Yves Saint Laurent" },
-      { name: "Lancôme" },
-      { name: "Guerlain" },
-      { name: "Hermès" },
-      { name: "Armani" },
-      { name: "Paco Rabanne" },
-      { name: "Versace" },
-      { name: "Amouage" },
-      { name: "Byredo" },
-      { name: "Jo Malone" },
-      { name: "Louis Vuitton" },
-      { name: "Parfums de Marly" },
-      { name: "Viktor&Rolf" },
-      { name: "Carolina Herrera" },
-      { name: "Le Labo" },
-      { name: "Initio" },
-    ],
-    skipDuplicates: true,
-  });
+  // Nettoyage dans l'ordre (respecter les clés étrangères)
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.cartItem.deleteMany();
+  await prisma.cart.deleteMany();
+  await prisma.product.deleteMany();
+  await prisma.user.deleteMany();
+  console.log('🧹 Base nettoyée');
 
-  const houses = await prisma.perfumeHouse.findMany();
-  const houseByName = Object.fromEntries(houses.map(h => [h.name, h.id]));
-
-  // 2. Catégories
-  await prisma.category.createMany({
-    data: [
-      { name: "Homme", slug: "homme" },
-      { name: "Femme", slug: "femme" },
-      { name: "Unisexe", slug: "unisexe" },
-      { name: "Floral", slug: "floral" },
-      { name: "Boisé", slug: "boise" },
-      { name: "Oriental", slug: "oriental" },
-      { name: "Frais", slug: "frais" },
-      { name: "Épicé", slug: "epice" },
-      { name: "Aquatique", slug: "aquatique" },
-      { name: "Gourmand", slug: "gourmand" },
-    ],
-    skipDuplicates: true,
-  });
-
-  const categories = await prisma.category.findMany();
-  const catBySlug = Object.fromEntries(categories.map(c => [c.slug, c.id]));
-
-  // 3. Liste complète des 30 parfums avec images locales
-  const perfumes = [
-    // Homme (10)
-    { name: "Sauvage Elixir", description: "Concentration extrême, boisé et épicé.", price: 450, category: "Homme", imageUrl: "/perfumes/sauvage-elixir.jpg", style: ["Boisé", "Épicé", "Frais"], house: "Dior", categories: ["homme", "boise", "epice", "frais"] },
-    { name: "Bleu de Chanel Parfum", description: "Élégance boisée intemporelle.", price: 480, category: "Homme", imageUrl: "/perfumes/bleu-chanel.jpg", style: ["Boisé", "Frais"], house: "Chanel", categories: ["homme", "boise", "frais"] },
-    { name: "Aventus", description: "Ananas fumé et charismatique.", price: 950, category: "Homme", imageUrl: "/perfumes/aventus.jpg", style: ["Fruité", "Boisé"], house: "Creed", categories: ["homme", "boise"] },
-    { name: "Terre d'Hermès Parfum", description: "Minéral et terreux profond.", price: 420, category: "Homme", imageUrl: "/perfumes/terre-hermes.jpg", style: ["Boisé", "Minéral"], house: "Hermès", categories: ["homme", "boise"] },
-    { name: "Acqua di Giò Profondo", description: "Aquatique intense.", price: 380, category: "Homme", imageUrl: "/perfumes/acqua-gio.jpg", style: ["Aquatique", "Frais"], house: "Armani", categories: ["homme", "aquatique", "frais"] },
-    { name: "Invictus Victory", description: "Frais et victorieux.", price: 350, category: "Homme", imageUrl: "/perfumes/invictus.jpg", style: ["Frais", "Ambré"], house: "Paco Rabanne", categories: ["homme", "frais"] },
-    { name: "Layton", description: "Pomme épicée luxueuse.", price: 850, category: "Homme", imageUrl: "/perfumes/layton.jpg", style: ["Épicé", "Fruité"], house: "Parfums de Marly", categories: ["homme", "epice"] },
-    { name: "Spicebomb Extreme", description: "Explosion épicée chaude.", price: 370, category: "Homme", imageUrl: "/perfumes/spicebomb.jpg", style: ["Épicé", "Oriental"], house: "Viktor&Rolf", categories: ["homme", "epice", "oriental"] },
-    { name: "Dylan Blue", description: "Frais méditerranéen.", price: 340, category: "Homme", imageUrl: "/perfumes/dylan-blue.jpg", style: ["Frais", "Aquatique"], house: "Versace", categories: ["homme", "frais", "aquatique"] },
-    { name: "One Million Parfum", description: "Ambre solaire cuiré.", price: 360, category: "Homme", imageUrl: "/perfumes/one-million.jpg", style: ["Ambré", "Cuiré"], house: "Paco Rabanne", categories: ["homme", "oriental"] },
-
-    // Femme (10)
-    { name: "J'adore Eau de Parfum", description: "Bouquet floral opulent.", price: 420, category: "Femme", imageUrl: "/perfumes/jadore.jpg", style: ["Floral", "Fruité"], house: "Dior", categories: ["femme", "floral"] },
-    { name: "Chanel N°5", description: "L'intemporel absolu.", price: 500, category: "Femme", imageUrl: "/perfumes/chanel-5.jpg", style: ["Aldéhydé", "Floral"], house: "Chanel", categories: ["femme", "floral"] },
-    { name: "Black Opium", description: "Gourmand rock addictif.", price: 380, category: "Femme", imageUrl: "/perfumes/black-opium.jpg", style: ["Gourmand", "Vanille"], house: "Yves Saint Laurent", categories: ["femme", "gourmand", "oriental"] },
-    { name: "La Vie Est Belle", description: "Iris praliné joyeux.", price: 360, category: "Femme", imageUrl: "/perfumes/la-vie-belle.jpg", style: ["Gourmand", "Floral"], house: "Lancôme", categories: ["femme", "gourmand", "floral"] },
-    { name: "Libre Intense", description: "Lavande vanille audacieuse.", price: 400, category: "Femme", imageUrl: "/perfumes/libre.jpg", style: ["Floral", "Oriental"], house: "Yves Saint Laurent", categories: ["femme", "floral", "oriental"] },
-    { name: "Good Girl", description: "Talons aiguilles sensuels.", price: 390, category: "Femme", imageUrl: "/perfumes/good-girl.jpg", style: ["Oriental", "Floral"], house: "Carolina Herrera", categories: ["femme", "oriental", "floral"] },
-    { name: "Delina", description: "Rose turque fruitée.", price: 900, category: "Femme", imageUrl: "/perfumes/delina.jpg", style: ["Floral", "Fruité"], house: "Parfums de Marly", categories: ["femme", "floral"] },
-    { name: "Mon Guerlain", description: "Lavande vanille élégante.", price: 410, category: "Femme", imageUrl: "/perfumes/mon-guerlain.jpg", style: ["Oriental", "Vanille"], house: "Guerlain", categories: ["femme", "oriental"] },
-    { name: "Si", description: "Cassis vanille moderne.", price: 370, category: "Femme", imageUrl: "/perfumes/si.jpg", style: ["Fruité", "Gourmand"], house: "Armani", categories: ["femme", "gourmand"] },
-    { name: "Olympéa", description: "Vanille salée divine.", price: 350, category: "Femme", imageUrl: "/perfumes/olympea.jpg", style: ["Gourmand", "Vanille"], house: "Paco Rabanne", categories: ["femme", "gourmand"] },
-
-    // Unisexe (10)
-    { name: "Baccarat Rouge 540", description: "Safran ambré aérien.", price: 1050, category: "Unisexe", imageUrl: "/perfumes/baccarat-rouge.jpg", style: ["Ambré", "Safran"], house: "Maison Francis Kurkdjian", categories: ["unisexe", "oriental", "boise"] },
-    { name: "Oud Wood", description: "Oud doux luxueux.", price: 850, category: "Unisexe", imageUrl: "/perfumes/oud-wood.jpg", style: ["Boisé", "Oud"], house: "Tom Ford", categories: ["unisexe", "boise"] },
-    { name: "Gypsy Water", description: "Bohème forestier.", price: 620, category: "Unisexe", imageUrl: "/perfumes/gypsy-water.jpg", style: ["Boisé", "Encens"], house: "Byredo", categories: ["unisexe", "boise"] },
-    { name: "Another 13", description: "Musc animalique mystérieux.", price: 700, category: "Unisexe", imageUrl: "/perfumes/another-13.jpg", style: ["Musc", "Boisé"], house: "Le Labo", categories: ["unisexe", "boise"] },
-    { name: "English Pear & Freesia", description: "Poire fraîche élégante.", price: 450, category: "Unisexe", imageUrl: "/perfumes/english-pear.jpg", style: ["Fruité", "Floral"], house: "Jo Malone", categories: ["unisexe", "floral"] },
-    { name: "Reflection Man", description: "Frais floral musqué.", price: 800, category: "Unisexe", imageUrl: "/perfumes/reflection-man.jpg", style: ["Floral", "Musc"], house: "Amouage", categories: ["unisexe", "floral"] },
-    { name: "Neroli Portofino", description: "Agrumes méditerranéens.", price: 750, category: "Unisexe", imageUrl: "/perfumes/neroli-portofino.jpg", style: ["Agrumes", "Frais"], house: "Tom Ford", categories: ["unisexe", "frais"] },
-    { name: "Santal 33", description: "Santal crémeux iconique.", price: 680, category: "Unisexe", imageUrl: "/perfumes/santal-33.jpg", style: ["Boisé", "Santal"], house: "Le Labo", categories: ["unisexe", "boise"] },
-    { name: "Louis Vuitton Imagination", description: "Agrumes ambrés modernes.", price: 950, category: "Unisexe", imageUrl: "/perfumes/lv-imagination.jpg", style: ["Agrumes", "Ambré"], house: "Louis Vuitton", categories: ["unisexe", "frais"] },
-    { name: "Oud for Greatness", description: "Oud safran puissant.", price: 900, category: "Unisexe", imageUrl: "/perfumes/oud-greatness.jpg", style: ["Oud", "Safran"], house: "Initio", categories: ["unisexe", "boise", "oriental"] },
+  // ⚠️ Remplace les clerkId ci-dessous par les vrais ID Clerk
+  // (visibles dans le dashboard Clerk > Users > cliquer sur l'utilisateur)
+  const users = [
+    {
+      clerkId: "user_REMPLACER_ZMORDA",
+      email: "zmorda.benali1970@gmail.com",
+      firstName: "Zmorda",
+      lastName: "Ben Ali",
+      role: "ADMIN",
+    },
+    {
+      clerkId: "user_REMPLACER_MARWA",
+      email: "mba.marwa25@gmail.com",
+      firstName: "Marwa",
+      lastName: "Ben Ali",
+      role: "CLIENT",
+    },
   ];
 
-  // 4. Insertion des parfums avec vérification
-  for (const p of perfumes) {
-    const houseId = houseByName[p.house];
-    if (!houseId) {
-      console.warn(`⚠️ Maison inconnue : ${p.house} (ignorée)`);
-      continue;
-    }
+  for (const user of users) {
+    await prisma.user.create({ data: user });
+  }
+  console.log('✅ Users créés');
 
-    const existing = await prisma.perfume.findFirst({
-      where: { name: p.name },
-    });
+  const products = [
+    {
+      name: "Pantalon Cargo Noir",
+      description: "Pantalon cargo large avec poches utilitaires. Style streetwear premium.",
+      price: 89.99,
+      category: "pantalon",
+      gender: "unisex",
+      color: "Noir",
+      colorHex: "#111111",
+      stock: 45,
+      images: [
+        "https://images.unsplash.com/photo-1542272604-787c3835535d?w=800",
+        "https://images.unsplash.com/photo-1585487000160-6eb1fcb4d5a1?w=800"
+      ],
+      sizes: ["S", "M", "L", "XL"],
+      material: "Coton / Polyester",
+      fit: "Relaxed",
+      isNew: true,
+    },
+    {
+      name: "Pull Oversize Cachemire",
+      description: "Pull en maille douce ultra confortable.",
+      price: 129.99,
+      category: "pull",
+      gender: "unisex",
+      color: "Beige",
+      colorHex: "#D2B48C",
+      stock: 32,
+      images: ["https://images.unsplash.com/photo-1622445275576-721325763afe?w=800"],
+      sizes: ["S", "M", "L"],
+      material: "Cachemire / Laine",
+      fit: "Oversize",
+      isNew: false,
+    },
+    {
+      name: "Veste Denim Vintage",
+      description: "Veste en jean brut premium.",
+      price: 149.99,
+      category: "veste",
+      gender: "unisex",
+      color: "Bleu Denim",
+      colorHex: "#4A6B8A",
+      stock: 18,
+      images: ["https://images.unsplash.com/photo-1551028719-00167b16b4d0?w=800"],
+      sizes: ["M", "L", "XL"],
+      material: "100% Coton Denim",
+      fit: "Regular",
+      isNew: true,
+    },
+    {
+      name: "Chemise Oxford Blanche",
+      description: "Chemise classique élégante.",
+      price: 69.99,
+      category: "chemise",
+      gender: "men",
+      color: "Blanc",
+      colorHex: "#FFFFFF",
+      stock: 55,
+      images: ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800"],
+      sizes: ["S", "M", "L", "XL"],
+      material: "Coton Oxford",
+      fit: "Slim",
+      isNew: false,
+    },
+    {
+      name: "Sac Bandoulière Cuir",
+      description: "Sac bandoulière élégant en similicuir.",
+      price: 59.99,
+      category: "accessoire",
+      gender: "unisex",
+      color: "Marron",
+      colorHex: "#8B4513",
+      stock: 22,
+      images: ["https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800"],
+      sizes: [],
+      material: "Similicuir",
+      fit: "",
+      isNew: false,
+    },
+    {
+      name: "Robe Satin Émeraude",
+      description: "Robe longue en satin fluide, coupe ajustée et élégante.",
+      price: 159.99,
+      category: "robe",
+      gender: "women",
+      color: "Émeraude",
+      colorHex: "#046307",
+      stock: 15,
+      images: ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800"],
+      sizes: ["XS", "S", "M", "L"],
+      material: "Satin",
+      fit: "Slim",
+      isNew: true,
+    },
+    {
+      name: "Sneakers Blanches Premium",
+      description: "Sneakers minimalistes en cuir véritable.",
+      price: 119.99,
+      category: "chaussure",
+      gender: "unisex",
+      color: "Blanc",
+      colorHex: "#FAFAFA",
+      stock: 40,
+      images: ["https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=800"],
+      sizes: ["39", "40", "41", "42", "43", "44"],
+      material: "Cuir",
+      fit: "Regular",
+      isNew: false,
+    },
+    {
+      name: "Trench Coat Camel",
+      description: "Trench classique intemporel, coupe droite.",
+      price: 219.99,
+      category: "manteau",
+      gender: "unisex",
+      color: "Camel",
+      colorHex: "#C19A6B",
+      stock: 12,
+      images: ["https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800"],
+      sizes: ["S", "M", "L", "XL"],
+      material: "Coton / Polyester",
+      fit: "Regular",
+      isNew: true,
+    },
+    {
+      name: "T-shirt Basique Blanc",
+      description: "T-shirt essentiel en coton bio.",
+      price: 24.99,
+      category: "t-shirt",
+      gender: "unisex",
+      color: "Blanc",
+      colorHex: "#FFFFFF",
+      stock: 100,
+      images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800"],
+      sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+      material: "Coton Bio",
+      fit: "Regular",
+      isNew: false,
+    },
+    {
+      name: "Jupe Plissée Noire",
+      description: "Jupe plissée midi, tombée fluide.",
+      price: 79.99,
+      category: "jupe",
+      gender: "women",
+      color: "Noir",
+      colorHex: "#111111",
+      stock: 28,
+      images: ["https://images.unsplash.com/photo-1577900232427-18219b9166a0?w=800"],
+      sizes: ["XS", "S", "M", "L"],
+      material: "Polyester plissé",
+      fit: "A-line",
+      isNew: false,
+    },
+  ];
 
-    if (existing) {
-      console.log(`✓ Déjà présent : ${p.name}`);
-      continue;
-    }
+  const createdProducts = [];
+  for (const product of products) {
+    const p = await prisma.product.create({ data: product });
+    createdProducts.push(p);
+  }
+  console.log('✅ Produits créés');
 
-    const perfume = await prisma.perfume.create({
+  const adminId = users[0].clerkId;
+  const clientId = users[1].clerkId;
+
+  const orders = [
+    {
+      userId: clientId,
+      status: "confirmed",
+      total: 219.98,
+      deliveryMethod: "DELIVERY",
+      items: [
+        { productId: createdProducts[0].id, quantity: 1, size: "M", price: 89.99 },
+        { productId: createdProducts[1].id, quantity: 1, size: "L", price: 129.99 },
+      ],
+    },
+    {
+      userId: clientId,
+      status: "shipped",
+      total: 149.99,
+      deliveryMethod: "PICKUP",
+      items: [{ productId: createdProducts[2].id, quantity: 1, size: "L", price: 149.99 }],
+    },
+    {
+      userId: clientId,
+      status: "delivered",
+      total: 279.97,
+      deliveryMethod: "DELIVERY",
+      items: [
+        { productId: createdProducts[3].id, quantity: 1, size: "M", price: 69.99 },
+        { productId: createdProducts[4].id, quantity: 1, size: "S", price: 59.99 },
+      ],
+    },
+    {
+      userId: clientId,
+      status: "pending",
+      total: 89.99,
+      deliveryMethod: "PICKUP",
+      items: [{ productId: createdProducts[0].id, quantity: 1, size: "L", price: 89.99 }],
+    },
+    {
+      userId: clientId,
+      status: "delivered",
+      total: 159.99,
+      deliveryMethod: "DELIVERY",
+      items: [{ productId: createdProducts[5].id, quantity: 1, size: "S", price: 159.99 }],
+    },
+    {
+      userId: clientId,
+      status: "confirmed",
+      total: 244.98,
+      deliveryMethod: "DELIVERY",
+      items: [
+        { productId: createdProducts[6].id, quantity: 1, size: "42", price: 119.99 },
+        { productId: createdProducts[8].id, quantity: 5, size: "M", price: 24.99 },
+      ],
+    },
+    {
+      userId: adminId,
+      status: "pending",
+      total: 219.99,
+      deliveryMethod: "PICKUP",
+      items: [{ productId: createdProducts[7].id, quantity: 1, size: "L", price: 219.99 }],
+    },
+    {
+      userId: adminId,
+      status: "shipped",
+      total: 79.99,
+      deliveryMethod: "DELIVERY",
+      items: [{ productId: createdProducts[9].id, quantity: 1, size: "M", price: 79.99 }],
+    },
+  ];
+
+  for (const orderData of orders) {
+    const { items, ...orderInfo } = orderData;
+    const order = await prisma.order.create({
       data: {
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        category: p.category,
-        imageUrl: p.imageUrl,
-        style: p.style,
-        houseId: houseId,
-        stock: 100,
+        ...orderInfo,
+        items: { create: items },
       },
     });
-
-    const links = p.categories.map(slug => ({
-      perfumeId: perfume.id,
-      categoryId: catBySlug[slug],
-    })).filter(l => l.categoryId);
-
-    if (links.length > 0) {
-      await prisma.perfumeCategory.createMany({
-        data: links,
-        skipDuplicates: true,
-      });
-    }
-
-    console.log(`✅ Ajouté : ${p.name}`);
+    console.log(`✅ Commande #${order.id} (${order.status}) créée`);
   }
 
-  // 5. Utilisateurs
-  console.log("\n👤 Création des utilisateurs...");
-
-  const usersData = [
-    { clerkId: "admin_001", email: "admin@parfumia.com", name: "Admin ParfumIA", role: "ADMIN" },
-    { clerkId: "user_001", email: "marwa.tunis@example.com", name: "Marwa Ben Ali", role: "CLIENT" },
-    { clerkId: "user_002", email: "ahmed.tn@gmail.com", name: "Ahmed Khaldi", role: "CLIENT" },
-    { clerkId: "user_003", email: "sara.luxe@outlook.com", name: "Sara Mahfoudh", role: "CLIENT" },
-    { clerkId: "user_004", email: "karim.paris@free.fr", name: "Karim Zouari", role: "CLIENT" },
-  ];
-
-  const createdUsers = [];
-
-  for (const u of usersData) {
-    let user = await prisma.user.findUnique({ where: { email: u.email } });
-
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          clerkId: u.clerkId,
-          email: u.email,
-          name: u.name,
-          role: u.role,
-        },
-      });
-      console.log(`✅ Créé : ${user.name} (${user.role})`);
-    } else {
-      console.log(`✓ Existe déjà : ${user.name} (${user.role})`);
-    }
-
-    createdUsers.push(user);
-  }
-
-  const userByEmail = Object.fromEntries(createdUsers.map(u => [u.email, u]));
-
-  // 6. Commandes + items
-  console.log("\n🛒 Création des commandes...");
-
-  const ordersData = [
-    {
-      userEmail: "marwa.tunis@example.com",
-      status: "PENDING",
-      delivery: "DELIVERY",
-      items: [
-        { perfumeName: "Sauvage Elixir", qty: 1 },
-        { perfumeName: "Baccarat Rouge 540", qty: 1 },
-      ],
-    },
-    {
-      userEmail: "ahmed.tn@gmail.com",
-      status: "CONFIRMED",
-      delivery: "PICKUP",
-      items: [
-        { perfumeName: "Aventus", qty: 1 },
-        { perfumeName: "Layton", qty: 2 },
-      ],
-    },
-    {
-      userEmail: "sara.luxe@outlook.com",
-      status: "SHIPPED",
-      delivery: "DELIVERY",
-      items: [
-        { perfumeName: "J'adore Eau de Parfum", qty: 1 },
-        { perfumeName: "Delina", qty: 1 },
-      ],
-    },
-    {
-      userEmail: "marwa.tunis@example.com",
-      status: "DELIVERED",
-      delivery: "DELIVERY",
-      items: [
-        { perfumeName: "Bleu de Chanel Parfum", qty: 1 },
-      ],
-    },
-    {
-      userEmail: "karim.paris@free.fr",
-      status: "CANCELLED",
-      delivery: "PICKUP",
-      items: [
-        { perfumeName: "Oud Wood", qty: 1 },
-        { perfumeName: "Santal 33", qty: 1 },
-      ],
-    },
-  ];
-
-  for (const ord of ordersData) {
-    const user = userByEmail[ord.userEmail];
-    if (!user) {
-      console.warn(`⚠️ Utilisateur non trouvé : ${ord.userEmail}`);
-      continue;
-    }
-
-    const orderItemsData = [];
-    let total = 0;
-
-    for (const item of ord.items) {
-      const perfume = await prisma.perfume.findFirst({
-        where: { name: item.perfumeName },
-      });
-
-      if (!perfume) {
-        console.warn(`⚠️ Parfum non trouvé : ${item.perfumeName}`);
-        continue;
-      }
-
-      orderItemsData.push({
-        perfumeId: perfume.id,
-        quantity: item.qty,
-        price: perfume.price,
-      });
-
-      total += perfume.price * item.qty;
-    }
-
-    if (orderItemsData.length === 0) continue;
-
-    await prisma.order.create({
-      data: {
-        userId: user.id,
-        totalAmount: total,
-        status: ord.status,
-        deliveryMethod: ord.delivery,
-        items: {
-          createMany: { data: orderItemsData },
-        },
-      },
-    });
-
-    console.log(`✅ Commande ${ord.status} créée pour ${user.name} (${total} TND)`);
-  }
-
-  // 7. Quelques réponses au quiz
-  console.log("\n📝 Ajout de réponses au quiz...");
-
-  await prisma.quizResponse.createMany({
-    data: [
-      {
-        userId: userByEmail["marwa.tunis@example.com"]?.id,
-        preferences: JSON.stringify({
-          gender: "Femme",
-          season: "Hiver",
-          notes: ["vanille", "rose", "gourmand"],
-          intensity: "Fort",
-        }),
-        suggestedPerfumes: [1, 12, 15], // IDs fictifs - adapte si besoin
-      },
-      {
-        userId: userByEmail["ahmed.tn@gmail.com"]?.id,
-        preferences: JSON.stringify({
-          gender: "Homme",
-          season: "Été",
-          notes: ["frais", "aquatique", "agrumes"],
-          intensity: "Léger",
-        }),
-        suggestedPerfumes: [5, 9],
-      },
-    ],
-    skipDuplicates: true,
-  });
-
-  console.log("✓ Réponses quiz ajoutées");
-
-  // ────────────────────────────────────────────────
-  console.log("\n✅ Seed terminé avec succès !");
-  console.log("═══════════════════════════════════════");
-  console.log("🎯 BASE DE DONNÉES PRÊTE POUR PARFUMIA");
-  console.log("═══════════════════════════════════════");
-  console.log("💰 Prix en TND | 👔 Homme | 👗 Femme | 🎭 Unisexe");
-  console.log("🚀 npm run dev");
-  console.log("💜 Quiz : http://localhost:3000/quiz");
-  console.log("═══════════════════════════════════════\n");
+  console.log('🎉 Seeding terminé avec succès !');
 }
 
 main()
-  .catch(e => {
-    console.error("❌ Erreur durant le seed :", e);
+  .catch((e) => {
+    console.error('❌ Erreur:', e);
     process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();
-    await pool.end();
   });
