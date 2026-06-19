@@ -4,9 +4,11 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const perfumes = await prisma.perfume.findMany({
+    const perfumes = await prisma.product.findMany({
+      where: { category: 'parfum' },
       select: {
-        style: true,
+        name: true,
+        description: true,
       },
     });
 
@@ -29,22 +31,20 @@ export async function GET() {
     };
 
     perfumes.forEach((perfume) => {
-      const styles = (perfume.style ?? [])
-        .map((s) => s.toLowerCase().trim())
-        .filter(Boolean);
+      const text = `${perfume.name} ${perfume.description ?? ''}`.toLowerCase();
 
-      if (styles.length === 0) return;
+      if (!text.trim()) return;
 
-      if (styles.some((s) => familles.floraux.some((k) => s.includes(k) || k.includes(s)))) {
+      if (familles.floraux.some((k) => text.includes(k))) {
         counts.floraux++;
       }
-      if (styles.some((s) => familles.orientaux.some((k) => s.includes(k) || k.includes(s)))) {
+      if (familles.orientaux.some((k) => text.includes(k))) {
         counts.orientaux++;
       }
-      if (styles.some((s) => familles.frais.some((k) => s.includes(k) || k.includes(s)))) {
+      if (familles.frais.some((k) => text.includes(k))) {
         counts.frais++;
       }
-      if (styles.some((s) => familles.boises.some((k) => s.includes(k) || k.includes(s)))) {
+      if (familles.boises.some((k) => text.includes(k))) {
         counts.boises++;
       }
     });
