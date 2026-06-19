@@ -21,7 +21,7 @@
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.561.0",
-    "next": "16.0.4",
+    "next": "16.2.9",
     "next-video": "^2.7.1",
     "openai": "^6.9.1",
     "react": "19.2.0",
