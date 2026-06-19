@@ -3,35 +3,31 @@ import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import ProfileClient from "../../../components/ClientProfileEditForm";
-import { Prisma } from "@prisma/client";
 
-const userWithOrdersArgs = {
-  include: {
-    orders: {
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      include: {
-        items: {
-          include: {
-            product: { select: { name: true } },
+async function getUserWithOrders(clerkId: string) {
+  return prisma.user.findUnique({
+    where: { clerkId },
+    include: {
+      orders: {
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        include: {
+          items: {
+            include: {
+              product: { select: { name: true } },
+            },
           },
         },
       },
     },
-  },
-} satisfies Prisma.UserDefaultArgs;
-
-type UserWithOrders = Prisma.UserGetPayload<typeof userWithOrdersArgs>;
+  });
+}
 
 export default async function ProfilePage() {
   const clerkUser = await currentUser();
   if (!clerkUser) redirect("/sign-in");
 
-  const dbUser: UserWithOrders | null = await prisma.user.findUnique({
-    where: { clerkId: clerkUser.id },
-    ...userWithOrdersArgs,
-  });
-
+  const dbUser = await getUserWithOrders(clerkUser.id);
   if (!dbUser) redirect("/sign-in");
 
   return (
