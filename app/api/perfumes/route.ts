@@ -3,12 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const perfumes = await prisma.perfume.findMany({
-    include: {
-      house: {
-        select: { id: true, name: true },
-      },
-    },
+  const perfumes = await prisma.product.findMany({
+    where: { category: "parfum" },
     orderBy: { price: "desc" },
   });
 
