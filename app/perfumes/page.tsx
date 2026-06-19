@@ -1,11 +1,11 @@
 // app/perfumes/page.tsx
 import { PerfumeCard } from "@/components/ParfumCard";
 import type { Product } from "@prisma/client";
+import { getAllPerfumesGrouped } from "@/lib/perfumes";
+
+export const dynamic = "force-dynamic";
 
 type GroupedPerfumes = Record<string, Product[]>;
-
-// ON APPELLE DIRECTEMENT LA FONCTION, PAS VIA HTTP !
-import { getAllPerfumesGrouped } from "@/lib/perfumes";
 
 export default async function PerfumesPage() {
   const groupedPerfumes: GroupedPerfumes = await getAllPerfumesGrouped();
