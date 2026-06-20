@@ -300,27 +300,27 @@ export default function SignInPage() {
 
         <div className="sign-container">
           <div className="sign-card clerk-custom">
-            <SignIn 
-              appearance={{
-                elements: {
-                  rootBox: "clerk-sign-in",
-                  card: "cl-card",
-                  headerTitle: "cl-headerTitle",
-                  headerSubtitle: "cl-headerSubtitle",
-                  formButtonPrimary: "cl-formButtonPrimary",
-                  socialButtonsBlockButton: "cl-socialButtonsBlockButton",
-                  formFieldInput: "cl-formFieldInput",
-                  formFieldLabel: "cl-formFieldLabel",
-                  dividerLine: "cl-dividerLine",
-                  dividerText: "cl-dividerText",
-                  footerActionLink: "cl-footerActionLink",
-                },
-                layout: {
-                  socialButtonsVariant: "blockButton",
-                }
-              }}
-              redirectUrl="/"
-            />
+           <SignIn 
+  appearance={{
+  elements: {
+    rootBox: "clerk-sign-in",
+    card: "cl-card",
+    headerTitle: "cl-headerTitle",
+    headerSubtitle: "cl-headerSubtitle",
+    formButtonPrimary: "cl-formButtonPrimary",
+    socialButtonsBlockButton: "cl-socialButtonsBlockButton",
+    formFieldInput: "cl-formFieldInput",
+    formFieldLabel: "cl-formFieldLabel",
+    dividerLine: "cl-dividerLine",
+    dividerText: "cl-dividerText",
+    footerActionLink: "cl-footerActionLink",
+  },
+  options: {
+    socialButtonsVariant: "blockButton",
+  }
+}}
+ fallbackRedirectUrl="/"
+/>
           </div>
         </div>
       </div>
