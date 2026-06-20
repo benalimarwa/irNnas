@@ -20,9 +20,6 @@ export function Header() {
               IRNAS
             </h1>
           </div>
-          
-          
-          
 
           {/* Actions */}
           <div className="flex items-center space-x-4">
@@ -38,10 +35,10 @@ export function Header() {
                 3
               </span>
             </button>
-            
+
             {/* Auth */}
             {isSignedIn ? (
-              <UserButton afterSignOutUrl="/" />
+              <UserButton />
             ) : (
               <div className="flex gap-2">
                 <SignInButton mode="modal">

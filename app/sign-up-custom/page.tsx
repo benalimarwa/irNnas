@@ -8,9 +8,9 @@ import { Sparkles, Mail, Lock, User, Crown, Users, Loader2 } from "lucide-react"
 import Link from "next/link";
 
 export default function CustomSignUpPage() {
-  const { isLoaded, signUp, setActive } = useSignUp();
+  const { signUp, errors, fetchStatus } = useSignUp();
   const router = useRouter();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -19,19 +19,16 @@ export default function CustomSignUpPage() {
   const [pendingVerification, setPendingVerification] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  const loading = fetchStatus === "fetching";
 
   // Gérer l'inscription
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
-
-    setLoading(true);
     setError("");
 
     try {
-      // Créer l'utilisateur avec le rôle dans unsafeMetadata
-      await signUp.create({
+      const { error: signUpError } = await signUp.password({
         emailAddress: email,
         password,
         firstName,
@@ -41,48 +38,58 @@ export default function CustomSignUpPage() {
         },
       });
 
+      if (signUpError) {
+        console.error("Error:", signUpError);
+        setError(signUpError.message ?? "Une erreur est survenue");
+        return;
+      }
+
       // Envoyer l'email de vérification
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-      
+      await signUp.verifications.sendEmailCode();
+
       setPendingVerification(true);
     } catch (err: any) {
       console.error("Error:", err);
-      setError(err.errors?.[0]?.message || "Une erreur est survenue");
-    } finally {
-      setLoading(false);
+      setError(err?.message || "Une erreur est survenue");
     }
   };
 
-  // app/sign-up-custom/page.tsx  → extrait de la partie handleVerification
+  // Vérification du code email
+  const handleVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
 
-const handleVerification = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!isLoaded) return;
+    try {
+      await signUp.verifications.verifyEmailCode({ code });
 
-  setLoading(true);
-  setError("");
+      if (signUp.status === "complete") {
+        await signUp.finalize({
+          navigate: ({ session, decorateUrl }) => {
+            if (session?.currentTask) {
+              console.log(session.currentTask);
+              return;
+            }
 
-  try {
-    const completeSignUp = await signUp.attemptEmailAddressVerification({ code });
+            // Redirection selon le rôle choisi pendant l'inscription
+            const target = role === "admin" ? "/admin" : "/client";
+            const url = decorateUrl(target);
 
-    if (completeSignUp.status === "complete") {
-      await setActive({ session: completeSignUp.createdSessionId });
-
-      // Redirection immédiate selon le rôle choisi pendant l'inscription
-      // (le webhook va synchroniser plus tard, mais ici on sait déjà ce que l'utilisateur a choisi)
-      if (role === "admin") {
-        router.push("/admin");
+            if (url.startsWith("http")) {
+              window.location.href = url;
+            } else {
+              router.push(url);
+            }
+          },
+        });
       } else {
-        router.push("/client"); // ou /client/catalog, / etc.
+        console.error("Sign-up attempt not complete:", signUp);
+        setError("Code invalide ou expiré");
       }
+    } catch (err: any) {
+      console.error("Erreur vérification:", err);
+      setError(err?.message || "Code invalide ou expiré");
     }
-  } catch (err: any) {
-    console.error("Erreur vérification:", err);
-    setError(err.errors?.[0]?.message || "Code invalide ou expiré");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Formulaire de vérification email
   if (pendingVerification) {
@@ -135,6 +142,14 @@ const handleVerification = async (e: React.FormEvent) => {
               ) : (
                 "Vérifier"
               )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => signUp.verifications.sendEmailCode()}
+              className="w-full text-sm text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              Je n'ai pas reçu de code
             </button>
           </form>
         </div>
@@ -246,6 +261,9 @@ const handleVerification = async (e: React.FormEvent) => {
                   className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-300 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   required
                 />
+                {errors?.fields?.emailAddress && (
+                  <p className="text-red-500 text-xs mt-1">{errors.fields.emailAddress.message}</p>
+                )}
               </div>
             </div>
 
@@ -264,6 +282,9 @@ const handleVerification = async (e: React.FormEvent) => {
                   required
                   minLength={8}
                 />
+                {errors?.fields?.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.fields.password.message}</p>
+                )}
               </div>
             </div>
 
@@ -287,6 +308,9 @@ const handleVerification = async (e: React.FormEvent) => {
                 "Créer mon compte"
               )}
             </button>
+
+            {/* Requis pour les flux d'inscription, la protection anti-bot Clerk est activée par défaut */}
+            <div id="clerk-captcha" />
           </form>
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">

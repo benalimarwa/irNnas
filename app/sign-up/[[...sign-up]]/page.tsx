@@ -420,35 +420,35 @@ export default function SignUpPage() {
             </div>
 
             <SignUp
-              unsafeMetadata={{ role: selectedRole }}
-              appearance={{
-                elements: {
-                  rootBox: "clerk-sign-up",
-                  card: "cl-card",
-                  headerTitle: "cl-headerTitle",
-                  headerSubtitle: "cl-headerSubtitle",
-                  formButtonPrimary: "cl-formButtonPrimary",
-                  socialButtonsBlockButton: "cl-socialButtonsBlockButton",
-                  formFieldInput: "cl-formFieldInput",
-                  formFieldLabel: "cl-formFieldLabel",
-                  dividerLine: "cl-dividerLine",
-                  dividerText: "cl-dividerText",
-                  footerActionLink: "cl-footerActionLink",
-                  identityPreview: "cl-identityPreview",
-                  identityPreviewText: "cl-identityPreviewText",
-                  identityPreviewEditButton: "cl-identityPreviewEditButton",
-                  otpCodeFieldInput: "cl-otpCodeFieldInput",
-                  formResendCodeLink: "cl-formResendCodeLink",
-                  footer: "cl-footer",
-                  footerText: "cl-footerText",
-                  badge: "cl-badge",
-                  alert: "cl-alert",
-                  formFieldErrorText: "cl-formFieldErrorText",
-                },
-                layout: { socialButtonsVariant: "blockButton" }
-              }}
-              redirectUrl="/"
-            />
+  unsafeMetadata={{ role: selectedRole }}
+  appearance={{
+    elements: {
+      rootBox: "clerk-sign-up",
+      card: "cl-card",
+      headerTitle: "cl-headerTitle",
+      headerSubtitle: "cl-headerSubtitle",
+      formButtonPrimary: "cl-formButtonPrimary",
+      socialButtonsBlockButton: "cl-socialButtonsBlockButton",
+      formFieldInput: "cl-formFieldInput",
+      formFieldLabel: "cl-formFieldLabel",
+      dividerLine: "cl-dividerLine",
+      dividerText: "cl-dividerText",
+      footerActionLink: "cl-footerActionLink",
+      identityPreview: "cl-identityPreview",
+      identityPreviewText: "cl-identityPreviewText",
+      identityPreviewEditButton: "cl-identityPreviewEditButton",
+      otpCodeFieldInput: "cl-otpCodeFieldInput",
+      formResendCodeLink: "cl-formResendCodeLink",
+      footer: "cl-footer",
+      footerText: "cl-footerText",
+      badge: "cl-badge",
+      alert: "cl-alert",
+      formFieldErrorText: "cl-formFieldErrorText",
+    },
+    options: { socialButtonsVariant: "blockButton" }
+  }}
+  fallbackRedirectUrl="/"
+/>
 
             <div className="mt-6 text-center">
               <p className="text-off-white/60 text-sm">
