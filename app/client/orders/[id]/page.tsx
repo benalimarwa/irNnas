@@ -79,7 +79,7 @@ export default function OrderConfirmationPage() {
         <div className="text-center">
           <Package size={80} className="mx-auto mb-6 text-white/30" />
           <h2 className="text-3xl font-bold mb-4">Commande introuvable</h2>
-          <Link href="/catalog" className="text-[#D4AF37] hover:text-white text-lg">
+          <Link href="/client/catalog" className="text-[#D4AF37] hover:text-white text-lg">
             Retour au catalogue →
           </Link>
         </div>
