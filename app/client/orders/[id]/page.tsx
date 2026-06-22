@@ -256,7 +256,7 @@ export default function OrderConfirmationPage() {
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-16">
             <Link
-              href="/catalog"
+              href="/client/catalog"
               className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] text-black px-12 py-5 rounded-2xl font-semibold text-lg hover:brightness-110 transition"
             >
               <Home size={22} />
