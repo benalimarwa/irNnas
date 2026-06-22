@@ -2,6 +2,9 @@ const { withNextVideo } = require('next-video/process')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  turbopack: {
+    root: __dirname, // ✅ Fixes the multiple lockfiles warning
+  },
   images: {
     remotePatterns: [
       {
@@ -10,7 +13,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '**.chanel.com', // Wildcard pour tous les sous-domaines
+        hostname: '**.chanel.com',
       },
       {
         protocol: 'https',
@@ -18,7 +21,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '**.yslbeauty.com', // ✅ Wildcard pour yslbeauty
+        hostname: '**.yslbeauty.com',
       },
       {
         protocol: 'https',

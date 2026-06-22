@@ -4,7 +4,7 @@ version: '3.8'
 services:
   db:
     image: postgres:16
-    container_name: irnNas
+    container_name: irnNass
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
