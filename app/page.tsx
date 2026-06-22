@@ -31,12 +31,9 @@ export default async function Home() {
           --text-secondary: rgba(248, 246, 242, 0.65);
           --text-muted: rgba(248, 246, 242, 0.4);
           
-          /* Couleurs principales */
           --accent-gold: #D4AF37;
           --accent-gold-dark: #B8942E;
           --accent-gold-glow: rgba(212, 175, 55, 0.2);
-          
-          /* Nouvelles couleurs ajoutées */
           --accent-coral: #FF6B6B;
           --accent-teal: #4ECDC4;
           --accent-violet: #9B59B6;
@@ -45,7 +42,6 @@ export default async function Home() {
           --accent-lime: #A8E6CF;
           --accent-indigo: #5D9BEC;
           
-          /* Dégradés variés */
           --gradient-gold: linear-gradient(135deg, #D4AF37 0%, #F5E6A3 50%, #D4AF37 100%);
           --gradient-coral: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
           --gradient-teal: linear-gradient(135deg, #4ECDC4 0%, #6EE7DE 100%);
@@ -61,6 +57,7 @@ export default async function Home() {
         body {
           background: var(--bg-primary);
           overflow-x: hidden;
+          width: 100%;
         }
 
         .homepage {
@@ -73,9 +70,10 @@ export default async function Home() {
             radial-gradient(circle at 80% 50%, rgba(155, 89, 182, 0.05) 0%, transparent 40%);
           font-family: 'Instrument Sans', sans-serif;
           color: var(--text-primary);
+          overflow-x: hidden;
+          width: 100%;
         }
 
-        /* Animated Background avec points colorés */
         .homepage::before {
           content: '';
           position: fixed;
@@ -95,7 +93,7 @@ export default async function Home() {
           z-index: 0;
         }
 
-        /* Navbar */
+        /* ── Navbar ── */
         .navbar {
           position: fixed;
           top: 0;
@@ -105,22 +103,22 @@ export default async function Home() {
           backdrop-filter: blur(20px);
           background: rgba(10, 10, 10, 0.8);
           border-bottom: 1px solid var(--border-light);
-          transition: all 0.3s ease;
         }
 
         .nav-container {
           max-width: 1400px;
           margin: 0 auto;
-          padding: 0 2rem;
-          height: 80px;
+          padding: 0 1rem;
+          height: 70px;
           display: flex;
           align-items: center;
           justify-content: space-between;
+          width: 100%;
         }
 
         .logo {
           font-family: 'Syne', sans-serif;
-          font-size: 32px;
+          font-size: 24px;
           font-weight: 800;
           letter-spacing: -1.5px;
           background: var(--gradient-multi);
@@ -129,8 +127,8 @@ export default async function Home() {
           background-clip: text;
           color: transparent;
           text-decoration: none;
-          transition: all 0.3s ease;
           animation: shimmer 3s infinite;
+          flex-shrink: 0;
         }
 
         @keyframes shimmer {
@@ -139,12 +137,8 @@ export default async function Home() {
           100% { background-position: 0% 50%; }
         }
 
-        .logo:hover {
-          transform: scale(1.02);
-        }
-
         .nav-links {
-          display: flex;
+          display: none;
           gap: 2.5rem;
           align-items: center;
         }
@@ -155,23 +149,7 @@ export default async function Home() {
           letter-spacing: 0.5px;
           color: var(--text-secondary);
           text-decoration: none;
-          transition: all 0.3s ease;
-          position: relative;
-        }
-
-        .nav-links a::after {
-          content: '';
-          position: absolute;
-          bottom: -4px;
-          left: 0;
-          width: 0;
-          height: 2px;
-          background: var(--gradient-gold);
-          transition: width 0.3s ease;
-        }
-
-        .nav-links a:hover::after {
-          width: 100%;
+          transition: color 0.3s ease;
         }
 
         .nav-links a:hover {
@@ -179,42 +157,40 @@ export default async function Home() {
         }
 
         .nav-cta {
-          padding: 0.75rem 1.75rem;
+          padding: 0.6rem 1.25rem;
           background: var(--gradient-gold);
           color: #0A0A0A;
           border-radius: 9999px;
           font-weight: 600;
-          font-size: 0.85rem;
+          font-size: 0.8rem;
           letter-spacing: 0.5px;
           text-transform: uppercase;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           display: inline-flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.4rem;
           text-decoration: none;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
-        .nav-cta:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 25px -5px rgba(212, 175, 55, 0.3);
-          gap: 0.75rem;
-        }
-
-        /* Main Container */
+        /* ── Main Container ── */
         .main-container {
           max-width: 1400px;
           margin: 0 auto;
-          padding: 0 2rem;
+          padding: 0 1rem;
+          width: 100%;
+          overflow-x: hidden;
         }
 
-        /* Hero Section */
+        /* ── Hero ── */
         .hero {
           min-height: 100vh;
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr;
           align-items: center;
-          gap: 4rem;
+          gap: 2rem;
           padding-top: 80px;
+          padding-bottom: 3rem;
           position: relative;
         }
 
@@ -223,20 +199,24 @@ export default async function Home() {
           align-items: center;
           gap: 0.75rem;
           background: rgba(212, 175, 55, 0.1);
-          backdrop-filter: blur(10px);
           padding: 0.5rem 1.25rem;
           border-radius: 9999px;
           margin-bottom: 1.5rem;
           border: 1px solid rgba(212, 175, 55, 0.2);
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           font-weight: 600;
-          letter-spacing: 2px;
+          letter-spacing: 1.5px;
           color: var(--accent-gold);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
         }
 
         .hero-badge span {
           width: 8px;
           height: 8px;
+          min-width: 8px;
           background: var(--accent-gold);
           border-radius: 50%;
           animation: pulse 2s infinite;
@@ -249,11 +229,13 @@ export default async function Home() {
 
         .hero-title {
           font-family: 'Syne', sans-serif;
-          font-size: clamp(3rem, 6vw, 5.5rem);
+          font-size: clamp(2.2rem, 9vw, 5.5rem);
           font-weight: 800;
           line-height: 1.1;
           letter-spacing: -0.02em;
           margin-bottom: 1.5rem;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
 
         .gradient-text {
@@ -266,27 +248,27 @@ export default async function Home() {
         }
 
         .hero-description {
-          font-size: 1.1rem;
+          font-size: 1rem;
           line-height: 1.6;
           color: var(--text-secondary);
           margin-bottom: 2rem;
-          max-width: 90%;
+          max-width: 100%;
         }
 
         .hero-buttons {
           display: flex;
-          gap: 1rem;
+          gap: 0.75rem;
           flex-wrap: wrap;
-          margin-bottom: 2.5rem;
+          margin-bottom: 2rem;
         }
 
         .btn-primary {
           background: var(--gradient-gold);
           color: #0A0A0A;
-          padding: 0.875rem 2rem;
+          padding: 0.75rem 1.5rem;
           border-radius: 9999px;
           font-weight: 600;
-          font-size: 0.875rem;
+          font-size: 0.8rem;
           text-transform: uppercase;
           letter-spacing: 1px;
           display: inline-flex;
@@ -294,23 +276,22 @@ export default async function Home() {
           gap: 0.5rem;
           transition: all 0.4s ease;
           text-decoration: none;
+          white-space: nowrap;
         }
 
         .btn-primary:hover {
           transform: translateY(-2px);
           box-shadow: 0 20px 35px -10px rgba(212, 175, 55, 0.4);
-          gap: 0.75rem;
         }
 
         .btn-secondary {
           background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(10px);
           border: 1px solid var(--border-light);
           color: var(--text-primary);
-          padding: 0.875rem 2rem;
+          padding: 0.75rem 1.5rem;
           border-radius: 9999px;
           font-weight: 600;
-          font-size: 0.875rem;
+          font-size: 0.8rem;
           text-transform: uppercase;
           letter-spacing: 1px;
           display: inline-flex;
@@ -318,29 +299,27 @@ export default async function Home() {
           gap: 0.5rem;
           transition: all 0.4s ease;
           text-decoration: none;
+          white-space: nowrap;
         }
 
         .btn-secondary:hover {
           border-color: var(--accent-coral);
           color: var(--accent-coral);
-          transform: translateY(-2px);
         }
 
         .hero-stats {
           display: flex;
-          gap: 2rem;
+          flex-wrap: wrap;
+          gap: 1.5rem;
           padding-top: 1rem;
           border-top: 1px solid var(--border-light);
         }
 
-        .hero-stat {
-          display: flex;
-          flex-direction: column;
-        }
+        .hero-stat { display: flex; flex-direction: column; }
 
         .hero-stat-value {
           font-family: 'Syne', sans-serif;
-          font-size: 1.5rem;
+          font-size: 1.4rem;
           font-weight: 700;
           background: var(--gradient-gold);
           -webkit-background-clip: text;
@@ -349,18 +328,14 @@ export default async function Home() {
         }
 
         .hero-stat-label {
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           color: var(--text-muted);
           letter-spacing: 0.5px;
         }
 
-        /* Hero Media avec cartes colorées */
+        /* Hero Media — caché sur mobile */
         .hero-media {
-          position: relative;
-          height: 500px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          display: none;
         }
 
         .floating-card {
@@ -373,26 +348,9 @@ export default async function Home() {
           animation: float 6s ease-in-out infinite;
         }
 
-        .floating-card:nth-child(1) {
-          top: 10%;
-          right: 10%;
-          animation-delay: 0s;
-          border-top-color: var(--accent-gold);
-        }
-
-        .floating-card:nth-child(2) {
-          bottom: 20%;
-          left: 10%;
-          animation-delay: 1s;
-          border-top-color: var(--accent-coral);
-        }
-
-        .floating-card:nth-child(3) {
-          top: 40%;
-          left: 30%;
-          animation-delay: 2s;
-          border-top-color: var(--accent-teal);
-        }
+        .floating-card:nth-child(1) { top: 10%; right: 10%; animation-delay: 0s; border-top-color: var(--accent-gold); }
+        .floating-card:nth-child(2) { bottom: 20%; left: 10%; animation-delay: 1s; border-top-color: var(--accent-coral); }
+        .floating-card:nth-child(3) { top: 40%; left: 30%; animation-delay: 2s; border-top-color: var(--accent-teal); }
 
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -413,14 +371,12 @@ export default async function Home() {
         .card-icon.coral { background: var(--gradient-coral); }
         .card-icon.teal { background: var(--gradient-teal); }
 
-        /* Features Section - Cartes multicolores */
-        .features-section {
-          padding: 6rem 0;
-        }
+        /* ── Features ── */
+        .features-section { padding: 4rem 0; }
 
         .section-header {
           text-align: center;
-          margin-bottom: 4rem;
+          margin-bottom: 3rem;
         }
 
         .section-badge {
@@ -429,7 +385,7 @@ export default async function Home() {
           color: var(--accent-gold);
           padding: 0.25rem 1rem;
           border-radius: 9999px;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           font-weight: 600;
           letter-spacing: 2px;
           margin-bottom: 1rem;
@@ -437,7 +393,7 @@ export default async function Home() {
 
         .section-title {
           font-family: 'Syne', sans-serif;
-          font-size: clamp(2rem, 4vw, 3rem);
+          font-size: clamp(1.6rem, 5vw, 3rem);
           font-weight: 700;
           letter-spacing: -0.02em;
           background: var(--gradient-multi);
@@ -449,18 +405,16 @@ export default async function Home() {
 
         .features-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 2rem;
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
         }
 
         .feature-card {
           background: var(--glass-bg);
-          backdrop-filter: blur(20px);
           border: 1px solid var(--glass-border);
           border-radius: 1.5rem;
-          padding: 2rem;
+          padding: 1.5rem;
           transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-          cursor: pointer;
           position: relative;
           overflow: hidden;
         }
@@ -468,48 +422,35 @@ export default async function Home() {
         .feature-card::before {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
+          top: 0; left: 0; right: 0;
           height: 4px;
           background: var(--gradient-gold);
           transform: scaleX(0);
           transition: transform 0.3s ease;
         }
 
-        .feature-card:hover::before {
-          transform: scaleX(1);
-        }
+        .feature-card:hover::before { transform: scaleX(1); }
 
-        .feature-card:nth-child(1):hover { border-color: rgba(212, 175, 55, 0.3); box-shadow: 0 20px 40px -20px rgba(212, 175, 55, 0.2); }
-        .feature-card:nth-child(2):hover { border-color: rgba(255, 107, 107, 0.3); box-shadow: 0 20px 40px -20px rgba(255, 107, 107, 0.2); }
-        .feature-card:nth-child(3):hover { border-color: rgba(78, 205, 196, 0.3); box-shadow: 0 20px 40px -20px rgba(78, 205, 196, 0.2); }
+        .feature-card:nth-child(1):hover { border-color: rgba(212, 175, 55, 0.3); }
+        .feature-card:nth-child(2):hover { border-color: rgba(255, 107, 107, 0.3); }
+        .feature-card:nth-child(3):hover { border-color: rgba(78, 205, 196, 0.3); }
 
         .feature-icon {
-          width: 56px;
-          height: 56px;
+          width: 48px;
+          height: 48px;
           border-radius: 1rem;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
         }
 
-        .feature-card:nth-child(1) .feature-icon { background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05)); color: var(--accent-gold); }
-        .feature-card:nth-child(2) .feature-icon { background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.05)); color: var(--accent-coral); }
-        .feature-card:nth-child(3) .feature-icon { background: linear-gradient(135deg, rgba(78, 205, 196, 0.2), rgba(78, 205, 196, 0.05)); color: var(--accent-teal); }
+        .feature-card:nth-child(1) .feature-icon { background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05)); color: var(--accent-gold); }
+        .feature-card:nth-child(2) .feature-icon { background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,107,107,0.05)); color: var(--accent-coral); }
+        .feature-card:nth-child(3) .feature-icon { background: linear-gradient(135deg, rgba(78,205,196,0.2), rgba(78,205,196,0.05)); color: var(--accent-teal); }
 
-        .feature-card h3 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin-bottom: 0.75rem;
-        }
-
-        .feature-card p {
-          color: var(--text-secondary);
-          line-height: 1.6;
-          margin-bottom: 1.5rem;
-        }
+        .feature-card h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .feature-card p { color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem; font-size: 0.9rem; }
 
         .feature-link {
           text-decoration: none;
@@ -525,56 +466,9 @@ export default async function Home() {
         .feature-card:nth-child(2) .feature-link { color: var(--accent-coral); }
         .feature-card:nth-child(3) .feature-link { color: var(--accent-teal); }
 
-        .feature-link:hover {
-          gap: 0.75rem;
-        }
+        .feature-link:hover { gap: 0.75rem; }
 
-        /* Stats Section multicolore */
-        .stats-section {
-          background: linear-gradient(135deg, 
-            rgba(212, 175, 55, 0.08), 
-            rgba(255, 107, 107, 0.05),
-            rgba(78, 205, 196, 0.05),
-            rgba(155, 89, 182, 0.05));
-          border-radius: 2rem;
-          padding: 4rem 3rem;
-          margin: 4rem 0;
-          border: 1px solid var(--glass-border);
-        }
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 2rem;
-          text-align: center;
-        }
-
-        .stat-item {
-          transition: transform 0.3s ease;
-        }
-
-        .stat-item:hover {
-          transform: translateY(-4px);
-        }
-
-        .stat-number {
-          font-family: 'Syne', sans-serif;
-          font-size: 3rem;
-          font-weight: 800;
-          background: var(--gradient-gold);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-          margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-          font-size: 0.875rem;
-          color: var(--text-secondary);
-          letter-spacing: 1px;
-        }
-
-        /* Catégories de couleurs supplémentaires */
+        /* Color chips */
         .color-showcase {
           display: flex;
           justify-content: center;
@@ -583,14 +477,7 @@ export default async function Home() {
           flex-wrap: wrap;
         }
 
-        .color-chip {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          cursor: pointer;
-          transition: transform 0.3s ease;
-        }
-
+        .color-chip { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; transition: transform 0.3s ease; }
         .color-chip:hover { transform: scale(1.1); }
         .color-chip.gold { background: var(--accent-gold); }
         .color-chip.coral { background: var(--accent-coral); }
@@ -599,16 +486,46 @@ export default async function Home() {
         .color-chip.amber { background: var(--accent-amber); }
         .color-chip.rose { background: var(--accent-rose); }
 
-        /* CTA Section colorée */
-        .cta-section {
-          background: linear-gradient(135deg, 
-            rgba(212, 175, 55, 0.15), 
-            rgba(255, 107, 107, 0.1),
-            rgba(78, 205, 196, 0.1));
-          border-radius: 2rem;
-          padding: 4rem;
+        /* ── Stats ── */
+        .stats-section {
+          background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(255,107,107,0.05), rgba(78,205,196,0.05), rgba(155,89,182,0.05));
+          border-radius: 1.5rem;
+          padding: 2rem 1rem;
+          margin: 2rem 0;
+          border: 1px solid var(--glass-border);
+          overflow: hidden;
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1.5rem;
           text-align: center;
-          margin: 4rem 0;
+        }
+
+        .stat-item { transition: transform 0.3s ease; }
+        .stat-item:hover { transform: translateY(-4px); }
+
+        .stat-number {
+          font-family: 'Syne', sans-serif;
+          font-size: clamp(2rem, 6vw, 3rem);
+          font-weight: 800;
+          background: var(--gradient-gold);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          margin-bottom: 0.5rem;
+        }
+
+        .stat-label { font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 1px; }
+
+        /* ── CTA ── */
+        .cta-section {
+          background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(255,107,107,0.1), rgba(78,205,196,0.1));
+          border-radius: 1.5rem;
+          padding: 2.5rem 1.5rem;
+          text-align: center;
+          margin: 2rem 0;
           border: 1px solid var(--glass-border);
           position: relative;
           overflow: hidden;
@@ -617,10 +534,8 @@ export default async function Home() {
         .cta-section::before {
           content: '';
           position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
+          top: -50%; left: -50%;
+          width: 200%; height: 200%;
           background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%);
           animation: rotate 20s linear infinite;
         }
@@ -632,7 +547,7 @@ export default async function Home() {
 
         .cta-title {
           font-family: 'Syne', sans-serif;
-          font-size: clamp(1.75rem, 3vw, 2.5rem);
+          font-size: clamp(1.4rem, 4vw, 2.5rem);
           font-weight: 700;
           margin-bottom: 1rem;
           position: relative;
@@ -641,32 +556,35 @@ export default async function Home() {
 
         .cta-description {
           color: var(--text-secondary);
-          margin-bottom: 2rem;
+          margin-bottom: 1.5rem;
           max-width: 500px;
           margin-left: auto;
           margin-right: auto;
           position: relative;
           z-index: 1;
+          font-size: 0.95rem;
         }
 
-        /* Footer */
+        /* ── Footer ── */
         .footer {
           border-top: 1px solid var(--border-light);
-          padding: 3rem 0;
-          margin-top: 4rem;
+          padding: 2rem 0;
+          margin-top: 2rem;
         }
 
         .footer-content {
           display: flex;
-          justify-content: space-between;
+          flex-direction: column;
           align-items: center;
-          flex-wrap: wrap;
-          gap: 1rem;
+          gap: 1.25rem;
+          text-align: center;
         }
 
         .footer-links {
           display: flex;
-          gap: 2rem;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 1rem;
         }
 
         .footer-links a {
@@ -676,54 +594,9 @@ export default async function Home() {
           transition: color 0.3s ease;
         }
 
-        .footer-links a:hover {
-          color: var(--accent-coral);
-        }
+        .footer-links a:hover { color: var(--accent-coral); }
 
-        @media (max-width: 1024px) {
-          .hero {
-            grid-template-columns: 1fr;
-            gap: 2rem;
-            padding-bottom: 3rem;
-          }
-          
-          .hero-media {
-            height: 400px;
-          }
-          
-          .nav-container {
-            padding: 0 1rem;
-          }
-          
-          .nav-links {
-            gap: 1.5rem;
-          }
-        }
-        
-        @media (max-width: 768px) {
-          .nav-links {
-            display: none;
-          }
-          
-          .main-container {
-            padding: 0 1rem;
-          }
-          
-          .hero-description {
-            max-width: 100%;
-          }
-          
-          .stats-section,
-          .cta-section {
-            padding: 2rem;
-          }
-          
-          .footer-content {
-            flex-direction: column;
-            text-align: center;
-          }
-        }
-
+        /* ── Animations ── */
         .animate-on-scroll {
           opacity: 0;
           transform: translateY(30px);
@@ -734,10 +607,76 @@ export default async function Home() {
           opacity: 1;
           transform: translateY(0);
         }
+
+        /* ── Desktop overrides ── */
+        @media (min-width: 768px) {
+          .features-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .nav-container {
+            padding: 0 2rem;
+            height: 80px;
+          }
+
+          .nav-links {
+            display: flex;
+          }
+
+          .logo {
+            font-size: 32px;
+          }
+
+          .main-container {
+            padding: 0 2rem;
+          }
+
+          .hero {
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            padding-bottom: 0;
+          }
+
+          .hero-media {
+            display: flex;
+            position: relative;
+            height: 500px;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .stats-section {
+            border-radius: 2rem;
+            padding: 4rem 3rem;
+            margin: 4rem 0;
+          }
+
+          .cta-section {
+            border-radius: 2rem;
+            padding: 4rem;
+            margin: 4rem 0;
+          }
+
+          .footer-content {
+            flex-direction: row;
+            justify-content: space-between;
+            text-align: left;
+          }
+
+          .hero-description {
+            font-size: 1.1rem;
+          }
+        }
       `}</style>
 
       <div className="homepage">
-        {/* Points colorés animés en arrière-plan */}
+        {/* Points colorés animés */}
         <div className="color-dot" style={{ top: '20%', left: '10%', width: '300px', height: '300px', background: 'var(--accent-gold)' }}></div>
         <div className="color-dot" style={{ bottom: '15%', right: '5%', width: '250px', height: '250px', background: 'var(--accent-coral)' }}></div>
         <div className="color-dot" style={{ top: '60%', left: '80%', width: '200px', height: '200px', background: 'var(--accent-teal)' }}></div>
@@ -745,23 +684,16 @@ export default async function Home() {
 
         <nav className="navbar">
           <div className="nav-container">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <img
-              src="/llogo.png"
-              alt="irNas — Timeless Royalty"
-              width={140}
-              height={50}
-              className="object-contain h-10 w-auto transition-transform duration-300 group-hover:scale-105"
-             
-            />
-            <div className="hidden sm:block">
-              <span className="text-2xl font-bold tracking-tighter bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                irNas
-              </span>
-            </div>
-          </Link>
-            
+            <Link href="/" className="flex items-center gap-2 group">
+              <img
+                src="/llogo.png"
+                alt="irNas"
+                width={120}
+                height={40}
+                className="object-contain h-9 w-auto transition-transform duration-300 group-hover:scale-105"
+              />
+            </Link>
+
             <div className="nav-links">
               <Link href="/catalogue">Collection</Link>
               <Link href="/client/quiz">Style Finder</Link>
@@ -769,59 +701,54 @@ export default async function Home() {
             </div>
 
             {clerkUser ? (
-              <Link 
-                href={isAdmin ? "/admin/dashboard" : "/client"} 
-                className="nav-cta"
-              >
-                {isAdmin ? <Layers size={16} /> : <UserPlus size={16} />}
-                {isAdmin ? "Dashboard Admin" : "Mon Espace"}
+              <Link href={isAdmin ? "/admin/dashboard" : "/client"} className="nav-cta">
+                {isAdmin ? <Layers size={14} /> : <UserPlus size={14} />}
+                {isAdmin ? "Dashboard" : "Mon Espace"}
               </Link>
             ) : (
               <Link href="/sign-in" className="nav-cta">
-                <LogIn size={16} /> Se Connecter
+                <LogIn size={14} /> Connexion
               </Link>
             )}
           </div>
         </nav>
 
         <main className="main-container">
-          {/* Hero Section */}
+          {/* Hero */}
           <section className="hero">
             <div className="hero-left animate-on-scroll">
               <div className="hero-badge">
                 <span></span>
                 COLLECTION PRINTEMPS — ÉTÉ 2025
               </div>
-              
+
               <h1 className="hero-title">
                 Marque<br />
-                <span className="gradient-text">International</span><br />
-              
+                <span className="gradient-text">Internationale</span>
               </h1>
-              
-             
+
               <div className="hero-buttons">
                 {clerkUser ? (
                   <>
                     <Link href="/client/quiz" className="btn-primary">
-                      <Sparkles size={18} /> Découvrir mon style
+                      <Sparkles size={16} /> Mon style
                     </Link>
                     <Link href="/catalogue" className="btn-secondary">
-                      Explorer <ArrowRight size={18} />
+                      Explorer <ArrowRight size={16} />
                     </Link>
                   </>
                 ) : (
                   <>
                     <Link href="/sign-up" className="btn-primary">
-                      <UserPlus size={18} /> Créer mon compte
+                      <UserPlus size={16} /> Créer mon compte
                     </Link>
                     <Link href="/catalogue" className="btn-secondary">
-                      Collection <ArrowRight size={18} />
+                      Collection <ArrowRight size={16} />
                     </Link>
                   </>
                 )}
               </div>
-              
+
               <div className="hero-stats">
                 <div className="hero-stat">
                   <span className="hero-stat-value">100+</span>
@@ -837,75 +764,57 @@ export default async function Home() {
                 </div>
               </div>
             </div>
-            
+
+            {/* Hero media — visible desktop seulement */}
             <div className="hero-media">
               <div className="floating-card">
-                <div className="card-icon gold">
-                  <Sparkles size={24} color="#0A0A0A" />
-                </div>
+                <div className="card-icon gold"><Sparkles size={24} color="#0A0A0A" /></div>
                 <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Style Finder AI</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Diagnostic personnalisé</div>
               </div>
               <div className="floating-card">
-                <div className="card-icon coral">
-                  <Shirt size={24} color="#0A0A0A" />
-                </div>
+                <div className="card-icon coral"><Shirt size={24} color="#0A0A0A" /></div>
                 <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Nouvelle Collection</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>SS 2025</div>
               </div>
               <div className="floating-card">
-                <div className="card-icon teal">
-                  <Gem size={24} color="#0A0A0A" />
-                </div>
+                <div className="card-icon teal"><Gem size={24} color="#0A0A0A" /></div>
                 <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Matières Nobles</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>100% durable</div>
               </div>
             </div>
           </section>
 
-          {/* Features Section */}
+          {/* Features */}
           <section className="features-section">
             <div className="section-header animate-on-scroll">
               <div className="section-badge">POURQUOI NOUS CHOISIR</div>
               <h2 className="section-title">Une expérience unique</h2>
             </div>
-            
+
             <div className="features-grid">
               <div className="feature-card animate-on-scroll">
-                <div className="feature-icon">
-                  <Zap size={28} />
-                </div>
+                <div className="feature-icon"><Zap size={24} /></div>
                 <h3>Style Finder IA</h3>
                 <p>Un diagnostic stylistique précis basé sur votre personnalité, vos préférences et votre morphologie en moins de 2 minutes.</p>
-                <Link href="/client/quiz" className="feature-link">
-                  Découvrir <ChevronRight size={16} />
-                </Link>
+                <Link href="/client/quiz" className="feature-link">Découvrir <ChevronRight size={16} /></Link>
               </div>
-              
+
               <div className="feature-card animate-on-scroll">
-                <div className="feature-icon">
-                  <Shield size={28} />
-                </div>
+                <div className="feature-icon"><Shield size={24} /></div>
                 <h3>Qualité Premium</h3>
                 <p>Des matières nobles sourcées auprès des meilleurs artisans italiens et français. Chaque pièce est vérifiée méticuleusement.</p>
-                <Link href="/catalogue" className="feature-link">
-                  Voir la collection <ChevronRight size={16} />
-                </Link>
+                <Link href="/catalogue" className="feature-link">Voir la collection <ChevronRight size={16} /></Link>
               </div>
-              
+
               <div className="feature-card animate-on-scroll">
-                <div className="feature-icon">
-                  <Truck size={28} />
-                </div>
+                <div className="feature-icon"><Truck size={24} /></div>
                 <h3>Livraison Express</h3>
                 <p>Livraison en 48h chrono, retour sous 14 jours. Un service client dédié 7j/7 pour vous accompagner.</p>
-                <Link href="/client/quiz" className="feature-link">
-                  En savoir plus <ChevronRight size={16} />
-                </Link>
+                <Link href="/client/quiz" className="feature-link">En savoir plus <ChevronRight size={16} /></Link>
               </div>
             </div>
 
-            {/* Petit aperçu des couleurs de la marque */}
             <div className="color-showcase animate-on-scroll">
               <div className="color-chip gold" title="Or"></div>
               <div className="color-chip coral" title="Corail"></div>
@@ -916,7 +825,7 @@ export default async function Home() {
             </div>
           </section>
 
-          {/* Stats Section */}
+          {/* Stats */}
           <div className="stats-section animate-on-scroll">
             <div className="stats-grid">
               <div className="stat-item">
@@ -924,7 +833,7 @@ export default async function Home() {
                 <div className="stat-label">PIÈCES EXCLUSIVES</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">48<span style={{fontSize: '1.5rem'}}>H</span></div>
+                <div className="stat-number">48<span style={{fontSize: '1.2rem'}}>H</span></div>
                 <div className="stat-label">LIVRAISON EXPRESS</div>
               </div>
               <div className="stat-item">
@@ -932,24 +841,24 @@ export default async function Home() {
                 <div className="stat-label">NOTE MOYENNE</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">14<span style={{fontSize: '1.5rem'}}>J</span></div>
+                <div className="stat-number">14<span style={{fontSize: '1.2rem'}}>J</span></div>
                 <div className="stat-label">RETOUR GRATUIT</div>
               </div>
             </div>
           </div>
 
-          {/* CTA Section */}
+          {/* CTA */}
           <div className="cta-section animate-on-scroll">
-            <div className="cta-icon" style={{ marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
-              <Award size={48} color="#D4AF37" />
+            <div style={{ marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
+              <Award size={44} color="#D4AF37" />
             </div>
             <h2 className="cta-title">Prêt à révéler votre style ?</h2>
             <p className="cta-description">
               Rejoignez une communauté qui valorise l'élégance authentique et la qualité exceptionnelle.
             </p>
             {!clerkUser && (
-              <Link href="/sign-up" className="btn-primary" style={{ marginTop: '1rem', position: 'relative', zIndex: 1 }}>
-                Créer mon compte <ArrowRight size={18} />
+              <Link href="/sign-up" className="btn-primary" style={{ marginTop: '1rem', position: 'relative', zIndex: 1, display: 'inline-flex' }}>
+                Créer mon compte <ArrowRight size={16} />
               </Link>
             )}
           </div>
@@ -958,7 +867,7 @@ export default async function Home() {
         <footer className="footer">
           <div className="main-container">
             <div className="footer-content">
-              <div className="logo" style={{ fontSize: '24px' }}>irNas</div>
+              <div className="logo" style={{ fontSize: '22px' }}>irNas</div>
               <div className="footer-links">
                 <Link href="/catalogue">Collection</Link>
                 <Link href="/client/quiz">Style Finder</Link>
@@ -972,7 +881,7 @@ export default async function Home() {
           </div>
         </footer>
       </div>
-      
+
       <ClientAnimations />
     </>
   );
