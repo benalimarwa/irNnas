@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
      <ClerkProvider localization={frFR}>
       <html lang="fr">
-        <body className="min-h-screen">
+        <body className="overflow-x-hidden w-full max-w-full">
          <SyncUser />
           <main className="pt-20 bg-black">{children}</main>
         </body>
