@@ -1,11 +1,9 @@
-// app/client/page.tsx
 'use client';
 
-import ClientNavbar from '@/components/ClientNavbar';
 import { useUser } from '@clerk/nextjs';
 import { Sparkles, ShoppingBag, Heart, Package, ArrowUpRight, TrendingUp, Award } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 type RecentOrder = {
   id: number;
@@ -24,7 +22,6 @@ type DashboardData = {
 
 export default function ClientDashboard() {
   const { user } = useUser();
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   const [data, setData] = useState<DashboardData>({
     ordersCount: 0,
@@ -34,38 +31,23 @@ export default function ClientDashboard() {
     recentOrders: [],
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Force la lecture de la vidéo
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(e => console.log("Autoplay bloqué:", e));
-    }
-  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        setError(null);
         const res = await fetch('/api/dashboard', {
           cache: 'no-store',
           headers: { 'Content-Type': 'application/json' },
         });
-
-        if (!res.ok) {
-          throw new Error(`Erreur ${res.status}`);
-        }
-
+        if (!res.ok) throw new Error(`Erreur ${res.status}`);
         const result: DashboardData = await res.json();
         setData(result);
-      } catch (err: any) {
+      } catch (err) {
         console.error(err);
-        setError("Impossible de charger les données du tableau de bord");
       } finally {
         setLoading(false);
       }
     };
-
     fetchDashboardData();
   }, []);
 
@@ -96,7 +78,7 @@ export default function ClientDashboard() {
     },
     {
       title: 'Commandes',
-      description: 'Suivi & historique d\'achats',
+      description: "Suivi & historique d'achats",
       icon: Package,
       href: '/orders',
       tag: 'Suivi',
@@ -106,69 +88,7 @@ export default function ClientDashboard() {
 
   return (
     <>
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
-
-        :root {
-          --bg-primary: #0A0A0A;
-          --bg-secondary: #111111;
-          --bg-elevated: rgba(20, 20, 25, 0.85);
-          --border-light: rgba(255, 255, 255, 0.08);
-          --text-primary: #F8F6F2;
-          --text-secondary: rgba(248, 246, 242, 0.75);
-          --text-muted: rgba(248, 246, 242, 0.5);
-          
-          --accent-gold: #D4AF37;
-          --accent-gold-dark: #B8942E;
-          --accent-coral: #FF6B6B;
-          --accent-teal: #4ECDC4;
-          --accent-violet: #9B59B6;
-          --accent-rose: #FF85A1;
-          --accent-indigo: #5D9BEC;
-          
-          --gradient-gold: linear-gradient(135deg, #D4AF37 0%, #F5E6A3 50%, #D4AF37 100%);
-          --gradient-multi: linear-gradient(135deg, #D4AF37, #FF6B6B, #4ECDC4, #9B59B6);
-          --glass-bg: rgba(17, 17, 17, 0.75);
-          --glass-border: rgba(255, 255, 255, 0.08);
-        }
-
-        .dashboard {
-          font-family: 'Instrument Sans', system-ui, sans-serif;
-          color: var(--text-primary);
-        }
-
-        /* Vidéo en arrière-plan */
-        .video-background {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: 0;
-          overflow: hidden;
-        }
-        .video-background video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          opacity: 0.4;
-          filter: brightness(0.7) contrast(1.1) saturate(1.2);
-        }
-        .video-overlay {
-          position: fixed;
-          inset: 0;
-          background: radial-gradient(circle at 20% 30%, rgba(212,175,55,0.15), rgba(0,212,255,0.1), rgba(10,10,12,0.92));
-          z-index: 1;
-          pointer-events: none;
-        }
-
-        .glass-card {
-          background: var(--glass-bg);
-          backdrop-filter: blur(24px);
-          border: 1px solid var(--glass-border);
-          box-shadow: 0 8px 32px -12px rgba(0, 0, 0, 0.6);
-        }
-
+      <style>{`
         .hero-title {
           font-family: 'Syne', sans-serif;
           font-size: clamp(3rem, 7vw, 5.5rem);
@@ -176,7 +96,6 @@ export default function ClientDashboard() {
           line-height: 1.05;
           letter-spacing: -0.04em;
         }
-
         .gradient-text {
           background: var(--gradient-multi);
           background-size: 200% auto;
@@ -185,83 +104,74 @@ export default function ClientDashboard() {
           color: transparent;
           animation: shimmer 6s linear infinite;
         }
-
         @keyframes shimmer {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
+          0%   { background-position: 0% 50%; }
+          50%  { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-
         .action-card {
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
         .action-card:hover {
           transform: translateY(-8px) scale(1.02);
-          border-color: var(--accent-gold);
+          border-color: var(--accent-gold) !important;
           box-shadow: 0 25px 50px -12px rgba(212, 175, 55, 0.25);
         }
-
         .stat-card {
           transition: all 0.3s ease;
         }
-
         .stat-card:hover {
-          border-color: rgba(212, 175, 55, 0.4);
+          border-color: rgba(212, 175, 55, 0.4) !important;
           transform: translateY(-4px);
         }
-
         .order-item:hover {
           background: rgba(212, 175, 55, 0.08);
         }
       `}</style>
 
-      <div className="min-h-screen">
-       
-        <div className="video-overlay" />
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '3rem 1.5rem 5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '2rem' }}>
 
-        {/* Grille de points animés */}
-        <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0 pointer-events-none" />
+            {/* ── Main column ── */}
+            <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
 
-        <div className="max-w-7xl mx-auto px-6 pt-12 pb-20 relative z-10">
-          <div className="grid lg:grid-cols-12 gap-8">
-            
-            {/* Main Content */}
-            <div className="lg:col-span-8 space-y-12">
-              
-              {/* Hero Greeting */}
-              <div className="glass-card rounded-3xl p-12 md:p-16 relative overflow-hidden border border-white/10">
-                <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-[#D4AF37]/20 to-[#FF6B6B]/10 rounded-full blur-3xl" />
-                <div className="absolute -bottom-32 -left-20 w-80 h-80 bg-[#4ECDC4]/10 rounded-full blur-3xl" />
+              {/* Hero greeting */}
+              <div
+                className="glass-card"
+                style={{ borderRadius: '1.5rem', padding: '4rem', position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                <div style={{ position: 'absolute', top: '-6rem', right: '-6rem', width: '24rem', height: '24rem', background: 'radial-gradient(circle, rgba(212,175,55,0.2), rgba(255,107,107,0.1))', borderRadius: '50%', filter: 'blur(60px)' }} />
+                <div style={{ position: 'absolute', bottom: '-8rem', left: '-5rem', width: '20rem', height: '20rem', background: 'rgba(78,205,196,0.1)', borderRadius: '50%', filter: 'blur(60px)' }} />
 
-                <div className="relative">
-                  <div className="inline-flex items-center gap-3 text-xs uppercase tracking-[3px] bg-white/5 border border-white/10 px-6 py-2.5 rounded-full mb-6">
-                    <Sparkles size={16} className="text-[#D4AF37]" />
+                <div style={{ position: 'relative' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '3px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.6rem 1.5rem', borderRadius: '9999px', marginBottom: '1.5rem' }}>
+                    <Sparkles size={14} color="#D4AF37" />
                     ESPACE CLIENT EXCLUSIF
                   </div>
-                  
-                  <h1 className="hero-title mb-6 leading-none">
+
+                  <h1 className="hero-title" style={{ marginBottom: '1.5rem' }}>
                     Bonjour,<br />
                     <span className="gradient-text">
                       {user?.firstName || 'Cher Client'}
                     </span>
                   </h1>
-                  
-                  <p className="text-xl md:text-2xl text-white/70 max-w-lg">
+
+                  <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.7)', maxWidth: '32rem' }}>
                     Bienvenue dans votre univers. Découvrez l'excellence, suivez vos commandes et affinez votre signature stylistique.
                   </p>
 
-                  <div className="mt-12 flex flex-wrap gap-4">
+                  <div style={{ marginTop: '3rem', display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
                     <Link
                       href="/catalog"
-                      className="inline-flex items-center gap-3 bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] text-black px-10 py-4 rounded-2xl font-semibold hover:brightness-110 transition-all active:scale-95"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', background: 'linear-gradient(135deg, #D4AF37, #F5E6A3)', color: '#000', padding: '1rem 2.5rem', borderRadius: '1rem', fontWeight: 600, textDecoration: 'none' }}
                     >
                       Explorer la Collection
-                      <ShoppingBag size={22} />
+                      <ShoppingBag size={20} />
                     </Link>
                     <Link
                       href="/orders"
-                      className="inline-flex items-center gap-3 border border-white/30 hover:border-white/60 px-9 py-4 rounded-2xl font-medium transition-all"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', border: '1px solid rgba(255,255,255,0.3)', padding: '1rem 2.25rem', borderRadius: '1rem', fontWeight: 500, textDecoration: 'none', color: '#F8F6F2' }}
                     >
                       Mes Commandes
                     </Link>
@@ -270,174 +180,152 @@ export default function ClientDashboard() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="glass-card stat-card rounded-3xl p-9 border border-white/10">
-                  <div className="flex justify-between items-start mb-8">
-                    <div className="w-14 h-14 bg-gradient-to-br from-[#D4AF37]/10 to-white/5 rounded-2xl flex items-center justify-center">
-                      <Package className="text-[#D4AF37]" size={32} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+                {[
+                  { icon: <Package color="#D4AF37" size={28} />, bg: 'rgba(212,175,55,0.1)', value: data.ordersCount, label: 'Commandes passées', badge: { text: 'Actif', color: '#6ee7b7' } },
+                  { icon: <Heart color="#FF85A1" size={28} />, bg: 'rgba(255,133,161,0.1)', value: data.wishlistCount, label: 'Pièces sauvegardées' },
+                  { icon: <Award color="#4ECDC4" size={28} />, bg: 'rgba(78,205,196,0.1)', value: data.loyaltyPoints, label: 'Points de fidélité', valueColor: '#4ECDC4' },
+                ].map((stat, i) => (
+                  <div key={i} className="glass-card stat-card" style={{ borderRadius: '1.5rem', padding: '2.25rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+                      <div style={{ width: '3.5rem', height: '3.5rem', background: stat.bg, borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {stat.icon}
+                      </div>
+                      {stat.badge && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 500, color: stat.badge.color }}>
+                          <TrendingUp size={14} /> {stat.badge.text}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-emerald-400 flex items-center gap-1.5 text-sm font-medium">
-                      <TrendingUp size={18} /> Actif
+                    <div style={{ fontSize: '3.5rem', fontWeight: 700, letterSpacing: '-0.05em', fontVariantNumeric: 'tabular-nums', color: stat.valueColor ?? '#F8F6F2', marginBottom: '0.5rem' }}>
+                      {loading ? '—' : stat.value}
                     </div>
+                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem' }}>{stat.label}</div>
                   </div>
-                  <div className="text-6xl font-bold tracking-tighter mb-2 font-mono">
-                    {loading ? "—" : data.ordersCount}
-                  </div>
-                  <div className="text-white/60 text-lg">Commandes passées</div>
-                </div>
-
-                <div className="glass-card stat-card rounded-3xl p-9 border border-white/10">
-                  <div className="flex justify-between items-start mb-8">
-                    <div className="w-14 h-14 bg-gradient-to-br from-[#FF85A1]/10 to-white/5 rounded-2xl flex items-center justify-center">
-                      <Heart className="text-[#FF85A1]" size={32} />
-                    </div>
-                  </div>
-                  <div className="text-6xl font-bold tracking-tighter mb-2 font-mono">
-                    {loading ? "—" : data.wishlistCount}
-                  </div>
-                  <div className="text-white/60 text-lg">Pièces sauvegardées</div>
-                </div>
-
-                <div className="glass-card stat-card rounded-3xl p-9 border border-white/10 relative overflow-hidden">
-                  <div className="flex justify-between items-start mb-8">
-                    <div className="w-14 h-14 bg-gradient-to-br from-[#4ECDC4]/10 to-white/5 rounded-2xl flex items-center justify-center">
-                      <Award className="text-[#4ECDC4]" size={32} />
-                    </div>
-                  </div>
-                  <div className="text-6xl font-bold tracking-tighter mb-2 text-[#4ECDC4] font-mono">
-                    {loading ? "—" : data.loyaltyPoints}
-                  </div>
-                  <div className="text-white/60 text-lg">Points de fidélité</div>
-                </div>
+                ))}
               </div>
 
-              {/* Quick Actions */}
+              {/* Quick actions */}
               <div>
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-3xl font-semibold tracking-tight">Accès Rapide</h2>
-                  <div className="h-px flex-1 mx-8 bg-gradient-to-r from-white/10 to-transparent" />
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem', gap: '2rem' }}>
+                  <h2 style={{ fontSize: '1.75rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Accès Rapide</h2>
+                  <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, rgba(255,255,255,0.1), transparent)' }} />
                 </div>
-                
-                <div className="grid md:grid-cols-2 gap-6">
-                  {quickActions.map((action, i) => (
-                    <Link
-                      key={i}
-                      href={action.href}
-                      className="action-card glass-card rounded-3xl p-10 group border border-white/10 hover:border-white/30 flex flex-col"
-                    >
-                      <div className="flex justify-between items-start mb-10">
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110
-                          ${action.accent === 'gold' ? 'bg-gradient-to-br from-[#D4AF37]/20 to-transparent' : ''}
-                          ${action.accent === 'coral' ? 'bg-gradient-to-br from-[#FF6B6B]/20 to-transparent' : ''}
-                          ${action.accent === 'rose' ? 'bg-gradient-to-br from-[#FF85A1]/20 to-transparent' : ''}
-                          ${action.accent === 'teal' ? 'bg-gradient-to-br from-[#4ECDC4]/20 to-transparent' : ''}
-                        `}>
-                          <action.icon className="text-white" size={36} />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  {quickActions.map((action, i) => {
+                    const accentMap: Record<string, string> = {
+                      gold: '#D4AF37', coral: '#FF6B6B', rose: '#FF85A1', teal: '#4ECDC4',
+                    };
+                    const color = accentMap[action.accent] ?? '#D4AF37';
+                    return (
+                      <Link
+                        key={i}
+                        href={action.href}
+                        className="action-card glass-card"
+                        style={{ borderRadius: '1.5rem', padding: '2.5rem', display: 'flex', flexDirection: 'column', border: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none', color: '#F8F6F2' }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem' }}>
+                          <div style={{ width: '4rem', height: '4rem', borderRadius: '0.75rem', background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <action.icon size={30} color={color} />
+                          </div>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.15em', padding: '0.4rem 1.25rem', background: 'rgba(255,255,255,0.05)', borderRadius: '9999px', color: 'rgba(255,255,255,0.6)' }}>
+                            {action.tag}
+                          </span>
                         </div>
-                        <span className="text-xs font-semibold tracking-widest px-5 py-2 bg-white/5 rounded-full text-white/70">
-                          {action.tag}
-                        </span>
-                      </div>
-                      
-                      <h3 className="text-3xl font-semibold mb-4 tracking-tight">{action.title}</h3>
-                      <p className="text-white/60 text-[17px] flex-1">{action.description}</p>
-                      
-                      <div className="mt-10 flex justify-end">
-                        <div className="w-11 h-11 rounded-2xl bg-white/5 group-hover:bg-[#D4AF37] group-hover:text-black flex items-center justify-center transition-all">
-                          <ArrowUpRight size={24} />
+                        <h3 style={{ fontSize: '1.6rem', fontWeight: 600, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>{action.title}</h3>
+                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem', flex: 1 }}>{action.description}</p>
+                        <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                          <div style={{ width: '2.75rem', height: '2.75rem', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ArrowUpRight size={20} />
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="lg:col-span-4 space-y-8">
-              
-              {/* Profile Card */}
-              <div className="glass-card rounded-3xl p-10 border border-white/10">
-                <div className="flex items-center gap-6 mb-10">
-                  <div className="w-24 h-24 bg-gradient-to-br from-[#D4AF37] via-[#FF6B6B] to-[#4ECDC4] rounded-3xl flex items-center justify-center text-5xl font-light border-2 border-white/20 shadow-inner">
+            {/* ── Sidebar ── */}
+            <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+              {/* Profile card */}
+              <div className="glass-card" style={{ borderRadius: '1.5rem', padding: '2.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2.5rem' }}>
+                  <div style={{ width: '6rem', height: '6rem', background: 'linear-gradient(135deg, #D4AF37, #FF6B6B, #4ECDC4)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 300, border: '2px solid rgba(255,255,255,0.2)', flexShrink: 0 }}>
                     {user?.firstName?.[0] ?? 'C'}
                   </div>
                   <div>
-                    <div className="text-3xl font-semibold tracking-tight">
+                    <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>
                       {user?.firstName} {user?.lastName}
                     </div>
-                    <div className="inline-flex items-center gap-2 mt-3 text-sm bg-gradient-to-r from-[#D4AF37]/10 to-white/5 border border-[#D4AF37]/30 text-[#D4AF37] px-6 py-2 rounded-full">
-                      <Award size={16} />
-                      Membre Gold
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.85rem', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37', padding: '0.4rem 1.25rem', borderRadius: '9999px' }}>
+                      <Award size={14} /> Membre Gold
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-6 pt-8 border-t border-white/10">
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/60">Total dépensé</span>
-                    <span className="font-semibold text-2xl tracking-tighter">{data.totalSpent.toLocaleString()} TND</span>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.6)' }}>Total dépensé</span>
+                    <span style={{ fontWeight: 600, fontSize: '1.4rem', letterSpacing: '-0.03em' }}>{data.totalSpent.toLocaleString()} TND</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/60">Points fidélité</span>
-                    <span className="font-semibold text-2xl tracking-tighter text-[#4ECDC4]">{data.loyaltyPoints}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.6)' }}>Points fidélité</span>
+                    <span style={{ fontWeight: 600, fontSize: '1.4rem', letterSpacing: '-0.03em', color: '#4ECDC4' }}>{data.loyaltyPoints}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Recent Orders */}
-              <div className="glass-card rounded-3xl overflow-hidden border border-white/10">
-                <div className="px-8 py-7 border-b border-white/10 text-sm uppercase tracking-[2px] text-white/50">
+              {/* Recent orders */}
+              <div className="glass-card" style={{ borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.5)' }}>
                   Commandes Récentes
                 </div>
-                
-                <div className="divide-y divide-white/10">
+
+                <div>
                   {loading ? (
-                    <div className="p-16 text-center text-white/40">Chargement...</div>
+                    <div style={{ padding: '4rem', textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>Chargement...</div>
                   ) : data.recentOrders.length > 0 ? (
                     data.recentOrders.slice(0, 3).map((order) => (
-                      <Link 
-                        key={order.id} 
+                      <Link
+                        key={order.id}
                         href="/orders"
-                        className="order-item block px-8 py-7 hover:bg-white/5 transition group"
+                        className="order-item"
+                        style={{ display: 'block', padding: '1.75rem 2rem', borderBottom: '1px solid rgba(255,255,255,0.06)', textDecoration: 'none', color: '#F8F6F2', transition: 'background 0.2s' }}
                       >
-                        <div className="flex gap-6 items-center">
-                          <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:bg-[#D4AF37]/10 transition">
-                            <Package className="text-[#D4AF37]" size={26} />
+                        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                          <div style={{ width: '3rem', height: '3rem', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Package color="#D4AF37" size={22} />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-lg">Commande #{order.id}</div>
-                            <div className="text-sm text-white/50 mt-1">
-                              {new Date(order.createdAt).toLocaleDateString('fr-FR', { 
-                                day: 'numeric', 
-                                month: 'long', 
-                                year: 'numeric' 
-                              })}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 500, fontSize: '1rem' }}>Commande #{order.id}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.25rem' }}>
+                              {new Date(order.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </div>
                           </div>
-                          <div className={`text-sm font-medium px-4 py-1.5 rounded-full self-start mt-1
-                            ${order.status === 'delivered' 
-                              ? 'bg-emerald-500/10 text-emerald-400' 
-                              : 'bg-amber-500/10 text-amber-400'}`}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 500, padding: '0.3rem 0.9rem', borderRadius: '9999px', background: order.status === 'delivered' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', color: order.status === 'delivered' ? '#6ee7b7' : '#fcd34d', flexShrink: 0 }}>
                             {order.status === 'delivered' ? 'Livré' : 'En cours'}
                           </div>
                         </div>
                       </Link>
                     ))
                   ) : (
-                    <div className="p-16 text-center text-white/40">
+                    <div style={{ padding: '4rem', textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
                       Aucune commande récente
                     </div>
                   )}
                 </div>
 
-                <div className="p-8 text-center border-t border-white/10">
-                  <Link href="/orders" className="inline-flex items-center gap-2 text-[#D4AF37] hover:text-white font-medium transition">
-                    Voir tout l'historique <ArrowUpRight size={18} />
+                <div style={{ padding: '1.5rem 2rem', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Link href="/orders" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: '#D4AF37', textDecoration: 'none', fontWeight: 500 }}>
+                    Voir tout l'historique <ArrowUpRight size={16} />
                   </Link>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
