@@ -1,6 +1,6 @@
 // app/sign-up-custom/page.tsx
 "use client";
-
+import "@/app/globals.css";
 import { useSignUp } from "@clerk/nextjs";
 import { useState } from "react";
 import { useRouter } from "next/navigation";

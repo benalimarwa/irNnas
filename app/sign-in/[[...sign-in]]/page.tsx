@@ -3,7 +3,7 @@
 import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-
+import "@/app/globals.css";
 export default function SignInPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
