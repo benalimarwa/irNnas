@@ -6,7 +6,6 @@ import {
   ArrowUpRight, AlertTriangle, Clock, Award,
   Maximize2, Minimize2,
 } from "lucide-react";
-import AdminNavbar from "@/components/AdminNavbar";
 import { CategoryProductChart } from "@/components/CategoryProductChart";
 import { StockProductChart } from "@/components/StockProductChart";
 import { OrdersMonthChart } from "@/components/CommandeParMois";
@@ -76,10 +75,14 @@ export default function AdminDashboard() {
   const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Lecture automatique de la vidéo
+  // Lecture automatique de la vidéo avec gestion d'erreur
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.play().catch(e => console.log("Autoplay bloqué:", e));
+      const video = videoRef.current;
+      // Tentative de lecture automatique
+      video.play().catch((err) => {
+        console.log("Autoplay bloqué:", err);
+      });
     }
   }, []);
 
@@ -183,8 +186,27 @@ export default function AdminDashboard() {
       <div className="admin-dashboard min-h-screen relative overflow-x-hidden">
         {/* === Vidéo d'arrière-plan === */}
         <div className="video-background">
-          <video ref={videoRef} autoPlay muted loop playsInline>
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error("Erreur de chargement de la vidéo :", e);
+              // En cas d'erreur, on cache la vidéo pour afficher le fond par défaut
+              e.currentTarget.style.display = 'none';
+            }}
+            onLoadedData={() => {
+              // La vidéo est chargée, on lance la lecture si elle ne l'est pas déjà
+              if (videoRef.current) {
+                videoRef.current.play().catch(() => {});
+              }
+            }}
+          >
             <source src="/video/mm.mp4" type="video/mp4" />
+            Votre navigateur ne supporte pas la lecture vidéo.
           </video>
         </div>
         <div className="video-overlay" />
