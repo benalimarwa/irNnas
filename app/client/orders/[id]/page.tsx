@@ -109,7 +109,7 @@ export default function OrderConfirmationPage() {
 
         .hero-title {
           font-family: 'Syne', sans-serif;
-          font-size: clamp(3rem, 6vw, 5rem);
+          font-size: clamp(2.5rem, 6vw, 5rem);
           font-weight: 800;
           letter-spacing: -0.04em;
         }
@@ -122,59 +122,62 @@ export default function OrderConfirmationPage() {
         }
       `}</style>
 
-      <div className="order-page min-h-screen relative overflow-hidden">
+      <div className="order-page min-h-screen relative overflow-hidden overflow-x-hidden">
         {/* Background Effects */}
         <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0" />
 
-        <div className="max-w-5xl mx-auto px-6 pt-12 pb-24 relative z-10">
+        <div className="max-w-5xl w-full mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-16 sm:pb-24 relative z-10">
           {/* Back Button */}
           <Link
             href="/client/orders"
-            className="inline-flex items-center gap-2 text-[#D4AF37] hover:text-white mb-10 transition"
+            className="inline-flex items-center gap-2 text-[#D4AF37] hover:text-white mb-6 sm:mb-10 transition"
           >
             <ArrowLeft size={20} /> Mes commandes
           </Link>
 
           {/* Success Header */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center w-28 h-28 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full mb-8 border border-emerald-500/30">
-              <CheckCircle className="w-16 h-16 text-emerald-400" />
+          <div className="text-center mb-12 sm:mb-16">
+            <div className="inline-flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full mb-6 sm:mb-8 border border-emerald-500/30">
+              <CheckCircle className="w-14 h-14 sm:w-16 sm:h-16 text-emerald-400" />
             </div>
 
-           
+            <h1 className="hero-title gradient-text mb-2">Commande confirmée !</h1>
+            <p className="text-white/60 text-base sm:text-lg max-w-xl mx-auto">
+              Merci pour votre commande. Nous vous tiendrons informé de son évolution.
+            </p>
           </div>
 
           {/* Order ID & Status */}
-          <div className="glass-card rounded-3xl p-10 mb-12">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-10 mb-8 sm:mb-12">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-8">
               <div>
-                <p className="text-white/60 text-sm uppercase tracking-widest mb-2">Numéro de commande</p>
-                <p className="text-5xl font-bold tracking-tighter text-[#D4AF37]">#{displayId}</p>
+                <p className="text-white/60 text-xs sm:text-sm uppercase tracking-widest mb-1 sm:mb-2">Numéro de commande</p>
+                <p className="text-3xl sm:text-5xl font-bold tracking-tighter text-[#D4AF37]">#{displayId}</p>
               </div>
 
-              <div className="text-right">
-                <p className="text-white/60 text-sm uppercase tracking-widest mb-2">Statut</p>
-                <span className="inline-block px-8 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl font-semibold">
+              <div className="sm:text-right">
+                <p className="text-white/60 text-xs sm:text-sm uppercase tracking-widest mb-1 sm:mb-2">Statut</p>
+                <span className="inline-block px-6 sm:px-8 py-2 sm:py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base">
                   {STATUS_LABELS[order.status] || order.status}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-12 gap-8">
+          <div className="grid lg:grid-cols-12 gap-6 sm:gap-8">
             {/* Delivery Info */}
-            <div className="lg:col-span-7">
-              <div className="glass-card rounded-3xl p-10 mb-8">
-                <h2 className="text-3xl font-semibold mb-8 flex items-center gap-4">
+            <div className="lg:col-span-7 space-y-6 sm:space-y-8">
+              <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-10">
+                <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4">
                   {order.deliveryMethod === "DELIVERY" ? (
-                    <Truck className="text-[#D4AF37]" size={32} />
+                    <Truck className="text-[#D4AF37]" size={28} />
                   ) : (
-                    <Store className="text-[#D4AF37]" size={32} />
+                    <Store className="text-[#D4AF37]" size={28} />
                   )}
                   Mode de livraison
                 </h2>
 
-                <div className="text-lg">
+                <div className="text-base sm:text-lg">
                   <p className="font-semibold mb-2">
                     {order.deliveryMethod === "DELIVERY" ? "Livraison à domicile" : "Retrait en magasin"}
                   </p>
@@ -186,13 +189,12 @@ export default function OrderConfirmationPage() {
                 </div>
               </div>
 
-              {/* Date */}
-              <div className="glass-card rounded-3xl p-10">
-                <h2 className="text-3xl font-semibold mb-8 flex items-center gap-4">
-                  <Calendar className="text-[#D4AF37]" size={32} />
+              <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-10">
+                <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4">
+                  <Calendar className="text-[#D4AF37]" size={28} />
                   Date de commande
                 </h2>
-                <p className="text-4xl font-light tracking-tight">
+                <p className="text-2xl sm:text-4xl font-light tracking-tight">
                   {new Date(order.createdAt).toLocaleDateString('fr-FR', {
                     weekday: 'long',
                     day: 'numeric',
@@ -200,7 +202,7 @@ export default function OrderConfirmationPage() {
                     year: 'numeric'
                   })}
                 </p>
-                <p className="text-white/60 mt-2">
+                <p className="text-white/60 mt-2 text-sm sm:text-base">
                   à {new Date(order.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
@@ -208,16 +210,16 @@ export default function OrderConfirmationPage() {
 
             {/* Order Summary */}
             <div className="lg:col-span-5">
-              <div className="glass-card rounded-3xl p-10 h-full">
-                <h2 className="text-3xl font-semibold mb-8 flex items-center gap-4">
-                  <Package className="text-[#D4AF37]" size={32} />
+              <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-10 h-full">
+                <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4">
+                  <Package className="text-[#D4AF37]" size={28} />
                   Vos articles ({totalItems})
                 </h2>
 
-                <div className="space-y-6 mb-10">
+                <div className="space-y-4 sm:space-y-6 mb-8 sm:mb-10">
                   {order.items.map((item) => (
-                    <div key={item.id} className="flex gap-5">
-                      <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 flex-shrink-0">
+                    <div key={item.id} className="flex gap-3 sm:gap-5">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 flex-shrink-0">
                         <img
                           src={item.product.images[0] || "/placeholder.jpg"}
                           alt={item.product.name}
@@ -225,13 +227,15 @@ export default function OrderConfirmationPage() {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-lg leading-tight">{item.product.name}</h4>
+                        <h4 className="font-semibold text-base sm:text-lg leading-tight break-words">
+                          {item.product.name}
+                        </h4>
                         {item.size && (
-                          <p className="text-white/50 text-sm">Taille : {item.size}</p>
+                          <p className="text-white/50 text-xs sm:text-sm">Taille : {item.size}</p>
                         )}
-                        <div className="flex justify-between mt-3">
-                          <span className="text-white/60">×{item.quantity}</span>
-                          <span className="font-semibold text-[#D4AF37]">
+                        <div className="flex justify-between items-center mt-2 sm:mt-3">
+                          <span className="text-white/60 text-sm sm:text-base">×{item.quantity}</span>
+                          <span className="font-semibold text-[#D4AF37] text-sm sm:text-base">
                             {(item.price * item.quantity).toFixed(2)} TND
                           </span>
                         </div>
@@ -240,12 +244,12 @@ export default function OrderConfirmationPage() {
                   ))}
                 </div>
 
-                <div className="pt-8 border-t border-white/10">
-                  <div className="flex justify-between text-3xl font-bold">
+                <div className="pt-6 sm:pt-8 border-t border-white/10">
+                  <div className="flex justify-between text-2xl sm:text-3xl font-bold">
                     <span>Total</span>
                     <span className="text-[#D4AF37]">{order.total.toFixed(2)} TND</span>
                   </div>
-                  <p className="text-white/50 text-sm mt-3 text-right">
+                  <p className="text-white/50 text-xs sm:text-sm mt-2 sm:mt-3 text-right">
                     Paiement à la {order.deliveryMethod === "DELIVERY" ? "livraison" : "récupération"}
                   </p>
                 </div>
@@ -254,10 +258,10 @@ export default function OrderConfirmationPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-16">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12 sm:mt-16">
             <Link
               href="/client/catalog"
-              className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] text-black px-12 py-5 rounded-2xl font-semibold text-lg hover:brightness-110 transition"
+              className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] text-black px-8 sm:px-12 py-4 sm:py-5 rounded-xl sm:rounded-2xl font-semibold text-base sm:text-lg hover:brightness-110 transition"
             >
               <Home size={22} />
               Continuer mes achats
@@ -265,7 +269,7 @@ export default function OrderConfirmationPage() {
 
             <Link
               href="/client/orders"
-              className="inline-flex items-center justify-center gap-3 border border-white/30 hover:border-white/60 px-10 py-5 rounded-2xl font-medium transition"
+              className="inline-flex items-center justify-center gap-3 border border-white/30 hover:border-white/60 px-6 sm:px-10 py-4 sm:py-5 rounded-xl sm:rounded-2xl font-medium transition text-sm sm:text-base"
             >
               Voir toutes mes commandes
             </Link>
