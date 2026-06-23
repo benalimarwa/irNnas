@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Search, ShoppingCart, CheckCircle,
   AlertCircle, XCircle, X, ChevronLeft,
-  ChevronRight, Eye, Heart, SlidersHorizontal,
+  ChevronRight, Eye, SlidersHorizontal,
   Package,
 } from "lucide-react";
 import ClientNavbar from "@/components/ClientNavbar";
@@ -66,21 +66,10 @@ export default function CatalogPage() {
   const [activeImage, setActiveImage] = useState<Record<number, number>>({});
   const [addingToCart, setAddingToCart] = useState<number | null>(null);
   const [alert, setAlert] = useState<AlertState>({ show: false, type: "success", message: "" });
-  const [wishlist, setWishlist] = useState<Set<number>>(new Set());
   const [lightbox, setLightbox] = useState<{ product: Product; index: number } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Load favorites (works even if not logged in)
-  useEffect(() => {
-    fetch("/api/favorites")
-      .then((r) => r.ok ? r.json() : [])
-      .then((data: Product[]) => {
-        if (Array.isArray(data)) setWishlist(new Set(data.map((p) => p.id)));
-      })
-      .catch(() => {});
-  }, []);
-
-  // Fetch products
+  // Fetch products — no auth required
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchTerm) params.set("search", searchTerm);
@@ -125,29 +114,6 @@ export default function CatalogPage() {
       showAlert("error", "Erreur réseau");
     } finally {
       setAddingToCart(null);
-    }
-  };
-
-  const toggleWishlist = async (id: number) => {
-    const isAdding = !wishlist.has(id);
-    setWishlist((prev) => {
-      const next = new Set(prev);
-      isAdding ? next.add(id) : next.delete(id);
-      return next;
-    });
-
-    try {
-      await fetch("/api/favorites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: id }),
-      });
-    } catch {
-      setWishlist((prev) => {
-        const next = new Set(prev);
-        isAdding ? next.delete(id) : next.add(id);
-        return next;
-      });
     }
   };
 
@@ -244,40 +210,6 @@ export default function CatalogPage() {
           animation: blink 2.2s ease-in-out infinite;
         }
         @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.3)} }
-
-        .cp-title {
-          font-family: 'Syne', sans-serif;
-          font-size: clamp(2.8rem, 6vw, 5rem);
-          font-weight: 800;
-          letter-spacing: -0.03em;
-          line-height: 1.02;
-          margin-bottom: 1rem;
-        }
-        .cp-title-grad {
-          background: var(--grad-multi); background-size: 250% auto;
-          -webkit-background-clip: text; background-clip: text; color: transparent;
-          animation: flow 5s ease infinite;
-        }
-        @keyframes flow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-
-        .cp-sub {
-          font-size: 0.95rem; color: var(--text-2); line-height: 1.65; margin-bottom: 1.75rem;
-        }
-
-        .cp-favlink {
-          display: inline-flex; align-items: center; gap: 0.5rem;
-          padding: 0.55rem 1.4rem;
-          border: 1px solid rgba(212,175,55,0.22);
-          border-radius: 9999px;
-          font-size: 0.78rem; font-weight: 600;
-          color: var(--gold); text-decoration: none;
-          transition: all 0.25s ease;
-        }
-        .cp-favlink:hover { background: var(--gold-dim); border-color: rgba(212,175,55,0.5); }
-        .cp-favlink-n {
-          background: rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.25);
-          border-radius: 9999px; padding: 0.1rem 0.6rem; font-size: 0.68rem; font-weight: 700;
-        }
 
         .cp-fbar {
           position: sticky; top: 0; z-index: 50;
@@ -461,20 +393,14 @@ export default function CatalogPage() {
         }
         .pcard-dot.on { background:var(--gold); width:12px; border-radius:999px; }
 
-        .pcard-actions {
-          position:absolute; top:0.7rem; right:0.7rem;
-          display:flex; flex-direction:column; gap:0.4rem; z-index:4;
+        .pcard-stock {
+          position:absolute; top:0.7rem; left:0.7rem; z-index:4;
+          font-size:0.6rem; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+          padding:0.22rem 0.65rem; border-radius:999px;
+          font-family:var(--mono);
         }
-        .pcard-action-btn {
-          width:36px; height:36px; border-radius:50%;
-          background:rgba(0,0,0,0.6); backdrop-filter:blur(8px);
-          border:1px solid rgba(255,255,255,0.09);
-          display:flex; align-items:center; justify-content:center;
-          cursor:pointer; color:#fff;
-          transition:all 0.2s;
-        }
-        .pcard-action-btn:hover { background:rgba(255,255,255,0.1); }
-        .pcard-action-btn.fav { border-color:rgba(212,175,55,0.45); }
+        .pcard-stock.out { background:rgba(255,107,107,0.14); color:var(--coral); border:1px solid rgba(255,107,107,0.28); }
+        .pcard-stock.low { background:rgba(255,179,71,0.14); color:var(--amber); border:1px solid rgba(255,179,71,0.28); }
 
         .pcard-qview {
           position:absolute; bottom:0.7rem; left:0.7rem; z-index:4;
@@ -488,15 +414,6 @@ export default function CatalogPage() {
         }
         .pcard:hover .pcard-qview { opacity:1; }
         .pcard-qview:hover { background:rgba(212,175,55,0.22); border-color:rgba(212,175,55,0.45); }
-
-        .pcard-stock {
-          position:absolute; top:0.7rem; left:0.7rem; z-index:4;
-          font-size:0.6rem; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
-          padding:0.22rem 0.65rem; border-radius:999px;
-          font-family:var(--mono);
-        }
-        .pcard-stock.out { background:rgba(255,107,107,0.14); color:var(--coral); border:1px solid rgba(255,107,107,0.28); }
-        .pcard-stock.low { background:rgba(255,179,71,0.14); color:var(--amber); border:1px solid rgba(255,179,71,0.28); }
 
         .pcard-body {
           padding: 1.1rem 1.2rem 1.35rem;
@@ -738,14 +655,6 @@ export default function CatalogPage() {
               <span className="cp-eyebrow-dot" />
               Nouvelle collection
             </div>
-
-            {wishlist.size > 0 && (
-              <Link href="/client/favoris" className="cp-favlink">
-                <Heart size={13} fill="var(--gold)" stroke="var(--gold)" />
-                Mes favoris
-                <span className="cp-favlink-n">{wishlist.size}</span>
-              </Link>
-            )}
           </header>
 
           {/* Filter Bar */}
@@ -850,7 +759,6 @@ export default function CatalogPage() {
                         const imgCount = product.images.length;
                         const currentImg = product.images[imgIndex];
                         const chosenSize = selectedSize[product.id];
-                        const inWishlist = wishlist.has(product.id);
                         const stockOk = product.stock > 0;
                         const lowStock = stockOk && product.stock <= 3;
                         const gBadge = GENDER_BADGE[product.gender];
@@ -888,20 +796,6 @@ export default function CatalogPage() {
                                   </div>
                                 </>
                               )}
-
-                              <div className="pcard-actions">
-                                <button
-                                  className={`pcard-action-btn ${inWishlist ? "fav" : ""}`}
-                                  onClick={() => toggleWishlist(product.id)}
-                                  title={inWishlist ? "Retirer des favoris" : "Ajouter aux favoris"}
-                                >
-                                  <Heart
-                                    size={15}
-                                    fill={inWishlist ? "var(--gold)" : "none"}
-                                    stroke={inWishlist ? "var(--gold)" : "currentColor"}
-                                  />
-                                </button>
-                              </div>
 
                               {currentImg && (
                                 <button
