@@ -43,7 +43,6 @@ export default function AdminOrdersPage() {
   const [filter, setFilter] = useState("all");
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
 
-  // Lecture automatique de la vidéo
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.play().catch(() => {});
@@ -94,8 +93,8 @@ export default function AdminOrdersPage() {
     const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
     const Icon = cfg.icon;
     return (
-      <span className={`inline-flex items-center gap-2 px-5 py-2 rounded-2xl text-sm font-medium border ${cfg.color}`}>
-        <Icon className="w-4 h-4" />
+      <span className={`inline-flex items-center gap-2 px-3 sm:px-5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium border ${cfg.color}`}>
+        <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
         {cfg.label}
       </span>
     );
@@ -131,7 +130,7 @@ export default function AdminOrdersPage() {
 
         .hero-title {
           font-family: 'Syne', sans-serif;
-          font-size: clamp(2.8rem, 5vw, 4.5rem);
+          font-size: clamp(2rem, 5vw, 4.5rem);
           font-weight: 800;
           letter-spacing: -0.04em;
         }
@@ -157,7 +156,7 @@ export default function AdminOrdersPage() {
         }
       `}</style>
 
-      <div className="admin-orders min-h-screen relative overflow-hidden">
+      <div className="admin-orders min-h-screen relative overflow-x-hidden">
         {/* Vidéo d'arrière-plan */}
         <div className="video-background">
           <video ref={videoRef} autoPlay muted loop playsInline>
@@ -169,44 +168,42 @@ export default function AdminOrdersPage() {
         {/* Grille dorée subtile */}
         <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0 pointer-events-none" />
 
-
-        <div className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-16 sm:pb-24 relative z-10">
           {/* Header */}
-          <div className="mb-12">
-            <div className="inline-flex items-center gap-3 text-xs uppercase tracking-[3px] bg-white/5 border border-white/10 px-6 py-2.5 rounded-full mb-6">
-              <Package size={16} className="text-[#D4AF37]" />
+          <div className="mb-8 sm:mb-12">
+            <div className="inline-flex items-center gap-3 text-xs uppercase tracking-[3px] bg-white/5 border border-white/10 px-4 sm:px-6 py-2 rounded-full mb-4 sm:mb-6">
+              <Package size={14} className="text-[#D4AF37]" />
               ADMINISTRATION
             </div>
-            
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
             {[
               { label: "Total Commandes", count: orders.length, icon: Package },
               { label: "En Attente", count: orders.filter(o => o.status === "pending").length, icon: Clock },
               { label: "En Cours", count: orders.filter(o => ["confirmed","shipped"].includes(o.status)).length, icon: TrendingUp },
               { label: "Livrées", count: orders.filter(o => o.status === "delivered").length, icon: CheckCircle },
             ].map((stat, i) => (
-              <div key={i} className="glass-card rounded-3xl p-8 hover:border-[#D4AF37]/50 transition-all">
-                <div className="w-14 h-14 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center mb-8">
-                  <stat.icon className="text-[#D4AF37]" size={32} />
+              <div key={i} className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 hover:border-[#D4AF37]/50 transition-all">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 bg-[#D4AF37]/10 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-8">
+                  <stat.icon className="text-[#D4AF37]" size={24} />
                 </div>
-                <div className="text-5xl font-bold tracking-tighter mb-2">{stat.count}</div>
-                <div className="text-white/60">{stat.label}</div>
+                <div className="text-3xl sm:text-5xl font-bold tracking-tighter mb-1">{stat.count}</div>
+                <div className="text-sm sm:text-base text-white/60">{stat.label}</div>
               </div>
             ))}
           </div>
 
           {/* Filtres */}
-          <div className="glass-card rounded-3xl p-8 mb-10">
-            <h3 className="text-lg font-semibold mb-6">Filtrer par statut</h3>
-            <div className="flex flex-wrap gap-3">
+          <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 mb-8 sm:mb-10">
+            <h3 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6">Filtrer par statut</h3>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {FILTER_OPTIONS.map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-6 py-3 rounded-2xl text-sm font-medium transition-all ${
+                  className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium transition-all ${
                     filter === f 
                       ? "bg-[#D4AF37] text-black" 
                       : "bg-white/5 border border-white/10 hover:border-white/30"
@@ -221,38 +218,38 @@ export default function AdminOrdersPage() {
           {/* Liste des commandes */}
           <div className="space-y-6">
             {filteredOrders.length === 0 ? (
-              <div className="glass-card rounded-3xl p-20 text-center">
-                <Package size={80} className="mx-auto mb-8 text-white/30" />
-                <p className="text-2xl font-semibold">Aucune commande trouvée</p>
+              <div className="glass-card rounded-2xl sm:rounded-3xl p-12 sm:p-20 text-center">
+                <Package size={64} className="mx-auto mb-6 text-white/30" />
+                <p className="text-xl sm:text-2xl font-semibold">Aucune commande trouvée</p>
               </div>
             ) : (
               filteredOrders.map((order) => (
-                <div key={order.id} className="glass-card rounded-3xl overflow-hidden">
-                  <div className="p-8">
-                    <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
+                <div key={order.id} className="glass-card rounded-2xl sm:rounded-3xl overflow-hidden">
+                  <div className="p-5 sm:p-8">
+                    <div className="flex flex-col md:flex-row justify-between gap-4 md:gap-6 mb-6 sm:mb-8">
                       <div>
-                        <p className="text-white/60 text-sm">Commande #{String(order.id).padStart(6, '0')}</p>
-                        <p className="text-4xl font-bold text-[#D4AF37] mt-2">
-                          {order.total.toFixed(2)} <span className="text-xl text-white/60">TND</span>
+                        <p className="text-white/60 text-xs sm:text-sm">Commande #{String(order.id).padStart(6, '0')}</p>
+                        <p className="text-2xl sm:text-4xl font-bold text-[#D4AF37] mt-1 sm:mt-2">
+                          {order.total.toFixed(2)} <span className="text-base sm:text-xl text-white/60">TND</span>
                         </p>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                         <StatusBadge status={order.status} />
-                        <div className="text-sm text-white/60">
+                        <div className="text-xs sm:text-sm text-white/60">
                           {new Date(order.createdAt).toLocaleDateString('fr-FR')}
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8 mb-8">
+                    <div className="grid sm:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
                       <div>
-                        <p className="text-white/60 text-sm mb-2">CLIENT</p>
-                        <p className="font-semibold text-lg">{order.userName}</p>
-                        <p className="text-white/60">{order.userEmail}</p>
+                        <p className="text-white/60 text-xs sm:text-sm mb-1 sm:mb-2">CLIENT</p>
+                        <p className="font-semibold text-base sm:text-lg">{order.userName}</p>
+                        <p className="text-white/60 text-sm sm:text-base truncate max-w-[200px] sm:max-w-none">{order.userEmail}</p>
                       </div>
                       <div>
-                        <p className="text-white/60 text-sm mb-2">LIVRAISON</p>
-                        <div className="flex items-center gap-3 text-lg">
+                        <p className="text-white/60 text-xs sm:text-sm mb-1 sm:mb-2">LIVRAISON</p>
+                        <div className="flex items-center gap-2 sm:gap-3 text-sm sm:text-lg">
                           {order.deliveryMethod === "DELIVERY" ? (
                             <>🚚 Livraison à domicile</>
                           ) : (
@@ -264,15 +261,15 @@ export default function AdminOrdersPage() {
 
                     {/* Articles */}
                     <div>
-                      <p className="text-white/60 text-sm mb-4">ARTICLES ({order.items.length})</p>
-                      <div className="space-y-4">
+                      <p className="text-white/60 text-xs sm:text-sm mb-2 sm:mb-4">ARTICLES ({order.items.length})</p>
+                      <div className="space-y-3 sm:space-y-4">
                         {order.items.map((item) => (
-                          <div key={item.id} className="flex justify-between bg-white/5 rounded-2xl p-5">
-                            <div>
-                              <p className="font-medium">{item.productName}</p>
-                              <p className="text-sm text-white/60">Quantité : {item.quantity}</p>
+                          <div key={item.id} className="flex justify-between items-center bg-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-5">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm sm:text-base truncate">{item.productName}</p>
+                              <p className="text-xs sm:text-sm text-white/60">Quantité : {item.quantity}</p>
                             </div>
-                            <p className="font-semibold text-[#D4AF37]">
+                            <p className="font-semibold text-[#D4AF37] text-sm sm:text-base ml-2 flex-shrink-0">
                               {(item.price * item.quantity).toFixed(2)} TND
                             </p>
                           </div>
@@ -281,20 +278,20 @@ export default function AdminOrdersPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="mt-10 flex flex-wrap gap-4">
+                    <div className="mt-6 sm:mt-10 flex flex-wrap gap-3 sm:gap-4">
                       {order.status === "pending" && (
                         <>
                           <button
                             onClick={() => updateOrderStatus(order.id, "confirmed")}
                             disabled={updatingOrderId === order.id}
-                            className="bg-emerald-600 hover:bg-emerald-700 px-8 py-4 rounded-2xl font-semibold transition flex-1 md:flex-none"
+                            className="bg-emerald-600 hover:bg-emerald-700 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold transition flex-1 sm:flex-none text-sm sm:text-base"
                           >
                             Confirmer la commande
                           </button>
                           <button
                             onClick={() => updateOrderStatus(order.id, "cancelled")}
                             disabled={updatingOrderId === order.id}
-                            className="border border-red-500/30 text-red-400 hover:bg-red-500/10 px-8 py-4 rounded-2xl font-semibold transition"
+                            className="border border-red-500/30 text-red-400 hover:bg-red-500/10 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold transition flex-1 sm:flex-none text-sm sm:text-base"
                           >
                             Annuler
                           </button>
@@ -304,7 +301,7 @@ export default function AdminOrdersPage() {
                         <button
                           onClick={() => updateOrderStatus(order.id, "shipped")}
                           disabled={updatingOrderId === order.id}
-                          className="bg-indigo-600 hover:bg-indigo-700 px-8 py-4 rounded-2xl font-semibold transition"
+                          className="bg-indigo-600 hover:bg-indigo-700 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold transition text-sm sm:text-base"
                         >
                           Marquer comme expédiée
                         </button>
@@ -313,7 +310,7 @@ export default function AdminOrdersPage() {
                         <button
                           onClick={() => updateOrderStatus(order.id, "delivered")}
                           disabled={updatingOrderId === order.id}
-                          className="bg-emerald-600 hover:bg-emerald-700 px-8 py-4 rounded-2xl font-semibold transition"
+                          className="bg-emerald-600 hover:bg-emerald-700 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold transition text-sm sm:text-base"
                         >
                           Marquer comme livrée
                         </button>
