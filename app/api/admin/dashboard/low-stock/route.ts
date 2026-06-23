@@ -1,4 +1,3 @@
-// app/api/admin/dashboard/low-stock/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -11,14 +10,18 @@ export async function GET(req: NextRequest) {
     }
 
     const products = await prisma.product.findMany({
-      where: { 
-        stockStatus: { in: ["LOW", "CRITICAL"] }   // ← Correction ici
+      where: {
+        OR: [
+          { stockStatus: { in: ["LOW", "CRITICAL", "OUT_OF_STOCK"] } },
+          { stock: { lte: 15 } },
+        ],
       },
-      select: { 
-        id: true, 
-        name: true, 
-        stock: true, 
-        category: true 
+      select: {
+        id: true,
+        name: true,
+        stock: true,
+        category: true,
+        stockStatus: true,
       },
       orderBy: { stock: "asc" },
       take: 8,
