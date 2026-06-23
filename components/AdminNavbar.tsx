@@ -98,7 +98,7 @@ export default function AdminNavbar() {
               }`}
             >
               <Users className="h-5 w-5" />
-              <span className="font-medium">Clients</span>
+              <span className="font-medium">Utilisateurs</span>
             </Link>
           </div>
 

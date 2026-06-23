@@ -149,14 +149,8 @@ export default function AdminDashboard() {
       `}</style>
 
       <div className="admin-dashboard min-h-screen relative overflow-x-hidden">
-        {/* VIDÉO */}
-<div style={{
-  position: "fixed",
-  inset: 0,
-  zIndex: 0,
-  overflow: "hidden",
-  pointerEvents: "none",
-}}>
+   {/* === VIDÉO D'ARRIÈRE-PLAN === */}
+<div className="video-background">
   <video
     ref={videoRef}
     autoPlay
@@ -164,30 +158,19 @@ export default function AdminDashboard() {
     loop
     playsInline
     preload="metadata"
-    style={{
-      width: "100%",
-      height: "100%",
-      objectFit: "cover",
-      opacity: 0.25,
-      filter: "brightness(0.65) contrast(1.1)",
-    }}
+    className="absolute inset-0 w-full h-full object-cover"
+    style={{ opacity: 0.25, filter: 'brightness(0.65) contrast(1.1)' }}
     onError={(e) => {
-      console.error("Erreur vidéo :", e);
-      e.currentTarget.style.display = "none";
+      console.error("❌ Erreur chargement vidéo");
+      e.currentTarget.style.display = 'none';
     }}
+    onLoadedData={() => console.log("✅ Vidéo chargée avec succès")}
   >
-    <source src="/video/pp.mp4" type="video/mp4" />
+    <source src="/video/mm.mp4" type="video/mp4" />
   </video>
 </div>
 
-{/* Overlay */}
-<div style={{
-  position: "fixed",
-  inset: 0,
-  background: "radial-gradient(circle at 30% 20%, rgba(212,175,55,0.12), rgba(0,0,0,0.85))",
-  zIndex: 1,
-  pointerEvents: "none",
-}} />
+<div className="video-overlay" />
         <div className="video-overlay" />
 
         {/* Grille de points dorés */}
