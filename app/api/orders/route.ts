@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     // Créer la commande
     const order = await prisma.order.create({
       data: {
-        user: { connect: { clerkId: user.clerkId } },
+        userId: user.clerkId,
         total,
         status: "pending",
         deliveryMethod,
@@ -132,6 +132,7 @@ export async function POST(req: NextRequest) {
       {
         error: "Erreur lors de la création de la commande",
         message: error.message,
+        details: error.code ?? null,
       },
       { status: 500 }
     );
