@@ -1,4 +1,3 @@
-// app/api/admin/users/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -18,36 +17,30 @@ export async function GET(req: NextRequest) {
             id: true,
             total: true,
             status: true,
-            role:true,
             createdAt: true,
           },
-          orderBy: {
-            createdAt: "desc",
-          },
+          orderBy: { createdAt: "desc" },
+          take: 5, // Limite pour ne pas surcharger
         },
         _count: {
-          select: {
-            orders: true,
-          },
+          select: { orders: true },
         },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     });
 
     const formattedUsers = users.map((user) => ({
       id: user.id,
       clerkId: user.clerkId,
       email: user.email,
-      name: [user.firstName, user.lastName].filter(Boolean).join(" ") || "Sans nom",
       firstName: user.firstName,
       lastName: user.lastName,
+      role: user.role,                    // ← Ajouté
       createdAt: user.createdAt.toISOString(),
       _count: user._count,
       orders: user.orders.map((order) => ({
         id: order.id,
-        totalAmount: order.total,
+        total: order.total,
         status: order.status,
         createdAt: order.createdAt.toISOString(),
       })),

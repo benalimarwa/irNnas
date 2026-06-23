@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useState, useRef } from "react";
-import { Search, Users, TrendingUp, ShoppingBag, ArrowUpRight } from "lucide-react";
+import { Search, Users, TrendingUp, ShoppingBag, ArrowUpRight, Award } from "lucide-react";
 import AdminNavbar from "@/components/AdminNavbar";
 
 type User = {
   id: string;
   clerkId: string;
   email: string;
-  name: string | null;
   firstName?: string | null;
   lastName?: string | null;
+  role: "CLIENT" | "ADMIN";           // ← Ajouté
   createdAt: string;
   _count: { orders: number };
   orders: {
@@ -92,6 +92,18 @@ export default function AdminUsersPage() {
     return "?";
   };
 
+  const getRoleBadge = (role: string) => {
+    return role === "ADMIN" ? (
+      <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-medium rounded-full">
+        <Award size={14} /> ADMIN
+      </span>
+    ) : (
+      <span className="inline-flex items-center px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-medium rounded-full">
+        CLIENT
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
@@ -129,11 +141,8 @@ export default function AdminUsersPage() {
 
         .video-background {
           position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: 0;
+          inset: 0;
+          z-index: -1;
           overflow: hidden;
         }
         .video-background video {
@@ -147,7 +156,7 @@ export default function AdminUsersPage() {
           position: fixed;
           inset: 0;
           background: radial-gradient(circle at 30% 20%, rgba(212,175,55,0.12), rgba(0,0,0,0.88));
-          z-index: 1;
+          z-index: 0;
           pointer-events: none;
         }
       `}</style>
@@ -161,7 +170,6 @@ export default function AdminUsersPage() {
         </div>
         <div className="video-overlay" />
 
-        {/* Grille dorée */}
         <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0 pointer-events-none" />
 
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-16 sm:pb-24 relative z-20">
@@ -169,7 +177,7 @@ export default function AdminUsersPage() {
           <div className="mb-8 sm:mb-12">
             <div className="inline-flex items-center gap-3 text-xs uppercase tracking-[3px] bg-white/5 border border-white/10 px-4 sm:px-6 py-2 rounded-full mb-4 sm:mb-6">
               <Users size={14} className="text-[#D4AF37]" />
-              ADMINISTRATION
+              ADMINISTRATION - CLIENTS
             </div>
           </div>
 
@@ -218,9 +226,12 @@ export default function AdminUsersPage() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base sm:text-xl font-semibold text-white mb-0.5 truncate">
-                        {user.firstName} {user.lastName}
-                      </h3>
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="text-base sm:text-xl font-semibold text-white truncate">
+                          {user.firstName} {user.lastName}
+                        </h3>
+                        {getRoleBadge(user.role)}
+                      </div>
                       <p className="text-white/60 text-xs sm:text-sm mb-3 sm:mb-6 truncate">{user.email}</p>
 
                       <div className="flex justify-between text-xs sm:text-sm">
@@ -253,7 +264,7 @@ export default function AdminUsersPage() {
           )}
         </div>
 
-        {/* Modal Détails */}
+        {/* Modal Détails - Mise à jour */}
         {showModal && selectedUser && (
           <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4 sm:p-6">
             <div className="glass-card rounded-2xl sm:rounded-3xl w-full max-w-2xl p-6 sm:p-10 relative max-h-[90vh] overflow-y-auto">
@@ -267,22 +278,28 @@ export default function AdminUsersPage() {
               <h2 className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8">Détails du client</h2>
 
               <div className="space-y-6 sm:space-y-8">
-                <div>
-                  <p className="text-white/60 text-sm mb-1">Nom complet</p>
-                  <p className="text-xl sm:text-2xl font-semibold">
-                    {selectedUser.firstName} {selectedUser.lastName}
-                  </p>
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl">{getInitial(selectedUser)}</div>
+                  <div>
+                    <p className="text-xl sm:text-2xl font-semibold">
+                      {selectedUser.firstName} {selectedUser.lastName}
+                    </p>
+                    <div className="mt-1">{getRoleBadge(selectedUser.role)}</div>
+                  </div>
                 </div>
+
                 <div>
                   <p className="text-white/60 text-sm mb-1">Email</p>
                   <p className="text-base sm:text-lg break-words">{selectedUser.email}</p>
                 </div>
+
                 <div>
                   <p className="text-white/60 text-sm mb-1">Membre depuis</p>
                   <p className="text-base sm:text-lg">
                     {new Date(selectedUser.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
                   </p>
                 </div>
+
                 <div>
                   <p className="text-white/60 text-sm mb-1">Total dépensé</p>
                   <p className="text-3xl sm:text-4xl font-bold text-[#D4AF37]">
