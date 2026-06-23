@@ -205,7 +205,7 @@ export default function AdminDashboard() {
               }
             }}
           >
-            <source src="/video/mm.mp4" type="video/mp4" />
+            <source src="/mm.mp4" type="mp4" />
             Votre navigateur ne supporte pas la lecture vidéo.
           </video>
         </div>
