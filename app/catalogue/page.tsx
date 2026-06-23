@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   Search, ShoppingCart, CheckCircle,
   AlertCircle, XCircle, X, ChevronLeft,
@@ -69,7 +68,7 @@ export default function CatalogPage() {
   const [lightbox, setLightbox] = useState<{ product: Product; index: number } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Fetch products — no auth required
+  // Fetch products
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchTerm) params.set("search", searchTerm);
@@ -270,7 +269,7 @@ export default function CatalogPage() {
         .cp-fdrawer-inner {
           padding: 1.5rem 0 1.75rem;
           display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
-          border-top: 1px solid var(--border); margin-top: 0;
+          border-top: 1px solid var(--border);
         }
         .cp-flabel {
           font-size: 0.6rem; letter-spacing: 2.5px; text-transform: uppercase;
@@ -356,6 +355,7 @@ export default function CatalogPage() {
           transition: transform 0.65s cubic-bezier(0.4,0,0.2,1);
         }
         .pcard:hover .pcard-img { transform: scale(1.07); }
+
         .pcard-img-empty {
           width:100%; height:100%;
           display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -393,15 +393,6 @@ export default function CatalogPage() {
         }
         .pcard-dot.on { background:var(--gold); width:12px; border-radius:999px; }
 
-        .pcard-stock {
-          position:absolute; top:0.7rem; left:0.7rem; z-index:4;
-          font-size:0.6rem; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
-          padding:0.22rem 0.65rem; border-radius:999px;
-          font-family:var(--mono);
-        }
-        .pcard-stock.out { background:rgba(255,107,107,0.14); color:var(--coral); border:1px solid rgba(255,107,107,0.28); }
-        .pcard-stock.low { background:rgba(255,179,71,0.14); color:var(--amber); border:1px solid rgba(255,179,71,0.28); }
-
         .pcard-qview {
           position:absolute; bottom:0.7rem; left:0.7rem; z-index:4;
           background:rgba(0,0,0,0.65); backdrop-filter:blur(8px);
@@ -414,6 +405,15 @@ export default function CatalogPage() {
         }
         .pcard:hover .pcard-qview { opacity:1; }
         .pcard-qview:hover { background:rgba(212,175,55,0.22); border-color:rgba(212,175,55,0.45); }
+
+        .pcard-stock {
+          position:absolute; top:0.7rem; left:0.7rem; z-index:4;
+          font-size:0.6rem; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+          padding:0.22rem 0.65rem; border-radius:999px;
+          font-family:var(--mono);
+        }
+        .pcard-stock.out { background:rgba(255,107,107,0.14); color:var(--coral); border:1px solid rgba(255,107,107,0.28); }
+        .pcard-stock.low { background:rgba(255,179,71,0.14); color:var(--amber); border:1px solid rgba(255,179,71,0.28); }
 
         .pcard-body {
           padding: 1.1rem 1.2rem 1.35rem;
@@ -605,14 +605,12 @@ export default function CatalogPage() {
       `}</style>
 
       <div className="cp">
-        {/* Video Background */}
         <div className="cp-vbg">
           <video autoPlay muted loop playsInline>
             <source src="/video/mm.mp4" type="video/mp4" />
           </video>
         </div>
 
-        {/* Ambient dots */}
         <div className="cp-dot" style={{ top: "10%", left: "3%", width: "400px", height: "400px", background: "var(--gold)" }} />
         <div className="cp-dot" style={{ bottom: "8%", right: "4%", width: "300px", height: "300px", background: "var(--coral)" }} />
         <div className="cp-dot" style={{ top: "50%", left: "70%", width: "240px", height: "240px", background: "var(--teal)" }} />
@@ -715,7 +713,7 @@ export default function CatalogPage() {
             </div>
           </div>
 
-          {/* Products Section */}
+          {/* Products */}
           <main className="cp-main">
             {loading ? (
               <div className="cp-grid">
@@ -765,7 +763,6 @@ export default function CatalogPage() {
 
                         return (
                           <div key={product.id} className="pcard">
-                            {/* Image Section */}
                             <div className="pcard-img-wrap">
                               {currentImg ? (
                                 <img src={currentImg} alt={product.name} className="pcard-img" />
@@ -807,7 +804,6 @@ export default function CatalogPage() {
                               )}
                             </div>
 
-                            {/* Card Body */}
                             <div className="pcard-body">
                               <div className="pcard-meta">
                                 {gBadge && (
