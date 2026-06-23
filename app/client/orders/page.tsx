@@ -102,7 +102,7 @@ export default function MyOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#0A0A0A] text-white relative overflow-hidden overflow-x-hidden">
       {/* === VIDÉO D'ARRIÈRE-PLAN === */}
       <video
         autoPlay
@@ -119,13 +119,13 @@ export default function MyOrdersPage() {
       {/* Texture subtile */}
       <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-[-1]" />
 
-      <div className="max-w-6xl mx-auto px-6 pt-24 pb-20 relative z-10">
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-16 sm:pb-20 relative z-10">
         
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8 sm:mb-12">
           <Link
             href="/client"
-            className="inline-flex items-center gap-2 text-white/60 hover:text-white transition mb-8 group"
+            className="inline-flex items-center gap-2 text-white/60 hover:text-white transition mb-6 sm:mb-8 group"
           >
             <ArrowLeft className="group-hover:-translate-x-1 transition" size={20} />
             Retour à l’accueil
@@ -133,10 +133,10 @@ export default function MyOrdersPage() {
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-6xl md:text-7xl font-bold tracking-tighter bg-gradient-to-r from-white via-[#D4AF37] to-white bg-clip-text text-transparent">
+              <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tighter bg-gradient-to-r from-white via-[#D4AF37] to-white bg-clip-text text-transparent">
                 Mes Commandes
               </h1>
-              <p className="mt-3 text-xl text-white/70">
+              <p className="mt-2 sm:mt-3 text-lg sm:text-xl text-white/70">
                 {orders.length} commande{orders.length > 1 ? "s" : ""} • Suivi en temps réel
               </p>
             </div>
@@ -144,10 +144,10 @@ export default function MyOrdersPage() {
         </div>
 
         {/* Filtres */}
-        <div className="mb-12 flex flex-wrap gap-3">
+        <div className="mb-10 sm:mb-12 flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={() => setFilter("all")}
-            className={`px-8 py-3.5 rounded-3xl font-semibold transition-all duration-300 text-sm ${
+            className={`px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-3xl font-semibold transition-all duration-300 text-sm ${
               filter === "all"
                 ? "bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] text-black shadow-xl shadow-[#D4AF37]/40"
                 : "bg-white/5 hover:bg-white/10 border border-white/10 text-white/80"
@@ -164,13 +164,13 @@ export default function MyOrdersPage() {
               <button
                 key={status}
                 onClick={() => setFilter(status)}
-                className={`px-7 py-3.5 rounded-3xl font-semibold transition-all duration-300 text-sm flex items-center gap-2.5 ${
+                className={`px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-3xl font-semibold transition-all duration-300 text-sm flex items-center gap-2 ${
                   filter === status
                     ? "bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] text-black shadow-xl shadow-[#D4AF37]/40"
                     : "bg-white/5 hover:bg-white/10 border border-white/10 text-white/80"
                 }`}
               >
-                <span className={`p-1.5 rounded-xl ${statusColors[status]}`}>
+                <span className={`p-1 rounded-xl ${statusColors[status]}`}>
                   {status === "pending" || status === "cancelled" ? (
                     <AlertCircle className="w-4 h-4" />
                   ) : (
@@ -186,12 +186,12 @@ export default function MyOrdersPage() {
 
         {/* Liste des commandes */}
         {filteredOrders.length === 0 ? (
-          <div className="text-center py-28">
-            <div className="mx-auto w-28 h-28 bg-white/5 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/10 mb-8">
-              <ShoppingBag size={56} className="text-white/40" />
+          <div className="text-center py-20 sm:py-28">
+            <div className="mx-auto w-24 h-24 sm:w-28 sm:h-28 bg-white/5 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/10 mb-6 sm:mb-8">
+              <ShoppingBag size={48} className="text-white/40" />
             </div>
-            <h2 className="text-4xl font-semibold mb-4">Aucune commande trouvée</h2>
-            <p className="text-white/60 max-w-md mx-auto text-lg">
+            <h2 className="text-3xl sm:text-4xl font-semibold mb-4">Aucune commande trouvée</h2>
+            <p className="text-white/60 max-w-md mx-auto text-base sm:text-lg">
               {filter === "all" 
                 ? "Vous n'avez pas encore passé de commande." 
                 : "Aucune commande correspond à ce filtre."}
@@ -199,14 +199,14 @@ export default function MyOrdersPage() {
             {filter === "all" && (
               <Link
                 href="/catalog"
-                className="mt-10 inline-block bg-gradient-to-r from-[#D4AF37] to-white text-black px-10 py-4 rounded-3xl font-semibold text-lg hover:scale-105 transition"
+                className="mt-8 sm:mt-10 inline-block bg-gradient-to-r from-[#D4AF37] to-white text-black px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl font-semibold text-base sm:text-lg hover:scale-105 transition"
               >
                 Explorer la Collection
               </Link>
             )}
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {filteredOrders.map((order) => {
               const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
               const firstThreeItems = order.items.slice(0, 3);
@@ -214,23 +214,23 @@ export default function MyOrdersPage() {
               return (
                 <div
                   key={order.id}
-                  className="group bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden hover:border-[#D4AF37]/40 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/10"
+                  className="group bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden hover:border-[#D4AF37]/40 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/10"
                 >
-                  <div className="p-9">
+                  <div className="p-6 sm:p-9">
                     {/* En-tête */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-white/10">
-                      <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#D4AF37]/10 to-white/5 flex items-center justify-center border border-[#D4AF37]/20">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 sm:pb-8 border-b border-white/10">
+                      <div className="flex items-center gap-4 sm:gap-6">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#D4AF37]/10 to-white/5 flex items-center justify-center border border-[#D4AF37]/20">
                           {order.deliveryMethod === "DELIVERY" ? (
-                            <Truck className="w-8 h-8 text-[#D4AF37]" />
+                            <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-[#D4AF37]" />
                           ) : (
-                            <Store className="w-8 h-8 text-[#D4AF37]" />
+                            <Store className="w-6 h-6 sm:w-8 sm:h-8 text-[#D4AF37]" />
                           )}
                         </div>
 
                         <div>
-                          <p className="text-sm text-white/50">Commande #{String(order.id).padStart(6, "0")}</p>
-                          <p className="text-2xl font-semibold mt-1">
+                          <p className="text-xs sm:text-sm text-white/50">Commande #{String(order.id).padStart(6, "0")}</p>
+                          <p className="text-lg sm:text-2xl font-semibold mt-1 break-words">
                             {new Date(order.createdAt).toLocaleDateString("fr-FR", {
                               weekday: "long",
                               day: "numeric",
@@ -241,43 +241,43 @@ export default function MyOrdersPage() {
                         </div>
                       </div>
 
-                      <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-3xl text-sm font-medium ${statusColors[order.status]}`}>
+                      <div className={`inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl sm:rounded-3xl text-xs sm:text-sm font-medium ${statusColors[order.status]}`}>
                         {order.status === "delivered" ? (
-                          <Package className="w-4 h-4" />
+                          <Package className="w-3 h-3 sm:w-4 sm:h-4" />
                         ) : (
-                          <AlertCircle className="w-4 h-4" />
+                          <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                         )}
                         {statusLabels[order.status]}
                       </div>
                     </div>
 
-                    <div className="grid lg:grid-cols-12 gap-10 mt-10">
+                    <div className="grid lg:grid-cols-12 gap-8 sm:gap-10 mt-8 sm:mt-10">
                       {/* Articles */}
                       <div className="lg:col-span-7">
                         <p className="uppercase text-xs tracking-widest text-white/50 mb-4">Articles commandés</p>
-                        <div className="flex gap-5 overflow-x-auto pb-4">
+                        <div className="flex gap-3 sm:gap-5 overflow-x-auto pb-4">
                           {firstThreeItems.map((item) => (
                             <div
                               key={item.id}
-                              className="flex-shrink-0 w-28 h-28 bg-black/60 rounded-2xl overflow-hidden border border-white/10 relative"
+                              className="flex-shrink-0 w-20 h-20 sm:w-28 sm:h-28 bg-black/60 rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 relative"
                             >
                               {item.product.images?.[0] ? (
                                 <img
                                   src={item.product.images[0]}
                                   alt={item.product.name}
-                                  className="w-full h-full object-contain p-3"
+                                  className="w-full h-full object-contain p-2 sm:p-3"
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-5xl">👕</div>
+                                <div className="w-full h-full flex items-center justify-center text-3xl sm:text-5xl">👕</div>
                               )}
 
                               {item.quantity > 1 && (
-                                <div className="absolute top-3 right-3 bg-[#D4AF37] text-black text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center ring-2 ring-black">
+                                <div className="absolute top-1 sm:top-3 right-1 sm:right-3 bg-[#D4AF37] text-black text-xs font-bold w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ring-2 ring-black">
                                   {item.quantity}
                                 </div>
                               )}
                               {item.size && (
-                                <div className="absolute bottom-3 left-3 text-xs font-mono bg-black/80 px-2.5 py-1 rounded text-[#D4AF37]">
+                                <div className="absolute bottom-1 sm:bottom-3 left-1 sm:left-3 text-[10px] sm:text-xs font-mono bg-black/80 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded text-[#D4AF37]">
                                   {item.size}
                                 </div>
                               )}
@@ -285,10 +285,10 @@ export default function MyOrdersPage() {
                           ))}
 
                           {order.items.length > 3 && (
-                            <div className="flex-shrink-0 w-28 h-28 bg-black/60 rounded-2xl flex items-center justify-center border border-dashed border-white/20">
+                            <div className="flex-shrink-0 w-20 h-20 sm:w-28 sm:h-28 bg-black/60 rounded-xl sm:rounded-2xl flex items-center justify-center border border-dashed border-white/20">
                               <div className="text-center">
-                                <p className="text-2xl font-semibold text-[#D4AF37]">+{order.items.length - 3}</p>
-                                <p className="text-xs text-white/50">autres</p>
+                                <p className="text-xl sm:text-2xl font-semibold text-[#D4AF37]">+{order.items.length - 3}</p>
+                                <p className="text-[10px] sm:text-xs text-white/50">autres</p>
                               </div>
                             </div>
                           )}
@@ -299,15 +299,15 @@ export default function MyOrdersPage() {
                       <div className="lg:col-span-5 flex flex-col justify-between">
                         <div className="text-right">
                           <p className="text-sm text-white/50">Montant total</p>
-                          <p className="text-5xl font-bold bg-gradient-to-r from-[#D4AF37] to-white bg-clip-text text-transparent tracking-tighter mt-2">
-                            {order.total.toFixed(2)} <span className="text-2xl font-normal text-white/60">TND</span>
+                          <p className="text-3xl sm:text-5xl font-bold bg-gradient-to-r from-[#D4AF37] to-white bg-clip-text text-transparent tracking-tighter mt-2">
+                            {order.total.toFixed(2)} <span className="text-xl sm:text-2xl font-normal text-white/60">TND</span>
                           </p>
                           <p className="text-white/60 mt-1">{totalItems} article{totalItems > 1 ? "s" : ""}</p>
                         </div>
 
                         <Link
                           href={`/client/orders/${order.id}`}
-                          className="mt-8 lg:mt-0 group flex items-center justify-center gap-3 bg-gradient-to-r from-[#D4AF37] to-white hover:brightness-110 text-black font-semibold py-5 px-10 rounded-3xl transition-all duration-300 hover:scale-[1.03]"
+                          className="mt-6 sm:mt-8 lg:mt-0 group flex items-center justify-center gap-3 bg-gradient-to-r from-[#D4AF37] to-white hover:brightness-110 text-black font-semibold py-4 sm:py-5 px-8 sm:px-10 rounded-2xl sm:rounded-3xl transition-all duration-300 hover:scale-[1.03]"
                         >
                           Voir les détails
                           <ChevronRight className="group-hover:translate-x-1 transition" />
