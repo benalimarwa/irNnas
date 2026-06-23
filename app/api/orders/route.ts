@@ -1,4 +1,3 @@
-// app/api/orders/route.ts
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
@@ -72,12 +71,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ✅ Total = articles + frais de livraison envoyés depuis le client
     const subtotal = cart.items.reduce(
       (sum, item) => sum + item.product.price * item.quantity,
       0
     );
-    // ✅ On valide le deliveryFee côté serveur (ne jamais faire confiance au client seul)
     const validatedDeliveryFee = deliveryMethod === "DELIVERY" ? 7 : 0;
     const total = subtotal + validatedDeliveryFee;
 
@@ -88,10 +85,10 @@ export async function POST(req: NextRequest) {
     // Créer la commande
     const order = await prisma.order.create({
       data: {
-        userId: user.clerkId,
-        total,                       // ✅ Inclut les frais de livraison
+        user: { connect: { clerkId: user.clerkId } },
+        total,
         status: "pending",
-        deliveryMethod,              // ✅ PICKUP ou DELIVERY
+        deliveryMethod,
         items: {
           create: cart.items.map((item) => ({
             productId: item.productId,
@@ -141,7 +138,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET — commandes de l'utilisateur connecté
 export async function GET(req: NextRequest) {
   try {
     const authResult = await auth();
