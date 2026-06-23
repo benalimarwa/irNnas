@@ -115,16 +115,14 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 @layer base {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+  }
+  
   * {
-    @apply border-border outline-ring/50;
-    box-sizing: border-box; /* ✅ ajoute ici */
+    box-sizing: border-box;
   }
-  body {
-    @apply bg-background text-foreground;
-    overflow-x: hidden; /* ✅ ajoute ici */
-    max-width: 100vw;   /* ✅ ajoute ici */
-  }
-  html {
-    overflow-x: hidden; /* ✅ ajoute ici */
-  }
+
 }

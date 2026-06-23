@@ -3,10 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft, ShoppingBag, Truck, Store, CheckCircle,
-  XCircle, AlertCircle, X, User, CreditCard, MapPin
-} from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, Store, CheckCircle, XCircle, AlertCircle, X, User, CreditCard, MapPin } from "lucide-react";
 
 type CartItem = {
   id: number;
@@ -27,14 +24,18 @@ const DELIVERY_FEE = 7;
 
 export default function CheckoutPage() {
   const router = useRouter();
+  
   const [cart, setCart] = useState<{ items: CartItem[] }>({ items: [] });
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [alert, setAlert] = useState<{ show: boolean; type: string; message: string }>({
-    show: false, type: "success", message: ""
+    show: false,
+    type: "success",
+    message: "",
   });
-
+  
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("PICKUP");
+  
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -121,15 +122,15 @@ export default function CheckoutPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0A0A0A" }}>
-        <div style={{ color: "#D4AF37", fontSize: "1.5rem" }}>Chargement...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A]">
+        <div className="text-[#D4AF37] text-2xl">Chargement...</div>
       </div>
     );
   }
 
   return (
     <>
-      <style>{`
+      <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
 
         .checkout-page {
@@ -146,7 +147,7 @@ export default function CheckoutPage() {
 
         .hero-title {
           font-family: 'Syne', sans-serif;
-          font-size: clamp(2.8rem, 5vw, 4.5rem);
+          font-size: clamp(2.4rem, 5vw, 4.5rem);
           font-weight: 800;
           letter-spacing: -0.04em;
         }
@@ -164,10 +165,9 @@ export default function CheckoutPage() {
           transition: all 0.3s ease;
           color: #F8F6F2;
           outline: none;
+          width: 100%;
         }
-        .input-field::placeholder {
-          color: rgba(255,255,255,0.3);
-        }
+
         .input-field:focus {
           border-color: #D4AF37;
           box-shadow: 0 0 0 4px rgba(212,175,55,0.15);
@@ -188,13 +188,10 @@ export default function CheckoutPage() {
           box-shadow: 0 8px 32px rgba(0,0,0,0.4);
           animation: slideIn 0.3s ease;
         }
-        .checkout-alert.success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #6ee7b7; }
-        .checkout-alert.error   { background: rgba(239,68,68,0.15);  border: 1px solid rgba(239,68,68,0.4);  color: #fca5a5; }
-        .checkout-alert.warning { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #fcd34d; }
 
         @keyframes slideIn {
           from { opacity: 0; transform: translateX(40px); }
-          to   { opacity: 1; transform: translateX(0); }
+          to { opacity: 1; transform: translateX(0); }
         }
 
         .delivery-btn {
@@ -208,9 +205,11 @@ export default function CheckoutPage() {
           color: #F8F6F2;
           width: 100%;
         }
+
         .delivery-btn:hover {
           border-color: rgba(255,255,255,0.3);
         }
+
         .delivery-btn.active {
           border-color: #D4AF37;
           background: rgba(212,175,55,0.1);
@@ -233,12 +232,31 @@ export default function CheckoutPage() {
           cursor: pointer;
           transition: filter 0.2s ease;
         }
+
         .confirm-btn:hover:not(:disabled) {
           filter: brightness(1.1);
         }
+
         .confirm-btn:disabled {
           opacity: 0.6;
           cursor: not-allowed;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .glass-card {
+            padding: 1.75rem !important;
+          }
+          .delivery-btn {
+            padding: 1.5rem !important;
+          }
+          h2 {
+            font-size: 1.6rem !important;
+          }
+          .input-field {
+            padding: 1rem 1.125rem !important;
+            font-size: 1rem !important;
+          }
         }
       `}</style>
 
@@ -246,7 +264,7 @@ export default function CheckoutPage() {
       {alert.show && (
         <div className={`checkout-alert ${alert.type}`}>
           {alert.type === "success" && <CheckCircle size={20} />}
-          {alert.type === "error"   && <XCircle size={20} />}
+          {alert.type === "error" && <XCircle size={20} />}
           {alert.type === "warning" && <AlertCircle size={20} />}
           {alert.message}
           <button
@@ -261,97 +279,97 @@ export default function CheckoutPage() {
 
       <div className="checkout-page min-h-screen relative overflow-hidden">
         {/* Background dot grid */}
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 0, opacity: 0.1,
-          backgroundImage: "radial-gradient(#D4AF37 0.8px, transparent 1px)",
-          backgroundSize: "60px 60px",
-          pointerEvents: "none",
-        }} />
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 0,
+            opacity: 0.1,
+            backgroundImage: "radial-gradient(#D4AF37 0.8px, transparent 1px)",
+            backgroundSize: "60px 60px",
+            pointerEvents: "none",
+          }}
+        />
 
-        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "3rem 1.5rem 6rem", position: "relative", zIndex: 10 }}>
-
+        <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-8 md:py-12 relative z-10">
           {/* Back link */}
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "3rem" }}>
-            <Link href="/client/panier" style={{ color: "#D4AF37", display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", transition: "color 0.2s" }}>
-              <ArrowLeft size={22} /> Retour au panier
+          <div className="flex items-center gap-4 mb-8">
+            <Link
+              href="/client/panier"
+              className="text-[#D4AF37] flex items-center gap-2 hover:text-white transition-colors"
+            >
+              <ArrowLeft size={22} />
+              Retour au panier
             </Link>
-            <div style={{ height: "1px", flex: 1, background: "rgba(255,255,255,0.1)" }} />
+            <div className="h-px flex-1 bg-white/10" />
           </div>
 
-          {/* Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "2.5rem", marginTop: "2rem" }}>
-
-            {/* Left column */}
-            <div style={{ gridColumn: "span 7", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
-
-              {/* Delivery method */}
-              <div className="glass-card" style={{ borderRadius: "1.5rem", padding: "2.5rem" }}>
-                <h2 style={{ fontSize: "1.75rem", fontWeight: 600, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+          {/* Main Grid - RESPONSIVE */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+            {/* Left Column - Form */}
+            <div className="lg:col-span-7 space-y-8">
+              {/* Delivery Method */}
+              <div className="glass-card rounded-3xl p-6 md:p-10">
+                <h2 className="text-2xl md:text-[1.75rem] font-semibold mb-8 flex items-center gap-4">
                   <Truck color="#D4AF37" size={28} />
                   Mode de livraison
                 </h2>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
                     type="button"
                     onClick={() => setDeliveryMethod("DELIVERY")}
-                    className={`delivery-btn${deliveryMethod === "DELIVERY" ? " active" : ""}`}
+                    className={`delivery-btn ${deliveryMethod === "DELIVERY" ? "active" : ""}`}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+                    <div className="flex justify-between items-start mb-6">
                       <Truck size={32} color={deliveryMethod === "DELIVERY" ? "#D4AF37" : "rgba(255,255,255,0.3)"} />
-                      <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#D4AF37" }}>{DELIVERY_FEE} TND</span>
+                      <span className="text-sm font-semibold text-[#D4AF37]">{DELIVERY_FEE} TND</span>
                     </div>
-                    <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "0.5rem" }}>Livraison à domicile</h3>
-                    <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.9rem" }}>Votre commande vous sera livrée directement</p>
+                    <h3 className="text-xl font-semibold mb-2">Livraison à domicile</h3>
+                    <p className="text-sm text-white/60">Votre commande vous sera livrée directement</p>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setDeliveryMethod("PICKUP")}
-                    className={`delivery-btn${deliveryMethod === "PICKUP" ? " active" : ""}`}
+                    className={`delivery-btn ${deliveryMethod === "PICKUP" ? "active" : ""}`}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+                    <div className="flex justify-between items-start mb-6">
                       <Store size={32} color={deliveryMethod === "PICKUP" ? "#D4AF37" : "rgba(255,255,255,0.3)"} />
-                      <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#6ee7b7" }}>Gratuit</span>
+                      <span className="text-sm font-semibold text-[#6ee7b7]">Gratuit</span>
                     </div>
-                    <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "0.5rem" }}>Retrait en magasin</h3>
-                    <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.9rem" }}>Venez récupérer votre commande sur place</p>
+                    <h3 className="text-xl font-semibold mb-2">Retrait en magasin</h3>
+                    <p className="text-sm text-white/60">Venez récupérer votre commande sur place</p>
                   </button>
                 </div>
               </div>
 
-              {/* Customer info */}
-              <div className="glass-card" style={{ borderRadius: "1.5rem", padding: "2.5rem" }}>
-                <h2 style={{ fontSize: "1.75rem", fontWeight: 600, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+              {/* Customer Info */}
+              <div className="glass-card rounded-3xl p-6 md:p-10">
+                <h2 className="text-2xl md:text-[1.75rem] font-semibold mb-8 flex items-center gap-4">
                   <User color="#D4AF37" size={28} />
                   Informations personnelles
                 </h2>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", display: "block", marginBottom: "0.5rem" }}>
-                        Nom complet *
-                      </label>
+                      <label className="block text-sm text-white/60 mb-2">Nom complet *</label>
                       <input
                         type="text"
                         value={form.name}
                         onChange={(e) => setForm({ ...form, name: e.target.value })}
-                        className="input-field"
-                        style={{ width: "100%", padding: "1rem 1.25rem", borderRadius: "0.75rem", fontSize: "1rem", boxSizing: "border-box" }}
+                        className="input-field px-5 py-4 rounded-2xl text-base"
                         placeholder="Votre nom"
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", display: "block", marginBottom: "0.5rem" }}>
-                        Téléphone *
-                      </label>
+                      <label className="block text-sm text-white/60 mb-2">Téléphone *</label>
                       <input
                         type="tel"
                         value={form.phone}
                         onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                        className="input-field"
-                        style={{ width: "100%", padding: "1rem 1.25rem", borderRadius: "0.75rem", fontSize: "1rem", boxSizing: "border-box" }}
+                        className="input-field px-5 py-4 rounded-2xl text-base"
                         placeholder="+216 XX XXX XXX"
                       />
                     </div>
@@ -360,43 +378,34 @@ export default function CheckoutPage() {
                   {deliveryMethod === "DELIVERY" && (
                     <>
                       <div>
-                        <label style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", display: "block", marginBottom: "0.5rem" }}>
-                          Adresse complète *
-                        </label>
+                        <label className="block text-sm text-white/60 mb-2">Adresse complète *</label>
                         <input
                           type="text"
                           value={form.address}
                           onChange={(e) => setForm({ ...form, address: e.target.value })}
-                          className="input-field"
-                          style={{ width: "100%", padding: "1rem 1.25rem", borderRadius: "0.75rem", fontSize: "1rem", boxSizing: "border-box" }}
+                          className="input-field px-5 py-4 rounded-2xl text-base"
                           placeholder="Rue, numéro, immeuble..."
                         />
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", display: "block", marginBottom: "0.5rem" }}>
-                            Ville *
-                          </label>
+                          <label className="block text-sm text-white/60 mb-2">Ville *</label>
                           <input
                             type="text"
                             value={form.city}
                             onChange={(e) => setForm({ ...form, city: e.target.value })}
-                            className="input-field"
-                            style={{ width: "100%", padding: "1rem 1.25rem", borderRadius: "0.75rem", fontSize: "1rem", boxSizing: "border-box" }}
+                            className="input-field px-5 py-4 rounded-2xl text-base"
                             placeholder="Tunis"
                           />
                         </div>
                         <div>
-                          <label style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", display: "block", marginBottom: "0.5rem" }}>
-                            Code postal
-                          </label>
+                          <label className="block text-sm text-white/60 mb-2">Code postal</label>
                           <input
                             type="text"
                             value={form.postalCode}
                             onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
-                            className="input-field"
-                            style={{ width: "100%", padding: "1rem 1.25rem", borderRadius: "0.75rem", fontSize: "1rem", boxSizing: "border-box" }}
+                            className="input-field px-5 py-4 rounded-2xl text-base"
                             placeholder="1000"
                           />
                         </div>
@@ -405,15 +414,12 @@ export default function CheckoutPage() {
                   )}
 
                   <div>
-                    <label style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", display: "block", marginBottom: "0.5rem" }}>
-                      Notes / Instructions
-                    </label>
+                    <label className="block text-sm text-white/60 mb-2">Notes / Instructions</label>
                     <textarea
                       value={form.notes}
                       onChange={(e) => setForm({ ...form, notes: e.target.value })}
                       rows={4}
-                      className="input-field"
-                      style={{ width: "100%", padding: "1rem 1.25rem", borderRadius: "0.75rem", fontSize: "1rem", resize: "none", boxSizing: "border-box" }}
+                      className="input-field px-5 py-4 rounded-2xl text-base resize-none"
                       placeholder="Instructions spéciales pour la livraison..."
                     />
                   </div>
@@ -421,27 +427,28 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Right column — Order summary */}
-            <div style={{ gridColumn: "span 5" }}>
-              <div className="glass-card" style={{ borderRadius: "1.5rem", padding: "2.5rem", position: "sticky", top: "2rem" }}>
-                <h2 style={{ fontSize: "1.75rem", fontWeight: 600, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  <ShoppingBag color="#D4AF37" /> Résumé de la commande
+            {/* Right Column - Order Summary */}
+            <div className="lg:col-span-5">
+              <div className="glass-card rounded-3xl p-6 md:p-10 sticky top-6 lg:top-8">
+                <h2 className="text-2xl md:text-[1.75rem] font-semibold mb-8 flex items-center gap-3">
+                  <ShoppingBag color="#D4AF37" size={28} />
+                  Résumé de la commande
                 </h2>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", marginBottom: "2.5rem", maxHeight: "420px", overflowY: "auto", paddingRight: "0.5rem" }}>
+                <div className="space-y-6 mb-10 max-h-[420px] overflow-y-auto pr-2 custom-scroll">
                   {cart.items.map((item) => (
-                    <div key={item.id} style={{ display: "flex", gap: "1.25rem" }}>
-                      <div style={{ width: "5rem", height: "5rem", borderRadius: "0.75rem", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
+                    <div key={item.id} className="flex gap-4">
+                      <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 flex-shrink-0">
                         <img
                           src={item.product.images[0] || "/placeholder.jpg"}
                           alt={item.product.name}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          className="w-full h-full object-cover"
                         />
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <h4 style={{ fontWeight: 600, fontSize: "1.05rem", lineHeight: 1.3 }}>{item.product.name}</h4>
-                        {item.size && <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem" }}>Taille : {item.size}</p>}
-                        <p style={{ color: "#D4AF37", fontWeight: 500, marginTop: "0.25rem" }}>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-lg leading-tight">{item.product.name}</h4>
+                        {item.size && <p className="text-white/50 text-sm">Taille : {item.size}</p>}
+                        <p className="text-[#D4AF37] font-medium mt-1">
                           {item.quantity} × {item.product.price} TND
                         </p>
                       </div>
@@ -449,20 +456,21 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "2rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.05rem" }}>
-                    <span style={{ color: "rgba(255,255,255,0.7)" }}>Sous-total</span>
+                <div className="border-t border-white/10 pt-8 space-y-4">
+                  <div className="flex justify-between text-lg">
+                    <span className="text-white/70">Sous-total</span>
                     <span>{subtotal.toFixed(2)} TND</span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.05rem" }}>
-                    <span style={{ color: "rgba(255,255,255,0.7)" }}>Livraison</span>
-                    <span style={{ color: deliveryFee === 0 ? "#6ee7b7" : undefined }}>
+                  <div className="flex justify-between text-lg">
+                    <span className="text-white/70">Livraison</span>
+                    <span className={deliveryFee === 0 ? "text-[#6ee7b7]" : ""}>
                       {deliveryFee === 0 ? "Gratuit" : `${deliveryFee} TND`}
                     </span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.75rem", fontWeight: 700, paddingTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+
+                  <div className="flex justify-between text-2xl font-bold pt-6 border-t border-white/10">
                     <span>Total</span>
-                    <span style={{ color: "#D4AF37" }}>{total.toFixed(2)} TND</span>
+                    <span className="text-[#D4AF37]">{total.toFixed(2)} TND</span>
                   </div>
                 </div>
 
@@ -482,7 +490,7 @@ export default function CheckoutPage() {
                   )}
                 </button>
 
-                <p style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: "0.875rem", marginTop: "1.25rem" }}>
+                <p className="text-center text-white/40 text-sm mt-4">
                   Paiement à la livraison • Sécurisé
                 </p>
               </div>
