@@ -32,8 +32,7 @@
     "stripe": "^20.0.0",
     "svix": "^1.95.1",
     "tailwind-merge": "^3.4.0",
-    "ws": "^8.21.0",
-    "type": "module"
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@prisma/adapter-pg": "^7.8.0",
