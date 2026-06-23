@@ -5,7 +5,19 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-
+model Order {
+  id             Int         @id @default(autoincrement())
+  userId         String
+  status         OrderStatus @default(pending)
+  total          Float
+  confirmedById  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deliveryMethod String      @default("PICKUP")
+  user           User        @relation("OrderPlacedBy", fields: [userId], references: [clerkId])
+  confirmedBy    User?       @relation("OrderConfirmedBy", fields: [confirmedById], references: [clerkId])
+  items          OrderItem[]
+}
 model User {
   id        String     @id @default(cuid())
   clerkId   String     @unique
@@ -16,7 +28,8 @@ model User {
   role      UserRole   @default(CLIENT)
   cart      Cart?
   favorites Favorite[]
-  orders    Order[]
+  orders          Order[]  @relation("OrderPlacedBy")
+  ordersConfirmed Order[]  @relation("OrderConfirmedBy")
 }
 
 model Product {
@@ -74,17 +87,7 @@ model CartItem {
   @@unique([cartId, productId, size])
 }
 
-model Order {
-  id             Int         @id @default(autoincrement())
-  userId         String
-  status         OrderStatus @default(pending)
-  total          Float
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  deliveryMethod String      @default("PICKUP")
-  user           User        @relation(fields: [userId], references: [clerkId])
-  items          OrderItem[]
-}
+
 
 model OrderItem {
   id        Int     @id @default(autoincrement())
