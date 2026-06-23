@@ -30,6 +30,7 @@ interface RecentOrder {
   total: number;
   status: string;
   createdAt: string;
+  confirmedBy?: string;        // ← Ajouté
 }
 
 interface LowStockProduct {
@@ -364,7 +365,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-         {/* Recent Orders */}
+{/* Recent Orders */}
 <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 mt-6 sm:mt-8">
   <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 flex items-center gap-3">
     <Clock className="text-[#D4AF37]" size={20} /> 
@@ -387,8 +388,8 @@ export default function AdminDashboard() {
             <tr key={order.id} className="hover:bg-white/5 transition">
               <td className="py-3 sm:py-5">#{order.id}</td>
               <td className="py-3 sm:py-5 font-medium">{order.userName}</td>
-              <td className="py-3 sm:py-5 text-emerald-400">
-                {order.confirmedBy || "—"}
+              <td className="py-3 sm:py-5 text-emerald-400 font-medium">
+                {order.confirmedBy || "Admin"}
               </td>
               <td className="py-3 sm:py-5 text-white/60 hidden md:table-cell">
                 {new Date(order.createdAt).toLocaleDateString('fr-FR')}
