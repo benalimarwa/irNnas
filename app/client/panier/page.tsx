@@ -133,15 +133,15 @@ export default function CartPage() {
 
   if (cart.items.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pt-24 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pt-24 px-4">
         <div className="max-w-2xl mx-auto text-center py-20">
-          <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-700 rounded-3xl p-16">
-            <ShoppingBag size={100} className="mx-auto text-slate-500 mb-8" />
-            <h1 className="text-5xl font-bold text-white mb-4">Votre panier est vide</h1>
-            <p className="text-xl text-slate-400 mb-10">Découvrez nos collections exclusives</p>
+          <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-700 rounded-3xl p-12 md:p-16">
+            <ShoppingBag size={80} className="mx-auto text-slate-500 mb-8" />
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Votre panier est vide</h1>
+            <p className="text-lg md:text-xl text-slate-400 mb-10">Découvrez nos collections exclusives</p>
             <Link
               href="/catalog"
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-blue-600 text-white px-10 py-5 rounded-3xl text-xl font-semibold hover:scale-105 transition"
+              className="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-blue-600 text-white px-8 md:px-10 py-5 rounded-3xl text-lg md:text-xl font-semibold hover:scale-105 transition"
             >
               Découvrir le catalogue
             </Link>
@@ -152,31 +152,31 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pb-20 overflow-x-hidden">
       {/* Alert */}
       {alert.show && (
-        <div className="fixed top-6 right-6 z-50 max-w-sm">
+        <div className="fixed top-6 right-4 md:right-6 z-50 max-w-sm w-full px-4">
           <div className={`rounded-3xl p-5 flex gap-4 shadow-2xl backdrop-blur-xl ${
             alert.type === "success" ? "bg-emerald-900/90 border border-emerald-700" :
             alert.type === "error" ? "bg-red-900/90 border border-red-700" : 
             "bg-amber-900/90 border border-amber-700"
           }`}>
-            {alert.type === "success" && <CheckCircle className="text-emerald-400 mt-0.5" size={28} />}
-            {alert.type === "error" && <XCircle className="text-red-400 mt-0.5" size={28} />}
-            {alert.type === "warning" && <AlertCircle className="text-amber-400 mt-0.5" size={28} />}
-            <div className="flex-1">
-              <p className="text-white font-medium">{alert.message}</p>
+            {alert.type === "success" && <CheckCircle className="text-emerald-400 mt-0.5 flex-shrink-0" size={28} />}
+            {alert.type === "error" && <XCircle className="text-red-400 mt-0.5 flex-shrink-0" size={28} />}
+            {alert.type === "warning" && <AlertCircle className="text-amber-400 mt-0.5 flex-shrink-0" size={28} />}
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-medium break-words">{alert.message}</p>
             </div>
-            <button onClick={() => setAlert({ ...alert, show: false })} className="text-white/70 hover:text-white">
+            <button onClick={() => setAlert({ ...alert, show: false })} className="text-white/70 hover:text-white flex-shrink-0">
               <X size={22} />
             </button>
           </div>
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 pt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 md:pt-24">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-10 md:mb-12">
           <Link
             href="/catalog"
             className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-400 transition mb-6"
@@ -184,15 +184,15 @@ export default function CartPage() {
             <ArrowLeft size={20} />
             Retour au catalogue
           </Link>
-          <h1 className="text-6xl font-bold tracking-tighter bg-gradient-to-r from-white via-blue-200 to-indigo-300 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter bg-gradient-to-r from-white via-blue-200 to-indigo-300 bg-clip-text text-transparent">
             Mon Panier
           </h1>
-          <p className="text-xl text-slate-400 mt-3">
+          <p className="text-lg md:text-xl text-slate-400 mt-3">
             {totalItems} article{totalItems > 1 ? "s" : ""} • {total.toFixed(2)} TND
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
           {/* Liste des articles */}
           <div className="lg:col-span-8 space-y-6">
             {cart.items.map((item) => {
@@ -203,7 +203,7 @@ export default function CartPage() {
               return (
                 <div
                   key={item.id}
-                  className="group bg-slate-900/70 backdrop-blur-xl border border-slate-700 hover:border-blue-500/30 rounded-3xl p-8 transition-all duration-300"
+                  className="group relative bg-slate-900/70 backdrop-blur-xl border border-slate-700 hover:border-blue-500/30 rounded-3xl p-6 md:p-8 transition-all duration-300"
                 >
                   {isUpdating && (
                     <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-3xl">
@@ -211,34 +211,34 @@ export default function CartPage() {
                     </div>
                   )}
 
-                  <div className="flex gap-8">
+                  <div className="flex flex-col sm:flex-row gap-6">
                     {/* Image */}
-                    <div className="w-40 h-40 flex-shrink-0 bg-slate-950 rounded-2xl overflow-hidden border border-slate-700">
+                    <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 flex-shrink-0 bg-slate-950 rounded-2xl overflow-hidden border border-slate-700 mx-auto sm:mx-0">
                       {imageUrl ? (
                         <img
                           src={imageUrl}
                           alt={item.product.name}
-                          className="w-full h-full object-contain p-4"
+                          className="w-full h-full object-contain p-3 md:p-4"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-6xl">👕</div>
+                        <div className="w-full h-full flex items-center justify-center text-5xl">👕</div>
                       )}
                     </div>
 
                     {/* Informations */}
-                    <div className="flex-1">
-                      <div className="flex justify-between">
-                        <h3 className="text-2xl font-semibold text-white">{item.product.name}</h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-4">
+                        <h3 className="text-xl md:text-2xl font-semibold text-white leading-tight">{item.product.name}</h3>
                         <button
                           onClick={() => removeFromCart(item.product.id, item.size)}
                           disabled={isUpdating}
-                          className="text-red-400 hover:text-red-500 transition p-2"
+                          className="text-red-400 hover:text-red-500 transition p-2 -mr-2"
                         >
                           <Trash2 size={22} />
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-3 mt-2 mb-6">
+                      <div className="flex flex-wrap items-center gap-3 mt-3 mb-6">
                         <span className="text-blue-400 font-medium capitalize">{item.product.category}</span>
                         {item.size && (
                           <span className="px-4 py-1 bg-slate-800 rounded-full text-sm text-blue-400">
@@ -247,14 +247,14 @@ export default function CartPage() {
                         )}
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                        <div className="flex items-center gap-4 justify-center sm:justify-start">
                           <button
                             onClick={() => updateQuantity(item.product.id, item.size, item.quantity - 1)}
                             disabled={item.quantity <= 1 || isUpdating}
-                            className="w-11 h-11 rounded-2xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center transition"
+                            className="w-10 h-10 rounded-2xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center transition"
                           >
-                            <Minus size={20} />
+                            <Minus size={18} />
                           </button>
 
                           <span className="text-3xl font-bold w-12 text-center">{item.quantity}</span>
@@ -262,14 +262,14 @@ export default function CartPage() {
                           <button
                             onClick={() => updateQuantity(item.product.id, item.size, item.quantity + 1)}
                             disabled={item.quantity >= item.product.stock || isUpdating}
-                            className="w-11 h-11 rounded-2xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center transition"
+                            className="w-10 h-10 rounded-2xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 flex items-center justify-center transition"
                           >
-                            <Plus size={20} />
+                            <Plus size={18} />
                           </button>
                         </div>
 
-                        <div className="text-right">
-                          <p className="text-4xl font-bold text-blue-400 tracking-tighter">
+                        <div className="text-center sm:text-right">
+                          <p className="text-3xl md:text-4xl font-bold text-blue-400 tracking-tighter">
                             {(item.product.price * item.quantity).toFixed(2)} TND
                           </p>
                           <p className="text-slate-400 text-sm">
@@ -286,22 +286,22 @@ export default function CartPage() {
 
           {/* Résumé */}
           <div className="lg:col-span-4">
-            <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-700 rounded-3xl p-10 sticky top-24">
-              <h2 className="text-3xl font-bold mb-8">Récapitulatif</h2>
+            <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-700 rounded-3xl p-6 md:p-10 sticky top-6 md:top-24">
+              <h2 className="text-2xl md:text-3xl font-bold mb-8">Récapitulatif</h2>
 
               <div className="space-y-5 mb-10">
-                <div className="flex justify-between text-lg">
+                <div className="flex justify-between text-base md:text-lg">
                   <span className="text-slate-400">Sous-total</span>
                   <span className="font-semibold">{total.toFixed(2)} TND</span>
                 </div>
-                <div className="flex justify-between text-lg">
+                <div className="flex justify-between text-base md:text-lg">
                   <span className="text-slate-400">Livraison</span>
                   <span className="text-emerald-400">Calculée à la caisse</span>
                 </div>
               </div>
 
               <div className="border-t border-slate-700 pt-8 mb-10">
-                <div className="flex justify-between text-3xl font-bold">
+                <div className="flex justify-between text-2xl md:text-3xl font-bold">
                   <span>Total</span>
                   <span className="text-blue-400">{total.toFixed(2)} TND</span>
                 </div>
@@ -309,7 +309,7 @@ export default function CartPage() {
 
               <Link
                 href="/client/checkout"
-                className="block w-full text-center bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 py-5 rounded-3xl text-xl font-semibold transition mb-4"
+                className="block w-full text-center bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 py-5 rounded-3xl text-lg md:text-xl font-semibold transition mb-4"
               >
                 Passer à la caisse
               </Link>
