@@ -102,7 +102,7 @@ export default function MyOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white relative overflow-hidden">
+    <div className="cp min-h-screen bg-[#0A0A0A] text-white relative overflow-hidden">
       {/* === VIDÉO D'ARRIÈRE-PLAN === */}
       <video
         autoPlay

@@ -259,7 +259,7 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      <div className="checkout-page min-h-screen relative overflow-hidden">
+      <div className="cp checkout-page min-h-screen relative overflow-hidden">
         {/* Background dot grid */}
         <div style={{
           position: "fixed", inset: 0, zIndex: 0, opacity: 0.1,
