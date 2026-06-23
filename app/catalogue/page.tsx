@@ -6,12 +6,12 @@ import {
   Search, ShoppingCart, CheckCircle,
   AlertCircle, XCircle, X, ChevronLeft,
   ChevronRight, Eye, Heart, SlidersHorizontal,
-  Sparkles, Package,
+  Package,
 } from "lucide-react";
 import ClientNavbar from "@/components/ClientNavbar";
 
 type Category = "all" | "pantalon" | "pull" | "veste" | "chemise" | "accessoire";
-type Gender   = "all" | "men" | "women" | "unisex";
+type Gender = "all" | "men" | "women" | "unisex";
 
 type Product = {
   id: number;
@@ -57,35 +57,36 @@ const CATEGORY_ORDER: Array<Exclude<Category, "all">> = [
 ];
 
 export default function CatalogPage() {
-  const [products, setProducts]         = useState<Product[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [searchTerm, setSearchTerm]     = useState("");
-  const [category, setCategory]         = useState<Category>("all");
-  const [gender, setGender]             = useState<Gender>("all");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [category, setCategory] = useState<Category>("all");
+  const [gender, setGender] = useState<Gender>("all");
   const [selectedSize, setSelectedSize] = useState<Record<number, string>>({});
-  const [activeImage, setActiveImage]   = useState<Record<number, number>>({});
+  const [activeImage, setActiveImage] = useState<Record<number, number>>({});
   const [addingToCart, setAddingToCart] = useState<number | null>(null);
-  const [alert, setAlert]               = useState<AlertState>({ show: false, type: "success", message: "" });
-  const [wishlist, setWishlist]         = useState<Set<number>>(new Set());
-  const [lightbox, setLightbox]         = useState<{ product: Product; index: number } | null>(null);
-  const [filtersOpen, setFiltersOpen]   = useState(false);
+  const [alert, setAlert] = useState<AlertState>({ show: false, type: "success", message: "" });
+  const [wishlist, setWishlist] = useState<Set<number>>(new Set());
+  const [lightbox, setLightbox] = useState<{ product: Product; index: number } | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // ── Load favorites from DB on mount ──
+  // Load favorites (works even if not logged in)
   useEffect(() => {
     fetch("/api/favorites")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((data: Product[]) => {
         if (Array.isArray(data)) setWishlist(new Set(data.map((p) => p.id)));
       })
       .catch(() => {});
   }, []);
 
-  // ── Fetch products ──
+  // Fetch products
   useEffect(() => {
     const params = new URLSearchParams();
-    if (searchTerm)         params.set("search", searchTerm);
+    if (searchTerm) params.set("search", searchTerm);
     if (category !== "all") params.set("category", category);
-    if (gender   !== "all") params.set("gender", gender);
+    if (gender !== "all") params.set("gender", gender);
+
     setLoading(true);
     fetch(`/api/products/filter?${params}`)
       .then((r) => r.json())
@@ -104,6 +105,7 @@ export default function CatalogPage() {
       showAlert("warning", "Veuillez sélectionner une taille");
       return;
     }
+
     setAddingToCart(product.id);
     try {
       const res = await fetch("/api/cart", {
@@ -111,11 +113,12 @@ export default function CatalogPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: product.id, quantity: 1, size: size || null }),
       });
+
       if (res.ok) {
         showAlert("success", `${product.name} ajouté au panier !`);
         setTimeout(() => { window.location.href = "/client/panier"; }, 1200);
       } else {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         showAlert("error", err.error || "Impossible d'ajouter au panier");
       }
     } catch {
@@ -126,11 +129,13 @@ export default function CatalogPage() {
   };
 
   const toggleWishlist = async (id: number) => {
+    const isAdding = !wishlist.has(id);
     setWishlist((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      isAdding ? next.add(id) : next.delete(id);
       return next;
     });
+
     try {
       await fetch("/api/favorites", {
         method: "POST",
@@ -140,7 +145,7 @@ export default function CatalogPage() {
     } catch {
       setWishlist((prev) => {
         const next = new Set(prev);
-        next.has(id) ? next.delete(id) : next.add(id);
+        isAdding ? next.delete(id) : next.add(id);
         return next;
       });
     }
@@ -199,7 +204,6 @@ export default function CatalogPage() {
           position: relative;
         }
 
-        /* ── Video bg ── */
         .cp-vbg {
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
         }
@@ -218,10 +222,8 @@ export default function CatalogPage() {
           filter:blur(90px); opacity:0.18; pointer-events:none; z-index:1;
         }
 
-        /* ── Content ── */
         .cp-inner { position:relative; z-index:2; }
 
-        /* ── Hero ── */
         .cp-hero {
           padding: 6rem 2rem 3.5rem;
           text-align: center;
@@ -277,7 +279,6 @@ export default function CatalogPage() {
           border-radius: 9999px; padding: 0.1rem 0.6rem; font-size: 0.68rem; font-weight: 700;
         }
 
-        /* ── Filter bar ── */
         .cp-fbar {
           position: sticky; top: 0; z-index: 50;
           backdrop-filter: blur(28px) saturate(1.4);
@@ -327,7 +328,6 @@ export default function CatalogPage() {
           display: flex; align-items: center; justify-content: center;
         }
 
-        /* ── Filter drawer ── */
         .cp-fdrawer {
           max-width: 1440px; margin: 0 auto; padding: 0 2rem;
           overflow: hidden;
@@ -356,10 +356,8 @@ export default function CatalogPage() {
         .cp-fpill:hover { border-color: var(--border-hover); color: var(--text-1); }
         .cp-fpill.on { background: var(--gold-dim); border-color: rgba(212,175,55,0.45); color: var(--gold); }
 
-        /* ── Main grid area ── */
         .cp-main { max-width: 1440px; margin: 0 auto; padding: 3rem 2rem 7rem; }
 
-        /* ── Section heading ── */
         .cp-sec-head {
           display: flex; align-items: center; gap: 1rem; margin-bottom: 1.75rem;
         }
@@ -381,7 +379,6 @@ export default function CatalogPage() {
         }
         .cp-sec-line { flex: 1; height: 1px; background: var(--border); }
 
-        /* ── Product grid ── */
         .cp-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -389,7 +386,6 @@ export default function CatalogPage() {
           margin-bottom: 4rem;
         }
 
-        /* ── Product card ── */
         .pcard {
           background: var(--glass);
           border: 1px solid var(--border);
@@ -409,7 +405,6 @@ export default function CatalogPage() {
             0 0 0 1px rgba(212,175,55,0.07),
             inset 0 1px 0 rgba(255,255,255,0.04);
         }
-        /* top shimmer line */
         .pcard::before {
           content:''; position:absolute; top:0; left:0; right:0; height:2px;
           background: var(--grad-gold); transform:scaleX(0); transform-origin:left;
@@ -417,7 +412,6 @@ export default function CatalogPage() {
         }
         .pcard:hover::before { transform:scaleX(1); }
 
-        /* ── Image zone ── */
         .pcard-img-wrap {
           position: relative;
           aspect-ratio: 4/5;
@@ -437,14 +431,12 @@ export default function CatalogPage() {
         }
         .pcard-img-empty span { font-size:0.75rem; font-family:var(--mono); letter-spacing:1px; }
 
-        /* gradient overlay on image bottom */
         .pcard-img-grad {
           position:absolute; bottom:0; left:0; right:0; height:45%;
           background: linear-gradient(to top, rgba(8,8,8,0.85) 0%, transparent 100%);
           pointer-events:none; z-index:1;
         }
 
-        /* arrows */
         .pcard-arr {
           position:absolute; top:50%; transform:translateY(-50%);
           background:rgba(0,0,0,0.55); backdrop-filter:blur(6px);
@@ -459,7 +451,6 @@ export default function CatalogPage() {
         .pcard-arr.r { right:0.65rem; }
         .pcard-arr:hover { background:rgba(212,175,55,0.28); border-color:rgba(212,175,55,0.5); }
 
-        /* dot indicators */
         .pcard-dots {
           position:absolute; bottom:0.65rem; left:50%; transform:translateX(-50%);
           display:flex; gap:0.28rem; z-index:3;
@@ -470,7 +461,6 @@ export default function CatalogPage() {
         }
         .pcard-dot.on { background:var(--gold); width:12px; border-radius:999px; }
 
-        /* overlay actions */
         .pcard-actions {
           position:absolute; top:0.7rem; right:0.7rem;
           display:flex; flex-direction:column; gap:0.4rem; z-index:4;
@@ -486,7 +476,6 @@ export default function CatalogPage() {
         .pcard-action-btn:hover { background:rgba(255,255,255,0.1); }
         .pcard-action-btn.fav { border-color:rgba(212,175,55,0.45); }
 
-        /* quick view */
         .pcard-qview {
           position:absolute; bottom:0.7rem; left:0.7rem; z-index:4;
           background:rgba(0,0,0,0.65); backdrop-filter:blur(8px);
@@ -500,7 +489,6 @@ export default function CatalogPage() {
         .pcard:hover .pcard-qview { opacity:1; }
         .pcard-qview:hover { background:rgba(212,175,55,0.22); border-color:rgba(212,175,55,0.45); }
 
-        /* stock badge */
         .pcard-stock {
           position:absolute; top:0.7rem; left:0.7rem; z-index:4;
           font-size:0.6rem; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
@@ -510,14 +498,12 @@ export default function CatalogPage() {
         .pcard-stock.out { background:rgba(255,107,107,0.14); color:var(--coral); border:1px solid rgba(255,107,107,0.28); }
         .pcard-stock.low { background:rgba(255,179,71,0.14); color:var(--amber); border:1px solid rgba(255,179,71,0.28); }
 
-        /* ── Card body ── */
         .pcard-body {
           padding: 1.1rem 1.2rem 1.35rem;
           display: flex; flex-direction: column; gap: 0;
           flex: 1;
         }
 
-        /* meta row: gender badge + color swatch */
         .pcard-meta {
           display: flex; align-items: center; justify-content: space-between;
           margin-bottom: 0.6rem;
@@ -539,14 +525,12 @@ export default function CatalogPage() {
           flex-shrink: 0;
         }
 
-        /* name */
         .pcard-name {
           font-weight: 600; font-size: 1rem; line-height: 1.3;
           color: var(--text-1); margin-bottom: 0.3rem;
           letter-spacing: -0.01em;
         }
 
-        /* price row */
         .pcard-price-row {
           display: flex; align-items: baseline; gap: 0.35rem;
           margin-bottom: 0.6rem;
@@ -563,7 +547,6 @@ export default function CatalogPage() {
           color: var(--text-3); font-weight: 500;
         }
 
-        /* description */
         .pcard-desc {
           font-size: 0.78rem; color: var(--text-3); line-height: 1.55;
           margin-bottom: 0.9rem;
@@ -571,12 +554,10 @@ export default function CatalogPage() {
           overflow: hidden;
         }
 
-        /* divider */
         .pcard-divider {
           height: 1px; background: var(--border); margin-bottom: 0.9rem;
         }
 
-        /* sizes */
         .pcard-sizes-head {
           display: flex; align-items: center; justify-content: space-between;
           margin-bottom: 0.5rem;
@@ -604,7 +585,6 @@ export default function CatalogPage() {
           color: var(--gold); font-weight: 700;
         }
 
-        /* CTA button */
         .pcard-cta {
           width: 100%; padding: 0.9rem 1rem;
           background: var(--grad-gold); color: #080808;
@@ -626,7 +606,6 @@ export default function CatalogPage() {
           border: 1px solid var(--border);
         }
 
-        /* loading spinner inside button */
         .spin {
           width: 14px; height: 14px;
           border: 2px solid rgba(0,0,0,0.3);
@@ -636,7 +615,6 @@ export default function CatalogPage() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── Skeleton ── */
         .skel { animation: skel-shine 1.6s ease infinite; }
         @keyframes skel-shine {
           0%,100% { opacity:0.4; } 50% { opacity:0.7; }
@@ -651,7 +629,6 @@ export default function CatalogPage() {
           height:12px; border-radius:6px; background:var(--surface-2); margin-bottom:0.65rem;
         }
 
-        /* ── Empty state ── */
         .cp-empty {
           text-align:center; padding:7rem 2rem;
         }
@@ -662,7 +639,6 @@ export default function CatalogPage() {
         }
         .cp-empty-sub { font-size:0.875rem; color:var(--text-3); }
 
-        /* ── Toast ── */
         .cp-toast {
           position:fixed; top:1.5rem; right:1.5rem; z-index:200;
           max-width:340px; min-width:260px;
@@ -681,7 +657,6 @@ export default function CatalogPage() {
         .cp-toast-msg  { font-size:0.845rem; flex:1; color:var(--text-1); line-height:1.45; }
         .cp-toast-x   { background:none; border:none; color:var(--text-3); cursor:pointer; padding:0; flex-shrink:0; }
 
-        /* ── Lightbox ── */
         .cp-lb {
           position:fixed; inset:0; z-index:300;
           background:rgba(0,0,0,0.96);
@@ -702,7 +677,6 @@ export default function CatalogPage() {
         }
         .cp-lb-x:hover { background:rgba(255,107,107,0.2); border-color:rgba(255,107,107,0.4); }
 
-        /* ── Responsive ── */
         @media (max-width:768px) {
           .cp-hero { padding:5rem 1.25rem 2.5rem; }
           .cp-fbar-row { padding:0.9rem 1.25rem; }
@@ -714,7 +688,7 @@ export default function CatalogPage() {
       `}</style>
 
       <div className="cp">
-        {/* Video bg */}
+        {/* Video Background */}
         <div className="cp-vbg">
           <video autoPlay muted loop playsInline>
             <source src="/video/mm.mp4" type="video/mp4" />
@@ -722,9 +696,9 @@ export default function CatalogPage() {
         </div>
 
         {/* Ambient dots */}
-        <div className="cp-dot" style={{ top:"10%",  left:"3%",   width:"400px", height:"400px", background:"var(--gold)"  }} />
-        <div className="cp-dot" style={{ bottom:"8%", right:"4%",  width:"300px", height:"300px", background:"var(--coral)" }} />
-        <div className="cp-dot" style={{ top:"50%",  left:"70%",  width:"240px", height:"240px", background:"var(--teal)"  }} />
+        <div className="cp-dot" style={{ top: "10%", left: "3%", width: "400px", height: "400px", background: "var(--gold)" }} />
+        <div className="cp-dot" style={{ bottom: "8%", right: "4%", width: "300px", height: "300px", background: "var(--coral)" }} />
+        <div className="cp-dot" style={{ top: "50%", left: "70%", width: "240px", height: "240px", background: "var(--teal)" }} />
 
         <div className="cp-inner">
           <ClientNavbar />
@@ -733,8 +707,8 @@ export default function CatalogPage() {
           {alert.show && (
             <div className={`cp-toast ${alert.type}`}>
               <span className="cp-toast-icon">
-                {alert.type === "success" && <CheckCircle size={17} color="var(--teal)"  />}
-                {alert.type === "error"   && <XCircle     size={17} color="var(--coral)" />}
+                {alert.type === "success" && <CheckCircle size={17} color="var(--teal)" />}
+                {alert.type === "error" && <XCircle size={17} color="var(--coral)" />}
                 {alert.type === "warning" && <AlertCircle size={17} color="var(--amber)" />}
               </span>
               <span className="cp-toast-msg">{alert.message}</span>
@@ -764,8 +738,7 @@ export default function CatalogPage() {
               <span className="cp-eyebrow-dot" />
               Nouvelle collection
             </div>
-            
-            
+
             {wishlist.size > 0 && (
               <Link href="/client/favoris" className="cp-favlink">
                 <Heart size={13} fill="var(--gold)" stroke="var(--gold)" />
@@ -775,7 +748,7 @@ export default function CatalogPage() {
             )}
           </header>
 
-          {/* Filter bar */}
+          {/* Filter Bar */}
           <div className="cp-fbar">
             <div className="cp-fbar-row">
               <div className="cp-search">
@@ -794,9 +767,7 @@ export default function CatalogPage() {
               >
                 <SlidersHorizontal size={15} />
                 Filtres
-                {activeFiltersCount > 0 && (
-                  <span className="cp-fbadge">{activeFiltersCount}</span>
-                )}
+                {activeFiltersCount > 0 && <span className="cp-fbadge">{activeFiltersCount}</span>}
               </button>
             </div>
 
@@ -811,7 +782,8 @@ export default function CatalogPage() {
                         onClick={() => setCategory(c)}
                         className={`cp-fpill ${category === c ? "on" : ""}`}
                       >
-                        {c !== "all" && CATEGORY_ICONS[c] + " "}{CATEGORY_LABELS[c]}
+                        {c !== "all" && CATEGORY_ICONS[c] + " "}
+                        {CATEGORY_LABELS[c]}
                       </button>
                     ))}
                   </div>
@@ -834,7 +806,7 @@ export default function CatalogPage() {
             </div>
           </div>
 
-          {/* Products */}
+          {/* Products Section */}
           <main className="cp-main">
             {loading ? (
               <div className="cp-grid">
@@ -842,10 +814,10 @@ export default function CatalogPage() {
                   <div key={i} className="skel-card skel">
                     <div className="skel-img" />
                     <div className="skel-body">
-                      <div className="skel-line" style={{ width: "40%", height: "8px" }} />
-                      <div className="skel-line" style={{ width: "75%", height: "14px" }} />
+                      <div className="skel-line" style={{ width: "40%" }} />
+                      <div className="skel-line" style={{ width: "75%" }} />
                       <div className="skel-line" style={{ width: "35%", height: "22px" }} />
-                      <div className="skel-line" style={{ width: "90%", height: "10px" }} />
+                      <div className="skel-line" style={{ width: "90%" }} />
                     </div>
                   </div>
                 ))}
@@ -863,7 +835,6 @@ export default function CatalogPage() {
 
                 return (
                   <section key={cat}>
-                    {/* Section header */}
                     <div className="cp-sec-head">
                       <span className="cp-sec-icon">{CATEGORY_ICONS[cat]}</span>
                       <h2 className="cp-sec-title">{CATEGORY_LABELS[cat]}</h2>
@@ -875,19 +846,18 @@ export default function CatalogPage() {
 
                     <div className="cp-grid">
                       {items.map((product) => {
-                        const imgIndex   = activeImage[product.id] ?? 0;
-                        const imgCount   = product.images.length;
+                        const imgIndex = activeImage[product.id] ?? 0;
+                        const imgCount = product.images.length;
                         const currentImg = product.images[imgIndex];
                         const chosenSize = selectedSize[product.id];
                         const inWishlist = wishlist.has(product.id);
-                        const stockOk    = product.stock > 0;
-                        const lowStock   = stockOk && product.stock <= 3;
-                        const gBadge     = GENDER_BADGE[product.gender];
+                        const stockOk = product.stock > 0;
+                        const lowStock = stockOk && product.stock <= 3;
+                        const gBadge = GENDER_BADGE[product.gender];
 
                         return (
                           <div key={product.id} className="pcard">
-
-                            {/* ── Image ── */}
+                            {/* Image Section */}
                             <div className="pcard-img-wrap">
                               {currentImg ? (
                                 <img src={currentImg} alt={product.name} className="pcard-img" />
@@ -898,14 +868,11 @@ export default function CatalogPage() {
                                 </div>
                               )}
 
-                              {/* gradient */}
                               <div className="pcard-img-grad" />
 
-                              {/* stock */}
-                              {!stockOk  && <span className="pcard-stock out">Épuisé</span>}
-                              {lowStock  && <span className="pcard-stock low">Reste {product.stock}</span>}
+                              {!stockOk && <span className="pcard-stock out">Épuisé</span>}
+                              {lowStock && <span className="pcard-stock low">Reste {product.stock}</span>}
 
-                              {/* arrows */}
                               {imgCount > 1 && (
                                 <>
                                   <button className="pcard-arr l" onClick={() => prevImage(product.id, imgCount)}>
@@ -922,7 +889,6 @@ export default function CatalogPage() {
                                 </>
                               )}
 
-                              {/* wishlist + quickview */}
                               <div className="pcard-actions">
                                 <button
                                   className={`pcard-action-btn ${inWishlist ? "fav" : ""}`}
@@ -947,10 +913,8 @@ export default function CatalogPage() {
                               )}
                             </div>
 
-                            {/* ── Body ── */}
+                            {/* Card Body */}
                             <div className="pcard-body">
-
-                              {/* meta: gender badge + color */}
                               <div className="pcard-meta">
                                 {gBadge && (
                                   <span
@@ -968,38 +932,30 @@ export default function CatalogPage() {
                                 )}
                               </div>
 
-                              {/* name */}
                               <h3 className="pcard-name">{product.name}</h3>
 
-                              {/* price */}
                               <div className="pcard-price-row">
                                 <span className="pcard-price">{product.price.toFixed(2)}</span>
                                 <span className="pcard-currency">TND</span>
                               </div>
 
-                              {/* description */}
                               {product.description && (
                                 <p className="pcard-desc">{product.description}</p>
                               )}
 
                               <div className="pcard-divider" />
 
-                              {/* sizes */}
                               {product.sizes.length > 0 && (
                                 <div>
                                   <div className="pcard-sizes-head">
                                     <span className="pcard-sizes-label">Taille</span>
-                                    {!chosenSize && (
-                                      <span className="pcard-sizes-hint">Choisir</span>
-                                    )}
+                                    {!chosenSize && <span className="pcard-sizes-hint">Choisir</span>}
                                   </div>
                                   <div className="pcard-sizes-row">
                                     {product.sizes.map((size) => (
                                       <button
                                         key={size}
-                                        onClick={() =>
-                                          setSelectedSize((prev) => ({ ...prev, [product.id]: size }))
-                                        }
+                                        onClick={() => setSelectedSize((prev) => ({ ...prev, [product.id]: size }))}
                                         className={`pcard-size ${chosenSize === size ? "on" : ""}`}
                                       >
                                         {size}
@@ -1009,7 +965,6 @@ export default function CatalogPage() {
                                 </div>
                               )}
 
-                              {/* CTA */}
                               <button
                                 onClick={() => handleAddToCart(product)}
                                 disabled={addingToCart === product.id || !stockOk}

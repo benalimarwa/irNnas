@@ -724,7 +724,7 @@ export default async function Home() {
 
               <h1 className="hero-title">
                 Marque<br />
-                <span className="gradient-text">Internationale</span>
+                <span className="gradient-text">de Luxe</span>
               </h1>
 
               <div className="hero-buttons">
@@ -793,13 +793,7 @@ export default async function Home() {
             </div>
 
             <div className="features-grid">
-              <div className="feature-card animate-on-scroll">
-                <div className="feature-icon"><Zap size={24} /></div>
-                <h3>Style Finder IA</h3>
-                <p>Un diagnostic stylistique précis basé sur votre personnalité, vos préférences et votre morphologie en moins de 2 minutes.</p>
-                <Link href="/client/quiz" className="feature-link">Découvrir <ChevronRight size={16} /></Link>
-              </div>
-
+              
               <div className="feature-card animate-on-scroll">
                 <div className="feature-icon"><Shield size={24} /></div>
                 <h3>Qualité Premium</h3>
@@ -811,7 +805,7 @@ export default async function Home() {
                 <div className="feature-icon"><Truck size={24} /></div>
                 <h3>Livraison Express</h3>
                 <p>Livraison en 48h chrono, retour sous 14 jours. Un service client dédié 7j/7 pour vous accompagner.</p>
-                <Link href="/client/quiz" className="feature-link">En savoir plus <ChevronRight size={16} /></Link>
+                <Link href="/sign-in" className="feature-link">En savoir plus <ChevronRight size={16} /></Link>
               </div>
             </div>
 
@@ -875,7 +869,7 @@ export default async function Home() {
                 <Link href="/contact">Contact</Link>
               </div>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                © 2025 irNas — Tous droits réservés
+                © 2020 irNas — Tous droits réservés
               </div>
             </div>
           </div>
