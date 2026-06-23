@@ -1,9 +1,9 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
-import { Sparkles, ShoppingBag, Heart, Package, ArrowUpRight, TrendingUp, Award } from 'lucide-react';
+import { Sparkles, ShoppingBag, Heart, Package, Award } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type RecentOrder = {
   id: number;
@@ -22,6 +22,7 @@ type DashboardData = {
 
 export default function ClientDashboard() {
   const { user } = useUser();
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const [data, setData] = useState<DashboardData>({
     ordersCount: 0,
@@ -31,6 +32,13 @@ export default function ClientDashboard() {
     recentOrders: [],
   });
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.play().catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -60,13 +68,6 @@ export default function ClientDashboard() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Instrument+Sans:wght@300;400;500;600;700&display=swap');
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body, html {
-          max-width: 100vw;
-          overflow-x: hidden;
-        }
 
         .glass-card {
           background: rgba(17, 17, 17, 0.85);
@@ -103,6 +104,8 @@ export default function ClientDashboard() {
           margin: 0 auto;
           padding: 2rem 1rem 4rem;
           width: 100%;
+          position: relative;
+          z-index: 10;
         }
 
         .action-card {
@@ -113,7 +116,6 @@ export default function ClientDashboard() {
           box-shadow: 0 25px 50px -12px rgba(212, 175, 55, 0.25);
         }
 
-        /* Mobile Optimizations */
         @media (max-width: 768px) {
           .dashboard-container { padding: 1.5rem 1rem 3rem; }
           .glass-card { padding: 2rem 1.5rem; border-radius: 1.25rem; }
@@ -121,6 +123,54 @@ export default function ClientDashboard() {
           .stat-card { padding: 1.75rem !important; }
         }
       `}</style>
+
+      {/* VIDÉO BACKGROUND */}
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+      }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: 0.25,
+            filter: "brightness(0.65) contrast(1.1)",
+          }}
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
+        >
+          <source src="/video/mm.mp4" type="video/mp4" />
+        </video>
+      </div>
+
+      {/* OVERLAY */}
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        background: "radial-gradient(circle at 30% 20%, rgba(212,175,55,0.12), rgba(0,0,0,0.88))",
+        zIndex: 1,
+        pointerEvents: "none",
+      }} />
+
+      {/* Grille de points dorés */}
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 2,
+        opacity: 0.08,
+        backgroundImage: "radial-gradient(#D4AF37 0.8px, transparent 1px)",
+        backgroundSize: "60px 60px",
+        pointerEvents: "none",
+      }} />
 
       <div className="dashboard-container">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
@@ -179,7 +229,7 @@ export default function ClientDashboard() {
                     key={i}
                     href={action.href}
                     className="action-card glass-card"
-                    style={{ padding: '2.25rem', border: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none', color: '#F8F6F2' }}
+                    style={{ padding: '2.25rem', border: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none', color: '#F8F6F2', display: 'block' }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
                       <div style={{ width: '4rem', height: '4rem', borderRadius: '0.75rem', background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
