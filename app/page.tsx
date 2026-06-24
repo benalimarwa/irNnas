@@ -63,11 +63,6 @@ export default async function Home() {
         .homepage {
           position: relative;
           min-height: 100vh;
-          background: 
-            radial-gradient(circle at 0% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
-            radial-gradient(circle at 100% 30%, rgba(255, 107, 107, 0.06) 0%, transparent 40%),
-            radial-gradient(circle at 50% 80%, rgba(78, 205, 196, 0.06) 0%, transparent 40%),
-            radial-gradient(circle at 80% 50%, rgba(155, 89, 182, 0.05) 0%, transparent 40%);
           font-family: 'Instrument Sans', sans-serif;
           color: var(--text-primary);
           overflow-x: hidden;
@@ -81,7 +76,7 @@ export default async function Home() {
           background-image: 
             repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 20px);
           pointer-events: none;
-          z-index: 0;
+          z-index: 1;
         }
 
         .color-dot {
@@ -90,7 +85,7 @@ export default async function Home() {
           filter: blur(60px);
           opacity: 0.4;
           pointer-events: none;
-          z-index: 0;
+          z-index: 1;
         }
 
         /* ── Navbar ── */
@@ -152,9 +147,7 @@ export default async function Home() {
           transition: color 0.3s ease;
         }
 
-        .nav-links a:hover {
-          color: var(--accent-gold);
-        }
+        .nav-links a:hover { color: var(--accent-gold); }
 
         .nav-cta {
           padding: 0.6rem 1.25rem;
@@ -173,16 +166,16 @@ export default async function Home() {
           flex-shrink: 0;
         }
 
-        /* ── Main Container ── */
         .main-container {
           max-width: 1400px;
           margin: 0 auto;
           padding: 0 1rem;
           width: 100%;
           overflow-x: hidden;
+          position: relative;
+          z-index: 10;
         }
 
-        /* ── Hero ── */
         .hero {
           min-height: 100vh;
           display: grid;
@@ -333,10 +326,7 @@ export default async function Home() {
           letter-spacing: 0.5px;
         }
 
-        /* Hero Media — caché sur mobile */
-        .hero-media {
-          display: none;
-        }
+        .hero-media { display: none; }
 
         .floating-card {
           position: absolute;
@@ -358,12 +348,9 @@ export default async function Home() {
         }
 
         .card-icon {
-          width: 48px;
-          height: 48px;
+          width: 48px; height: 48px;
           border-radius: 1rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          display: flex; align-items: center; justify-content: center;
           margin-bottom: 1rem;
         }
 
@@ -371,13 +358,9 @@ export default async function Home() {
         .card-icon.coral { background: var(--gradient-coral); }
         .card-icon.teal { background: var(--gradient-teal); }
 
-        /* ── Features ── */
         .features-section { padding: 4rem 0; }
 
-        .section-header {
-          text-align: center;
-          margin-bottom: 3rem;
-        }
+        .section-header { text-align: center; margin-bottom: 3rem; }
 
         .section-badge {
           display: inline-block;
@@ -430,18 +413,14 @@ export default async function Home() {
         }
 
         .feature-card:hover::before { transform: scaleX(1); }
-
         .feature-card:nth-child(1):hover { border-color: rgba(212, 175, 55, 0.3); }
         .feature-card:nth-child(2):hover { border-color: rgba(255, 107, 107, 0.3); }
         .feature-card:nth-child(3):hover { border-color: rgba(78, 205, 196, 0.3); }
 
         .feature-icon {
-          width: 48px;
-          height: 48px;
+          width: 48px; height: 48px;
           border-radius: 1rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          display: flex; align-items: center; justify-content: center;
           margin-bottom: 1rem;
         }
 
@@ -465,10 +444,8 @@ export default async function Home() {
         .feature-card:nth-child(1) .feature-link { color: var(--accent-gold); }
         .feature-card:nth-child(2) .feature-link { color: var(--accent-coral); }
         .feature-card:nth-child(3) .feature-link { color: var(--accent-teal); }
-
         .feature-link:hover { gap: 0.75rem; }
 
-        /* Color chips */
         .color-showcase {
           display: flex;
           justify-content: center;
@@ -486,7 +463,6 @@ export default async function Home() {
         .color-chip.amber { background: var(--accent-amber); }
         .color-chip.rose { background: var(--accent-rose); }
 
-        /* ── Stats ── */
         .stats-section {
           background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(255,107,107,0.05), rgba(78,205,196,0.05), rgba(155,89,182,0.05));
           border-radius: 1.5rem;
@@ -519,7 +495,6 @@ export default async function Home() {
 
         .stat-label { font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 1px; }
 
-        /* ── CTA ── */
         .cta-section {
           background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(255,107,107,0.1), rgba(78,205,196,0.1));
           border-radius: 1.5rem;
@@ -565,7 +540,6 @@ export default async function Home() {
           font-size: 0.95rem;
         }
 
-        /* ── Footer ── */
         .footer {
           border-top: 1px solid var(--border-light);
           padding: 2rem 0;
@@ -596,7 +570,6 @@ export default async function Home() {
 
         .footer-links a:hover { color: var(--accent-coral); }
 
-        /* ── Animations ── */
         .animate-on-scroll {
           opacity: 0;
           transform: translateY(30px);
@@ -608,75 +581,62 @@ export default async function Home() {
           transform: translateY(0);
         }
 
-        /* ── Desktop overrides ── */
         @media (min-width: 768px) {
-          .features-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
-
-          .stats-grid {
-            grid-template-columns: repeat(4, 1fr);
-          }
+          .features-grid { grid-template-columns: repeat(3, 1fr); }
+          .stats-grid { grid-template-columns: repeat(4, 1fr); }
         }
 
         @media (min-width: 1024px) {
-          .nav-container {
-            padding: 0 2rem;
-            height: 80px;
-          }
-
-          .nav-links {
-            display: flex;
-          }
-
-          .logo {
-            font-size: 32px;
-          }
-
-          .main-container {
-            padding: 0 2rem;
-          }
-
-          .hero {
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            padding-bottom: 0;
-          }
-
-          .hero-media {
-            display: flex;
-            position: relative;
-            height: 500px;
-            align-items: center;
-            justify-content: center;
-          }
-
-          .stats-section {
-            border-radius: 2rem;
-            padding: 4rem 3rem;
-            margin: 4rem 0;
-          }
-
-          .cta-section {
-            border-radius: 2rem;
-            padding: 4rem;
-            margin: 4rem 0;
-          }
-
-          .footer-content {
-            flex-direction: row;
-            justify-content: space-between;
-            text-align: left;
-          }
-
-          .hero-description {
-            font-size: 1.1rem;
-          }
+          .nav-container { padding: 0 2rem; height: 80px; }
+          .nav-links { display: flex; }
+          .logo { font-size: 32px; }
+          .main-container { padding: 0 2rem; }
+          .hero { grid-template-columns: 1fr 1fr; gap: 4rem; padding-bottom: 0; }
+          .hero-media { display: flex; position: relative; height: 500px; align-items: center; justify-content: center; }
+          .stats-section { border-radius: 2rem; padding: 4rem 3rem; margin: 4rem 0; }
+          .cta-section { border-radius: 2rem; padding: 4rem; margin: 4rem 0; }
+          .footer-content { flex-direction: row; justify-content: space-between; text-align: left; }
+          .hero-description { font-size: 1.1rem; }
         }
       `}</style>
 
+      {/* ── VIDÉO BACKGROUND ── */}
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+      }}>
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: 0.2,
+            filter: "brightness(0.5) contrast(1.1)",
+          }}
+        >
+          <source src="/video/mm.mp4" type="video/mp4" />
+        </video>
+      </div>
+
+      {/* ── OVERLAY RADIAL ── */}
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1,
+        background: "radial-gradient(circle at 30% 20%, rgba(212,175,55,0.1), rgba(0,0,0,0.85))",
+        pointerEvents: "none",
+      }} />
+
       <div className="homepage">
-        {/* Points colorés animés */}
+        {/* Points colorés */}
         <div className="color-dot" style={{ top: '20%', left: '10%', width: '300px', height: '300px', background: 'var(--accent-gold)' }}></div>
         <div className="color-dot" style={{ bottom: '15%', right: '5%', width: '250px', height: '250px', background: 'var(--accent-coral)' }}></div>
         <div className="color-dot" style={{ top: '60%', left: '80%', width: '200px', height: '200px', background: 'var(--accent-teal)' }}></div>
@@ -765,7 +725,6 @@ export default async function Home() {
               </div>
             </div>
 
-            {/* Hero media — visible desktop seulement */}
             <div className="hero-media">
               <div className="floating-card">
                 <div className="card-icon gold"><Sparkles size={24} color="#0A0A0A" /></div>
@@ -793,7 +752,6 @@ export default async function Home() {
             </div>
 
             <div className="features-grid">
-              
               <div className="feature-card animate-on-scroll">
                 <div className="feature-icon"><Shield size={24} /></div>
                 <h3>Qualité Premium</h3>
