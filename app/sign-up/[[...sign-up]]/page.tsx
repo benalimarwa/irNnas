@@ -1,4 +1,3 @@
-// app/sign-up/[[...sign-up]]/page.tsx
 "use client";
 import "@/app/globals.css";
 import { SignUp, useUser } from "@clerk/nextjs";
@@ -63,12 +62,21 @@ export default function SignUpPage() {
           --rose: #FF2D75;
         }
 
+        /* --- ANTI-DÉBORDEMENT --- */
+        html, body {
+          overflow-x: hidden !important;
+          width: 100%;
+          max-width: 100%;
+          background: var(--ink);
+        }
+
         .signup-root {
           position: relative;
           min-height: 100vh;
           font-family: 'Instrument Sans', sans-serif;
           background: var(--ink);
           overflow-x: hidden;
+          width: 100%;
         }
 
         /* Vidéo */
@@ -127,6 +135,8 @@ export default function SignUpPage() {
           background: rgba(10,10,12,0.6);
           backdrop-filter: blur(12px);
           border-bottom: 1px solid rgba(212,175,55,0.2);
+          width: 100%;
+          max-width: 100vw;
         }
         .nav-logo {
           font-family: 'Syne', sans-serif;
@@ -139,6 +149,7 @@ export default function SignUpPage() {
           color: transparent;
           text-decoration: none;
           animation: shimmer 3s infinite;
+          background-size: 200% auto;
         }
         @keyframes shimmer {
           0% { background-position: 0% 50%; }
@@ -155,6 +166,7 @@ export default function SignUpPage() {
           align-items: center;
           justify-content: center;
           padding: 40px 20px;
+          width: 100%;
         }
 
         /* Carte */
@@ -169,13 +181,33 @@ export default function SignUpPage() {
           box-shadow: 0 30px 50px -20px black;
           transition: all 0.4s;
           animation: cardGlow 4s infinite alternate;
+          overflow: hidden;
         }
         @keyframes cardGlow {
           0% { box-shadow: 0 30px 50px -20px black, 0 0 0 1px rgba(212,175,55,0.2) inset; border-color: rgba(212,175,55,0.3); }
           100% { box-shadow: 0 30px 60px -15px rgba(212,175,55,0.3), 0 0 0 2px rgba(0,212,255,0.3) inset; border-color: rgba(0,212,255,0.5); }
         }
 
-        /* Boutons de rôle avec couleurs distinctes */
+        /* Titres */
+        .text-center { text-align: center; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .font-bold { font-weight: 700; }
+        .bg-gradient-to-r { background-image: linear-gradient(to right, var(--gold), var(--blue-neon)); }
+        .bg-clip-text { -webkit-background-clip: text; background-clip: text; }
+        .text-transparent { color: transparent; }
+        .text-off-white\\/70 { color: rgba(244,241,236,0.7); }
+        .text-off-white\\/60 { color: rgba(244,241,236,0.6); }
+        .text-off-white\\/40 { color: rgba(244,241,236,0.4); }
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        .inline-block { display: inline-block; }
+
+        /* Boutons de rôle */
         .role-buttons {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -193,6 +225,7 @@ export default function SignUpPage() {
           gap: 0.5rem;
           transition: all 0.3s ease;
           cursor: pointer;
+          color: var(--off-white);
         }
         .role-btn.client.active {
           background: linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.05));
@@ -210,16 +243,12 @@ export default function SignUpPage() {
         .role-btn.client span { color: var(--gold); }
         .role-btn.admin span { color: var(--blue-neon); }
 
-        /* ============================================ */
-        /* Personnalisation Clerk - fond sombre forcé   */
-        /* sur TOUS les écrans (form + vérification OTP)*/
-        /* ============================================ */
+        /* --- PERSONNALISATION CLERK AVEC OTP AMÉLIORÉ --- */
         .clerk-sign-up {
           background: transparent !important;
           width: 100%;
         }
 
-        /* Conteneurs principaux Clerk - on neutralise tous les fonds blancs */
         .clerk-sign-up .cl-rootBox,
         .clerk-sign-up .cl-cardBox,
         .clerk-sign-up .cl-card,
@@ -240,7 +269,7 @@ export default function SignUpPage() {
           display: none;
         }
 
-        /* Champs de formulaire : texte en blanc */
+        /* Champs normaux */
         .clerk-sign-up .cl-formFieldInput {
           background: rgba(8,8,12,0.8) !important;
           border: 1px solid rgba(212,175,55,0.4) !important;
@@ -262,24 +291,33 @@ export default function SignUpPage() {
           font-weight: 500 !important;
         }
 
-        /* Champs OTP (code de vérification par email) */
+        /* --- OTP : champs de code de vérification --- */
         .clerk-sign-up .cl-otpCodeField,
         .clerk-sign-up .cl-otpCodeFieldInputs {
           background: transparent !important;
         }
-        .clerk-sign-up .cl-otpCodeFieldInput {
-          background: rgba(8,8,12,0.8) !important;
-          border: 1px solid rgba(212,175,55,0.4) !important;
+        .clerk-sign-up .cl-otpCodeFieldInput,
+        .clerk-sign-up input[type="text"][maxlength="1"] { /* fallback robuste */
+          background: rgba(8,8,12,0.9) !important;
+          border: 2px solid rgba(212,175,55,0.6) !important;
           border-radius: 12px !important;
           color: #ffffff !important;
+          font-size: 1.5rem !important;
+          font-weight: 600 !important;
           caret-color: var(--gold) !important;
+          width: 48px !important;
+          height: 56px !important;
+          text-align: center !important;
+          margin: 0 4px !important;
         }
-        .clerk-sign-up .cl-otpCodeFieldInput:focus {
+        .clerk-sign-up .cl-otpCodeFieldInput:focus,
+        .clerk-sign-up input[type="text"][maxlength="1"]:focus {
           border-color: var(--blue-neon) !important;
-          box-shadow: 0 0 0 3px rgba(0,212,255,0.2) !important;
+          box-shadow: 0 0 0 4px rgba(0,212,255,0.25) !important;
+          background: rgba(0,212,255,0.1) !important;
         }
 
-        /* Bloc affichant l'email pendant la vérification */
+        /* Bloc email */
         .clerk-sign-up .cl-identityPreview {
           background: rgba(20,20,30,0.6) !important;
           border: 1px solid rgba(212,175,55,0.3) !important;
@@ -320,7 +358,7 @@ export default function SignUpPage() {
           border-color: var(--gold);
         }
 
-        /* Diviseur "ou" */
+        /* Diviseur */
         .clerk-sign-up .cl-dividerLine {
           background: linear-gradient(90deg, transparent, var(--gold), var(--blue-neon), transparent) !important;
         }
@@ -343,7 +381,7 @@ export default function SignUpPage() {
           color: var(--gold) !important;
         }
 
-        /* Footer Clerk : "Secured by Clerk" + badge "Development mode" */
+        /* Footer */
         .clerk-sign-up .cl-footer {
           background: rgba(10,10,12,0.85) !important;
           border-top: 1px solid rgba(212,175,55,0.2) !important;
@@ -359,7 +397,7 @@ export default function SignUpPage() {
           border: 1px solid rgba(212,175,55,0.3) !important;
         }
 
-        /* Messages d'erreur */
+        /* Erreurs */
         .clerk-sign-up .cl-formFieldErrorText {
           color: var(--rose) !important;
         }
@@ -369,8 +407,16 @@ export default function SignUpPage() {
           color: var(--off-white) !important;
         }
 
+        /* Responsive */
         @media (max-width: 640px) {
           .signup-card { padding: 32px 24px; }
+          .role-buttons { gap: 0.75rem; }
+          .clerk-sign-up .cl-otpCodeFieldInput,
+          .clerk-sign-up input[type="text"][maxlength="1"] {
+            width: 40px !important;
+            height: 48px !important;
+            font-size: 1.25rem !important;
+          }
         }
       `}</style>
 
@@ -392,13 +438,12 @@ export default function SignUpPage() {
         <div className="signup-container">
           <div className="signup-card">
             <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-gold to-blue-neon bg-clip-text text-transparent">
+              <h2 className="text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent">
                 Créer un compte
               </h2>
               <p className="text-off-white/70 mt-2">Rejoignez la communauté irNas</p>
             </div>
 
-            {/* Sélecteur de rôle avec couleurs personnalisées */}
             <div className="mb-6">
               <p className="text-center text-off-white/60 mb-3 text-sm">Vous êtes ?</p>
               <div className="role-buttons">
@@ -420,35 +465,35 @@ export default function SignUpPage() {
             </div>
 
             <SignUp
-  unsafeMetadata={{ role: selectedRole }}
-  appearance={{
-    elements: {
-      rootBox: "clerk-sign-up",
-      card: "cl-card",
-      headerTitle: "cl-headerTitle",
-      headerSubtitle: "cl-headerSubtitle",
-      formButtonPrimary: "cl-formButtonPrimary",
-      socialButtonsBlockButton: "cl-socialButtonsBlockButton",
-      formFieldInput: "cl-formFieldInput",
-      formFieldLabel: "cl-formFieldLabel",
-      dividerLine: "cl-dividerLine",
-      dividerText: "cl-dividerText",
-      footerActionLink: "cl-footerActionLink",
-      identityPreview: "cl-identityPreview",
-      identityPreviewText: "cl-identityPreviewText",
-      identityPreviewEditButton: "cl-identityPreviewEditButton",
-      otpCodeFieldInput: "cl-otpCodeFieldInput",
-      formResendCodeLink: "cl-formResendCodeLink",
-      footer: "cl-footer",
-      footerText: "cl-footerText",
-      badge: "cl-badge",
-      alert: "cl-alert",
-      formFieldErrorText: "cl-formFieldErrorText",
-    },
-    options: { socialButtonsVariant: "blockButton" }
-  }}
-  fallbackRedirectUrl="/"
-/>
+              unsafeMetadata={{ role: selectedRole }}
+              appearance={{
+                elements: {
+                  rootBox: "clerk-sign-up",
+                  card: "cl-card",
+                  headerTitle: "cl-headerTitle",
+                  headerSubtitle: "cl-headerSubtitle",
+                  formButtonPrimary: "cl-formButtonPrimary",
+                  socialButtonsBlockButton: "cl-socialButtonsBlockButton",
+                  formFieldInput: "cl-formFieldInput",
+                  formFieldLabel: "cl-formFieldLabel",
+                  dividerLine: "cl-dividerLine",
+                  dividerText: "cl-dividerText",
+                  footerActionLink: "cl-footerActionLink",
+                  identityPreview: "cl-identityPreview",
+                  identityPreviewText: "cl-identityPreviewText",
+                  identityPreviewEditButton: "cl-identityPreviewEditButton",
+                  otpCodeFieldInput: "cl-otpCodeFieldInput",
+                  formResendCodeLink: "cl-formResendCodeLink",
+                  footer: "cl-footer",
+                  footerText: "cl-footerText",
+                  badge: "cl-badge",
+                  alert: "cl-alert",
+                  formFieldErrorText: "cl-formFieldErrorText",
+                },
+                options: { socialButtonsVariant: "blockButton" }
+              }}
+              fallbackRedirectUrl="/"
+            />
 
             <div className="mt-6 text-center">
               <p className="text-off-white/60 text-sm">

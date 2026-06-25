@@ -18,30 +18,49 @@ export default function SignInPage() {
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Instrument+Sans:wght@300;400;500;600;700&display=swap');
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* --- RESET & ANTI-DÉBORDEMENT --- */
+        html, body {
+          margin: 0;
+          padding: 0;
+          overflow-x: hidden !important;
+          width: 100%;
+          max-width: 100%;
+          background: #0A0A0C;
+        }
+
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
 
         :root {
           --ink: #0A0A0C;
           --off-white: #F4F1EC;
           --gold: #D4AF37;
+          --gold-dark: #B8942E;
+          --blue-neon: #00D4FF;
         }
 
         .sign-root {
           position: relative;
           min-height: 100vh;
+          width: 100%;
+          max-width: 100vw;
           font-family: 'Instrument Sans', sans-serif;
           background: var(--ink);
           overflow-x: hidden;
         }
 
-        /* Vidéo Background */
+        /* Vidéo */
         .sign-vid {
           position: fixed;
           inset: 0;
           z-index: 0;
           overflow: hidden;
+          width: 100%;
+          height: 100%;
         }
-
         .sign-vid video {
           width: 100%;
           height: 100%;
@@ -68,6 +87,8 @@ export default function SignInPage() {
           background: rgba(10,10,12,0.7);
           backdrop-filter: blur(12px);
           border-bottom: 1px solid rgba(212,175,55,0.2);
+          width: 100%;
+          max-width: 100vw;
         }
 
         .nav-logo {
@@ -75,13 +96,14 @@ export default function SignInPage() {
           font-size: 28px;
           font-weight: 800;
           letter-spacing: -1.5px;
-          background: linear-gradient(135deg, var(--gold), #00D4FF);
+          background: linear-gradient(135deg, var(--gold), var(--blue-neon));
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
+          text-decoration: none;
         }
 
-        /* Conteneur principal - Bien centré */
+        /* Conteneur principal */
         .sign-container {
           position: relative;
           z-index: 15;
@@ -90,9 +112,10 @@ export default function SignInPage() {
           align-items: center;
           justify-content: center;
           padding: 40px 20px 80px;
+          width: 100%;
         }
 
-        /* Carte SignIn - Optimisée mobile */
+        /* Carte */
         .sign-card {
           background: rgba(12, 12, 16, 0.85);
           backdrop-filter: blur(20px);
@@ -102,6 +125,7 @@ export default function SignInPage() {
           width: 100%;
           max-width: 420px;
           box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+          overflow: hidden; /* sécurité */
         }
 
         @media (max-width: 480px) {
@@ -110,15 +134,96 @@ export default function SignInPage() {
             border-radius: 24px;
             max-width: 92%;
           }
-          
           .nav-logo {
             font-size: 24px;
           }
         }
 
-        /* Personnalisation Clerk */
+        /* Personnalisation Clerk – fond sombre et champs lisibles */
         .clerk-custom .cl-signIn-root {
           width: 100% !important;
+        }
+        .clerk-custom .cl-card {
+          background: transparent !important;
+          padding: 0 !important;
+        }
+        .clerk-custom .cl-formFieldInput {
+          background: rgba(8,8,12,0.8) !important;
+          border: 1px solid rgba(212,175,55,0.4) !important;
+          border-radius: 20px !important;
+          color: #ffffff !important;
+          caret-color: var(--gold) !important;
+          padding: 12px 18px !important;
+          font-size: 0.95rem !important;
+        }
+        .clerk-custom .cl-formFieldInput::placeholder {
+          color: rgba(255,255,255,0.5) !important;
+        }
+        .clerk-custom .cl-formFieldInput:focus {
+          border-color: var(--blue-neon) !important;
+          box-shadow: 0 0 0 3px rgba(0,212,255,0.2) !important;
+        }
+        .clerk-custom .cl-formFieldLabel {
+          color: rgba(244,241,236,0.9) !important;
+          font-weight: 500 !important;
+        }
+        .clerk-custom .cl-formButtonPrimary {
+          background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important;
+          color: #0A0A0C !important;
+          font-weight: 700 !important;
+          border-radius: 60px !important;
+          padding: 0.8rem !important;
+          text-transform: uppercase !important;
+          letter-spacing: 1px !important;
+        }
+        .clerk-custom .cl-formButtonPrimary:hover {
+          background: linear-gradient(135deg, #E5C05A, #C9A142) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(212,175,55,0.3);
+        }
+        .clerk-custom .cl-socialButtonsBlockButton {
+          background: rgba(20,20,30,0.7) !important;
+          border: 1px solid rgba(212,175,55,0.4) !important;
+          border-radius: 60px !important;
+          color: var(--off-white) !important;
+        }
+        .clerk-custom .cl-socialButtonsBlockButton:hover {
+          background: rgba(212,175,55,0.15) !important;
+          border-color: var(--gold);
+        }
+        .clerk-custom .cl-dividerLine {
+          background: linear-gradient(90deg, transparent, var(--gold), var(--blue-neon), transparent) !important;
+        }
+        .clerk-custom .cl-dividerText {
+          color: rgba(244,241,236,0.7) !important;
+          background: rgba(10,10,12,0.8) !important;
+        }
+        .clerk-custom .cl-footerActionLink {
+          color: var(--blue-neon) !important;
+        }
+        .clerk-custom .cl-footerActionLink:hover {
+          color: var(--gold) !important;
+        }
+        .clerk-custom .cl-footer {
+          background: rgba(10,10,12,0.85) !important;
+          border-top: 1px solid rgba(212,175,55,0.2) !important;
+          border-radius: 0 0 24px 24px !important;
+        }
+        .clerk-custom .cl-footerText {
+          color: rgba(244,241,236,0.5) !important;
+        }
+        .clerk-custom .cl-badge {
+          background: rgba(212,175,55,0.15) !important;
+          color: var(--gold) !important;
+          border: 1px solid rgba(212,175,55,0.3) !important;
+        }
+        .clerk-custom .cl-formFieldErrorText {
+          color: #FF2D75 !important;
+        }
+        .clerk-custom .cl-alert {
+          background: rgba(255,45,117,0.1) !important;
+          border: 1px solid #FF2D75 !important;
+          color: var(--off-white) !important;
         }
       `}</style>
 
@@ -149,10 +254,10 @@ export default function SignInPage() {
         {/* Contenu centré */}
         <div className="sign-container">
           <div className="sign-card clerk-custom">
-            <SignIn 
+            <SignIn
               appearance={{
                 elements: {
-                  rootBox: "clerk-sign-in",
+                  rootBox: "cl-signIn-root",
                   card: "cl-card",
                   headerTitle: "cl-headerTitle",
                   headerSubtitle: "cl-headerSubtitle",
@@ -163,8 +268,12 @@ export default function SignInPage() {
                   dividerLine: "cl-dividerLine",
                   dividerText: "cl-dividerText",
                   footerActionLink: "cl-footerActionLink",
+                  footer: "cl-footer",
+                  footerText: "cl-footerText",
+                  badge: "cl-badge",
+                  alert: "cl-alert",
+                  formFieldErrorText: "cl-formFieldErrorText",
                 },
-                
               }}
               fallbackRedirectUrl="/"
             />
