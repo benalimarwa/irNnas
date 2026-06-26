@@ -470,7 +470,7 @@ export default async function Home() {
             filter: "brightness(0.5) contrast(1.1)",
           }}
         >
-          <source src="/video/mm.mp4" type="video/mp4" />
+          <source src="/video/pp.mp4" type="video/mp4" />
         </video>
       </div>
 
