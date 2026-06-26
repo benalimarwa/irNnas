@@ -1,7 +1,7 @@
 // app/page.tsx
 import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
-import { 
+import {
   Sparkles, ArrowRight, Package, LogIn, UserPlus, Shirt, ChevronRight,
   Gem, Shield, Truck, Star, Zap, Clock, Layers, Award, Palette, Heart, TrendingUp
 } from "lucide-react";
@@ -618,8 +618,8 @@ export default async function Home() {
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            opacity: 0.2,
-            filter: "brightness(0.5) contrast(1.1)",
+            opacity: 0.35,         // ← augmenté pour être visible
+            filter: "brightness(0.7) contrast(1.1) saturate(1.3)", // ← harmonisé
           }}
         >
           <source src="/video/mm.mp4" type="video/mp4" />
