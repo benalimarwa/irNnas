@@ -80,7 +80,7 @@ export default function SignInPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 16px 5vw;
+          padding: 14px 5vw;
           background: rgba(10,10,12,0.7);
           backdrop-filter: blur(12px);
           border-bottom: 1px solid rgba(212,175,55,0.2);
@@ -90,7 +90,7 @@ export default function SignInPage() {
 
         .nav-logo {
           font-family: 'Syne', sans-serif;
-          font-size: 24px;
+          font-size: 22px;
           font-weight: 800;
           letter-spacing: -1.5px;
           background: linear-gradient(135deg, var(--gold), var(--blue-neon));
@@ -103,11 +103,11 @@ export default function SignInPage() {
         .sign-container {
           position: relative;
           z-index: 15;
-          min-height: calc(100vh - 64px);
+          min-height: calc(100vh - 56px);
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 30px 20px 60px;
+          padding: 24px 16px 48px;
           width: 100%;
         }
 
@@ -115,98 +115,152 @@ export default function SignInPage() {
           background: rgba(12, 12, 16, 0.85);
           backdrop-filter: blur(20px);
           border: 1px solid rgba(212,175,55,0.35);
-          border-radius: 28px;
-          padding: 32px 24px;
+          border-radius: 24px;
+          padding: 28px 20px;
           width: 100%;
-          max-width: 400px;
+          max-width: 360px;
           box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
           overflow: hidden;
         }
 
         @media (max-width: 480px) {
           .sign-card {
-            padding: 24px 16px;
-            border-radius: 20px;
+            padding: 20px 14px;
+            border-radius: 18px;
             max-width: 94%;
           }
           .nav-logo {
-            font-size: 20px;
+            font-size: 18px;
           }
         }
 
-        /* --- CLERK CUSTOM AVEC CHAMPS RÉDUITS --- */
-        .clerk-custom .cl-signIn-root {
+        /* ---- CLERK CUSTOM ---- */
+        .clerk-custom .cl-signIn-root,
+        .clerk-custom .cl-rootBox {
           width: 100% !important;
         }
+
         .clerk-custom .cl-card {
           background: transparent !important;
           padding: 0 !important;
+          box-shadow: none !important;
+          border: none !important;
         }
+
+        /* Header */
+        .clerk-custom .cl-headerTitle {
+          color: var(--off-white) !important;
+          font-family: 'Syne', sans-serif !important;
+          font-size: 1.1rem !important;
+          font-weight: 700 !important;
+        }
+        .clerk-custom .cl-headerSubtitle {
+          color: rgba(244,241,236,0.5) !important;
+          font-size: 0.72rem !important;
+        }
+
+        /* Labels */
+        .clerk-custom .cl-formFieldLabel {
+          color: rgba(244,241,236,0.75) !important;
+          font-weight: 500 !important;
+          font-size: 0.72rem !important;
+          margin-bottom: 3px !important;
+          letter-spacing: 0.3px !important;
+        }
+
+        /* Inputs — taille réduite */
         .clerk-custom .cl-formFieldInput {
           background: rgba(8,8,12,0.8) !important;
           border: 1px solid rgba(212,175,55,0.4) !important;
-          border-radius: 16px !important;
+          border-radius: 10px !important;
           color: #ffffff !important;
           caret-color: var(--gold) !important;
-          padding: 8px 14px !important;
-          font-size: 0.85rem !important;
-          height: 40px !important;
+          padding: 0 12px !important;
+          font-size: 0.8rem !important;
+          height: 34px !important;
+          min-height: unset !important;
+          line-height: 34px !important;
+          transition: border-color 0.2s, box-shadow 0.2s !important;
         }
         .clerk-custom .cl-formFieldInput::placeholder {
-          color: rgba(255,255,255,0.5) !important;
-          font-size: 0.8rem !important;
+          color: rgba(255,255,255,0.4) !important;
+          font-size: 0.75rem !important;
         }
         .clerk-custom .cl-formFieldInput:focus {
           border-color: var(--blue-neon) !important;
-          box-shadow: 0 0 0 3px rgba(0,212,255,0.2) !important;
+          box-shadow: 0 0 0 2px rgba(0,212,255,0.18) !important;
+          outline: none !important;
         }
-        .clerk-custom .cl-formFieldLabel {
-          color: rgba(244,241,236,0.8) !important;
-          font-weight: 500 !important;
-          font-size: 0.8rem !important;
-          margin-bottom: 4px !important;
+
+        /* Espacement entre champs */
+        .clerk-custom .cl-formField {
+          margin-bottom: 10px !important;
         }
+
+        /* Bouton principal — taille réduite */
         .clerk-custom .cl-formButtonPrimary {
           background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important;
           color: #0A0A0C !important;
           font-weight: 700 !important;
           border-radius: 60px !important;
-          padding: 0.6rem !important;
+          padding: 0 !important;
           text-transform: uppercase !important;
-          letter-spacing: 1px !important;
-          font-size: 0.85rem !important;
-          height: 44px !important;
+          letter-spacing: 1.2px !important;
+          font-size: 0.75rem !important;
+          height: 36px !important;
+          min-height: unset !important;
+          width: 100% !important;
+          border: none !important;
+          cursor: pointer !important;
+          transition: transform 0.2s, box-shadow 0.2s !important;
+          margin-top: 4px !important;
         }
         .clerk-custom .cl-formButtonPrimary:hover {
           background: linear-gradient(135deg, #E5C05A, #C9A142) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(212,175,55,0.3);
+          transform: translateY(-1px) !important;
+          box-shadow: 0 6px 16px rgba(212,175,55,0.3) !important;
         }
+        .clerk-custom .cl-formButtonPrimary:active {
+          transform: translateY(0) !important;
+        }
+
+        /* Boutons sociaux — taille réduite */
         .clerk-custom .cl-socialButtonsBlockButton {
           background: rgba(20,20,30,0.7) !important;
           border: 1px solid rgba(212,175,55,0.4) !important;
           border-radius: 60px !important;
           color: var(--off-white) !important;
-          padding: 0.5rem !important;
-          font-size: 0.8rem !important;
-          height: 40px !important;
+          padding: 0 12px !important;
+          font-size: 0.75rem !important;
+          height: 34px !important;
+          min-height: unset !important;
+          transition: background 0.2s, border-color 0.2s !important;
         }
         .clerk-custom .cl-socialButtonsBlockButton:hover {
           background: rgba(212,175,55,0.15) !important;
-          border-color: var(--gold);
+          border-color: var(--gold) !important;
         }
+
+        /* Divider */
         .clerk-custom .cl-dividerLine {
           background: linear-gradient(90deg, transparent, var(--gold), var(--blue-neon), transparent) !important;
+          height: 1px !important;
         }
         .clerk-custom .cl-dividerText {
-          color: rgba(244,241,236,0.6) !important;
+          color: rgba(244,241,236,0.5) !important;
           background: rgba(10,10,12,0.8) !important;
-          font-size: 0.75rem !important;
+          font-size: 0.68rem !important;
           padding: 0 8px !important;
         }
+        .clerk-custom .cl-dividerRow {
+          margin: 10px 0 !important;
+        }
+
+        /* Footer */
         .clerk-custom .cl-footerActionLink {
           color: var(--blue-neon) !important;
-          font-size: 0.8rem !important;
+          font-size: 0.75rem !important;
+          text-decoration: none !important;
         }
         .clerk-custom .cl-footerActionLink:hover {
           color: var(--gold) !important;
@@ -214,33 +268,44 @@ export default function SignInPage() {
         .clerk-custom .cl-footer {
           background: rgba(10,10,12,0.85) !important;
           border-top: 1px solid rgba(212,175,55,0.2) !important;
-          border-radius: 0 0 20px 20px !important;
-          padding: 12px 0 !important;
+          border-radius: 0 0 18px 18px !important;
+          padding: 10px 0 !important;
         }
         .clerk-custom .cl-footerText {
           color: rgba(244,241,236,0.4) !important;
-          font-size: 0.7rem !important;
+          font-size: 0.65rem !important;
         }
-        .clerk-custom .cl-badge {
-          background: rgba(212,175,55,0.15) !important;
-          color: var(--gold) !important;
-          border: 1px solid rgba(212,175,55,0.3) !important;
-          font-size: 0.6rem !important;
-        }
+
+        /* Errors & alerts */
         .clerk-custom .cl-formFieldErrorText {
           color: #FF2D75 !important;
-          font-size: 0.75rem !important;
+          font-size: 0.68rem !important;
+          margin-top: 2px !important;
         }
         .clerk-custom .cl-alert {
           background: rgba(255,45,117,0.1) !important;
           border: 1px solid #FF2D75 !important;
           color: var(--off-white) !important;
-          padding: 8px !important;
-          font-size: 0.8rem !important;
+          padding: 6px 10px !important;
+          font-size: 0.75rem !important;
+          border-radius: 8px !important;
         }
-        /* Réduire l'espacement entre les champs */
-        .clerk-custom .cl-formField {
-          margin-bottom: 0.75rem !important;
+
+        /* Badge */
+        .clerk-custom .cl-badge {
+          background: rgba(212,175,55,0.15) !important;
+          color: var(--gold) !important;
+          border: 1px solid rgba(212,175,55,0.3) !important;
+          font-size: 0.55rem !important;
+        }
+
+        /* Lien "mot de passe oublié" */
+        .clerk-custom .cl-formFieldAction {
+          color: rgba(0,212,255,0.8) !important;
+          font-size: 0.68rem !important;
+        }
+        .clerk-custom .cl-formFieldAction:hover {
+          color: var(--gold) !important;
         }
       `}</style>
 
@@ -278,6 +343,7 @@ export default function SignInPage() {
                   formFieldLabel: "cl-formFieldLabel",
                   dividerLine: "cl-dividerLine",
                   dividerText: "cl-dividerText",
+                  dividerRow: "cl-dividerRow",
                   footerActionLink: "cl-footerActionLink",
                   footer: "cl-footer",
                   footerText: "cl-footerText",
@@ -285,6 +351,7 @@ export default function SignInPage() {
                   alert: "cl-alert",
                   formFieldErrorText: "cl-formFieldErrorText",
                   formField: "cl-formField",
+                  formFieldAction: "cl-formFieldAction",
                 },
               }}
               fallbackRedirectUrl="/"
