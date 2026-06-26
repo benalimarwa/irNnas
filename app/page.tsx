@@ -16,11 +16,7 @@ export default async function Home() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
 
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
           --bg-primary: #0A0A0A;
@@ -30,7 +26,6 @@ export default async function Home() {
           --text-primary: #F8F6F2;
           --text-secondary: rgba(248, 246, 242, 0.65);
           --text-muted: rgba(248, 246, 242, 0.4);
-          
           --accent-gold: #D4AF37;
           --accent-gold-dark: #B8942E;
           --accent-gold-glow: rgba(212, 175, 55, 0.2);
@@ -41,7 +36,6 @@ export default async function Home() {
           --accent-rose: #FF85A1;
           --accent-lime: #A8E6CF;
           --accent-indigo: #5D9BEC;
-          
           --gradient-gold: linear-gradient(135deg, #D4AF37 0%, #F5E6A3 50%, #D4AF37 100%);
           --gradient-coral: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
           --gradient-teal: linear-gradient(135deg, #4ECDC4 0%, #6EE7DE 100%);
@@ -49,41 +43,71 @@ export default async function Home() {
           --gradient-amber: linear-gradient(135deg, #FFB347 0%, #FFCC80 100%);
           --gradient-rose: linear-gradient(135deg, #FF85A1 0%, #FFB7C5 100%);
           --gradient-multi: linear-gradient(135deg, #D4AF37, #FF6B6B, #4ECDC4, #9B59B6);
-          
           --glass-bg: rgba(17, 17, 17, 0.7);
           --glass-border: rgba(255, 255, 255, 0.05);
         }
 
-        body {
+        html, body {
           background: var(--bg-primary);
           overflow-x: hidden;
           width: 100%;
+          margin: 0;
+          padding: 0;
         }
 
+        /* ── VIDEO BACKGROUND ── */
+        .video-bg {
+          position: fixed;
+          inset: 0;
+          z-index: 0;          /* ← le plus bas */
+          overflow: hidden;
+          pointer-events: none;
+        }
+        .video-bg video {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          opacity: 0.38;
+          filter: brightness(0.7) contrast(1.1) saturate(1.3);
+          display: block;
+        }
+
+        /* ── OVERLAY ── */
+        .video-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 1;          /* juste au-dessus de la vidéo */
+          background: radial-gradient(circle at 30% 20%, rgba(212,175,55,0.08), rgba(0,0,0,0.78));
+          pointer-events: none;
+        }
+
+        /* ── PAGE WRAPPER ── */
         .homepage {
           position: relative;
+          z-index: 2;          /* au-dessus de la vidéo ET de l'overlay */
           min-height: 100vh;
           font-family: 'Instrument Sans', sans-serif;
           color: var(--text-primary);
           overflow-x: hidden;
           width: 100%;
+          background: transparent;   /* ← important : pas de fond opaque */
         }
 
         .homepage::before {
           content: '';
           position: fixed;
           inset: 0;
-          background-image: 
-            repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 20px);
+          background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.008) 0px, rgba(255,255,255,0.008) 1px, transparent 1px, transparent 20px);
           pointer-events: none;
-          z-index: 1;
+          z-index: 0;
         }
 
+        /* Points colorés */
         .color-dot {
           position: fixed;
           border-radius: 50%;
-          filter: blur(60px);
-          opacity: 0.4;
+          filter: blur(70px);
+          opacity: 0.25;
           pointer-events: none;
           z-index: 1;
         }
@@ -96,7 +120,8 @@ export default async function Home() {
           right: 0;
           z-index: 100;
           backdrop-filter: blur(20px);
-          background: rgba(10, 10, 10, 0.8);
+          -webkit-backdrop-filter: blur(20px);
+          background: rgba(10, 10, 10, 0.75);
           border-bottom: 1px solid var(--border-light);
         }
 
@@ -127,8 +152,8 @@ export default async function Home() {
         }
 
         @keyframes shimmer {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
+          0%   { background-position: 0% 50%; }
+          50%  { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
 
@@ -137,7 +162,6 @@ export default async function Home() {
           gap: 2.5rem;
           align-items: center;
         }
-
         .nav-links a {
           font-size: 0.9rem;
           font-weight: 500;
@@ -146,7 +170,6 @@ export default async function Home() {
           text-decoration: none;
           transition: color 0.3s ease;
         }
-
         .nav-links a:hover { color: var(--accent-gold); }
 
         .nav-cta {
@@ -166,6 +189,7 @@ export default async function Home() {
           flex-shrink: 0;
         }
 
+        /* ── Main container ── */
         .main-container {
           max-width: 1400px;
           margin: 0 auto;
@@ -173,9 +197,10 @@ export default async function Home() {
           width: 100%;
           overflow-x: hidden;
           position: relative;
-          z-index: 10;
+          z-index: 2;
         }
 
+        /* ── Hero ── */
         .hero {
           min-height: 100vh;
           display: grid;
@@ -205,11 +230,8 @@ export default async function Home() {
           text-overflow: ellipsis;
           max-width: 100%;
         }
-
         .hero-badge span {
-          width: 8px;
-          height: 8px;
-          min-width: 8px;
+          width: 8px; height: 8px; min-width: 8px;
           background: var(--accent-gold);
           border-radius: 50%;
           animation: pulse 2s infinite;
@@ -217,7 +239,7 @@ export default async function Home() {
 
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.2); }
+          50%       { opacity: 0.5; transform: scale(1.2); }
         }
 
         .hero-title {
@@ -228,7 +250,6 @@ export default async function Home() {
           letter-spacing: -0.02em;
           margin-bottom: 1.5rem;
           word-break: break-word;
-          overflow-wrap: break-word;
         }
 
         .gradient-text {
@@ -245,7 +266,6 @@ export default async function Home() {
           line-height: 1.6;
           color: var(--text-secondary);
           margin-bottom: 2rem;
-          max-width: 100%;
         }
 
         .hero-buttons {
@@ -271,7 +291,6 @@ export default async function Home() {
           text-decoration: none;
           white-space: nowrap;
         }
-
         .btn-primary:hover {
           transform: translateY(-2px);
           box-shadow: 0 20px 35px -10px rgba(212, 175, 55, 0.4);
@@ -294,7 +313,6 @@ export default async function Home() {
           text-decoration: none;
           white-space: nowrap;
         }
-
         .btn-secondary:hover {
           border-color: var(--accent-coral);
           color: var(--accent-coral);
@@ -307,9 +325,7 @@ export default async function Home() {
           padding-top: 1rem;
           border-top: 1px solid var(--border-light);
         }
-
         .hero-stat { display: flex; flex-direction: column; }
-
         .hero-stat-value {
           font-family: 'Syne', sans-serif;
           font-size: 1.4rem;
@@ -319,32 +335,26 @@ export default async function Home() {
           background-clip: text;
           color: transparent;
         }
-
-        .hero-stat-label {
-          font-size: 0.7rem;
-          color: var(--text-muted);
-          letter-spacing: 0.5px;
-        }
+        .hero-stat-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.5px; }
 
         .hero-media { display: none; }
 
         .floating-card {
           position: absolute;
-          background: var(--glass-bg);
+          background: rgba(17,17,17,0.8);
           backdrop-filter: blur(20px);
           border: 1px solid var(--glass-border);
           border-radius: 1.5rem;
           padding: 1.5rem;
           animation: float 6s ease-in-out infinite;
         }
-
         .floating-card:nth-child(1) { top: 10%; right: 10%; animation-delay: 0s; border-top-color: var(--accent-gold); }
         .floating-card:nth-child(2) { bottom: 20%; left: 10%; animation-delay: 1s; border-top-color: var(--accent-coral); }
         .floating-card:nth-child(3) { top: 40%; left: 30%; animation-delay: 2s; border-top-color: var(--accent-teal); }
 
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
+          50%       { transform: translateY(-20px); }
         }
 
         .card-icon {
@@ -353,15 +363,13 @@ export default async function Home() {
           display: flex; align-items: center; justify-content: center;
           margin-bottom: 1rem;
         }
+        .card-icon.gold   { background: var(--gradient-gold); }
+        .card-icon.coral  { background: var(--gradient-coral); }
+        .card-icon.teal   { background: var(--gradient-teal); }
 
-        .card-icon.gold { background: var(--gradient-gold); }
-        .card-icon.coral { background: var(--gradient-coral); }
-        .card-icon.teal { background: var(--gradient-teal); }
-
+        /* ── Features ── */
         .features-section { padding: 4rem 0; }
-
         .section-header { text-align: center; margin-bottom: 3rem; }
-
         .section-badge {
           display: inline-block;
           background: rgba(212, 175, 55, 0.1);
@@ -373,7 +381,6 @@ export default async function Home() {
           letter-spacing: 2px;
           margin-bottom: 1rem;
         }
-
         .section-title {
           font-family: 'Syne', sans-serif;
           font-size: clamp(1.6rem, 5vw, 3rem);
@@ -391,9 +398,8 @@ export default async function Home() {
           grid-template-columns: 1fr;
           gap: 1.5rem;
         }
-
         .feature-card {
-          background: var(--glass-bg);
+          background: rgba(17,17,17,0.75);
           border: 1px solid var(--glass-border);
           border-radius: 1.5rem;
           padding: 1.5rem;
@@ -401,7 +407,6 @@ export default async function Home() {
           position: relative;
           overflow: hidden;
         }
-
         .feature-card::before {
           content: '';
           position: absolute;
@@ -411,11 +416,9 @@ export default async function Home() {
           transform: scaleX(0);
           transition: transform 0.3s ease;
         }
-
         .feature-card:hover::before { transform: scaleX(1); }
-        .feature-card:nth-child(1):hover { border-color: rgba(212, 175, 55, 0.3); }
-        .feature-card:nth-child(2):hover { border-color: rgba(255, 107, 107, 0.3); }
-        .feature-card:nth-child(3):hover { border-color: rgba(78, 205, 196, 0.3); }
+        .feature-card:nth-child(1):hover { border-color: rgba(212,175,55,0.3); }
+        .feature-card:nth-child(2):hover { border-color: rgba(255,107,107,0.3); }
 
         .feature-icon {
           width: 48px; height: 48px;
@@ -423,13 +426,11 @@ export default async function Home() {
           display: flex; align-items: center; justify-content: center;
           margin-bottom: 1rem;
         }
-
         .feature-card:nth-child(1) .feature-icon { background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05)); color: var(--accent-gold); }
         .feature-card:nth-child(2) .feature-icon { background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,107,107,0.05)); color: var(--accent-coral); }
-        .feature-card:nth-child(3) .feature-icon { background: linear-gradient(135deg, rgba(78,205,196,0.2), rgba(78,205,196,0.05)); color: var(--accent-teal); }
 
         .feature-card h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
-        .feature-card p { color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem; font-size: 0.9rem; }
+        .feature-card p  { color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem; font-size: 0.9rem; }
 
         .feature-link {
           text-decoration: none;
@@ -440,10 +441,8 @@ export default async function Home() {
           gap: 0.5rem;
           transition: gap 0.3s ease;
         }
-
         .feature-card:nth-child(1) .feature-link { color: var(--accent-gold); }
         .feature-card:nth-child(2) .feature-link { color: var(--accent-coral); }
-        .feature-card:nth-child(3) .feature-link { color: var(--accent-teal); }
         .feature-link:hover { gap: 0.75rem; }
 
         .color-showcase {
@@ -453,35 +452,31 @@ export default async function Home() {
           margin-top: 2rem;
           flex-wrap: wrap;
         }
-
         .color-chip { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; transition: transform 0.3s ease; }
         .color-chip:hover { transform: scale(1.1); }
-        .color-chip.gold { background: var(--accent-gold); }
-        .color-chip.coral { background: var(--accent-coral); }
-        .color-chip.teal { background: var(--accent-teal); }
+        .color-chip.gold   { background: var(--accent-gold); }
+        .color-chip.coral  { background: var(--accent-coral); }
+        .color-chip.teal   { background: var(--accent-teal); }
         .color-chip.violet { background: var(--accent-violet); }
-        .color-chip.amber { background: var(--accent-amber); }
-        .color-chip.rose { background: var(--accent-rose); }
+        .color-chip.amber  { background: var(--accent-amber); }
+        .color-chip.rose   { background: var(--accent-rose); }
 
+        /* ── Stats ── */
         .stats-section {
-          background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(255,107,107,0.05), rgba(78,205,196,0.05), rgba(155,89,182,0.05));
+          background: linear-gradient(135deg, rgba(212,175,55,0.07), rgba(255,107,107,0.04), rgba(78,205,196,0.04), rgba(155,89,182,0.04));
           border-radius: 1.5rem;
           padding: 2rem 1rem;
           margin: 2rem 0;
           border: 1px solid var(--glass-border);
-          overflow: hidden;
         }
-
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 1.5rem;
           text-align: center;
         }
-
         .stat-item { transition: transform 0.3s ease; }
         .stat-item:hover { transform: translateY(-4px); }
-
         .stat-number {
           font-family: 'Syne', sans-serif;
           font-size: clamp(2rem, 6vw, 3rem);
@@ -492,11 +487,11 @@ export default async function Home() {
           color: transparent;
           margin-bottom: 0.5rem;
         }
-
         .stat-label { font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 1px; }
 
+        /* ── CTA ── */
         .cta-section {
-          background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(255,107,107,0.1), rgba(78,205,196,0.1));
+          background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(255,107,107,0.08), rgba(78,205,196,0.08));
           border-radius: 1.5rem;
           padding: 2.5rem 1.5rem;
           text-align: center;
@@ -505,21 +500,18 @@ export default async function Home() {
           position: relative;
           overflow: hidden;
         }
-
         .cta-section::before {
           content: '';
           position: absolute;
           top: -50%; left: -50%;
           width: 200%; height: 200%;
-          background: radial-gradient(circle, rgba(212,175,55,0.1) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%);
           animation: rotate 20s linear infinite;
         }
-
         @keyframes rotate {
-          0% { transform: rotate(0deg); }
+          0%   { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-
         .cta-title {
           font-family: 'Syne', sans-serif;
           font-size: clamp(1.4rem, 4vw, 2.5rem);
@@ -528,7 +520,6 @@ export default async function Home() {
           position: relative;
           z-index: 1;
         }
-
         .cta-description {
           color: var(--text-secondary);
           margin-bottom: 1.5rem;
@@ -540,12 +531,12 @@ export default async function Home() {
           font-size: 0.95rem;
         }
 
+        /* ── Footer ── */
         .footer {
           border-top: 1px solid var(--border-light);
           padding: 2rem 0;
           margin-top: 2rem;
         }
-
         .footer-content {
           display: flex;
           flex-direction: column;
@@ -553,21 +544,18 @@ export default async function Home() {
           gap: 1.25rem;
           text-align: center;
         }
-
         .footer-links {
           display: flex;
           flex-wrap: wrap;
           justify-content: center;
           gap: 1rem;
         }
-
         .footer-links a {
           color: var(--text-muted);
           text-decoration: none;
           font-size: 0.875rem;
           transition: color 0.3s ease;
         }
-
         .footer-links a:hover { color: var(--accent-coral); }
 
         .animate-on-scroll {
@@ -575,72 +563,52 @@ export default async function Home() {
           transform: translateY(30px);
           transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
         .animate-on-scroll.visible {
           opacity: 1;
           transform: translateY(0);
         }
 
         @media (min-width: 768px) {
-          .features-grid { grid-template-columns: repeat(3, 1fr); }
-          .stats-grid { grid-template-columns: repeat(4, 1fr); }
+          .features-grid { grid-template-columns: repeat(2, 1fr); }
+          .stats-grid    { grid-template-columns: repeat(4, 1fr); }
         }
 
         @media (min-width: 1024px) {
-          .nav-container { padding: 0 2rem; height: 80px; }
-          .nav-links { display: flex; }
-          .logo { font-size: 32px; }
+          .nav-container  { padding: 0 2rem; height: 80px; }
+          .nav-links      { display: flex; }
+          .logo           { font-size: 32px; }
           .main-container { padding: 0 2rem; }
-          .hero { grid-template-columns: 1fr 1fr; gap: 4rem; padding-bottom: 0; }
-          .hero-media { display: flex; position: relative; height: 500px; align-items: center; justify-content: center; }
-          .stats-section { border-radius: 2rem; padding: 4rem 3rem; margin: 4rem 0; }
-          .cta-section { border-radius: 2rem; padding: 4rem; margin: 4rem 0; }
+          .hero           { grid-template-columns: 1fr 1fr; gap: 4rem; padding-bottom: 0; }
+          .hero-media     { display: flex; position: relative; height: 500px; align-items: center; justify-content: center; }
+          .stats-section  { border-radius: 2rem; padding: 4rem 3rem; margin: 4rem 0; }
+          .cta-section    { border-radius: 2rem; padding: 4rem; margin: 4rem 0; }
           .footer-content { flex-direction: row; justify-content: space-between; text-align: left; }
           .hero-description { font-size: 1.1rem; }
         }
       `}</style>
 
-      {/* ── VIDÉO BACKGROUND ── */}
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 0,
-        overflow: "hidden",
-        pointerEvents: "none",
-      }}>
+      {/* ── VIDÉO BACKGROUND — z-index: 0 ── */}
+      <div className="video-bg">
         <video
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            opacity: 0.35,         // ← augmenté pour être visible
-            filter: "brightness(0.7) contrast(1.1) saturate(1.3)", // ← harmonisé
-          }}
+          preload="auto"
         >
           <source src="/video/mm.mp4" type="video/mp4" />
         </video>
       </div>
 
-      {/* ── OVERLAY RADIAL ── */}
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1,
-        background: "radial-gradient(circle at 30% 20%, rgba(212,175,55,0.1), rgba(0,0,0,0.85))",
-        pointerEvents: "none",
-      }} />
+      {/* ── OVERLAY — z-index: 1 ── */}
+      <div className="video-overlay" />
 
+      {/* ── PAGE — z-index: 2 ── */}
       <div className="homepage">
-        {/* Points colorés */}
-        <div className="color-dot" style={{ top: '20%', left: '10%', width: '300px', height: '300px', background: 'var(--accent-gold)' }}></div>
-        <div className="color-dot" style={{ bottom: '15%', right: '5%', width: '250px', height: '250px', background: 'var(--accent-coral)' }}></div>
-        <div className="color-dot" style={{ top: '60%', left: '80%', width: '200px', height: '200px', background: 'var(--accent-teal)' }}></div>
-        <div className="color-dot" style={{ top: '40%', left: '30%', width: '180px', height: '180px', background: 'var(--accent-violet)' }}></div>
+        <div className="color-dot" style={{ top: '20%', left: '10%', width: '300px', height: '300px', background: 'var(--accent-gold)' }} />
+        <div className="color-dot" style={{ bottom: '15%', right: '5%', width: '250px', height: '250px', background: 'var(--accent-coral)' }} />
+        <div className="color-dot" style={{ top: '60%', left: '80%', width: '200px', height: '200px', background: 'var(--accent-teal)' }} />
+        <div className="color-dot" style={{ top: '40%', left: '30%', width: '180px', height: '180px', background: 'var(--accent-violet)' }} />
 
         <nav className="navbar">
           <div className="nav-container">
@@ -674,7 +642,6 @@ export default async function Home() {
         </nav>
 
         <main className="main-container">
-          {/* Hero */}
           <section className="hero">
             <div className="hero-left animate-on-scroll">
               <div className="hero-badge">
@@ -744,7 +711,6 @@ export default async function Home() {
             </div>
           </section>
 
-          {/* Features */}
           <section className="features-section">
             <div className="section-header animate-on-scroll">
               <div className="section-badge">POURQUOI NOUS CHOISIR</div>
@@ -768,16 +734,15 @@ export default async function Home() {
             </div>
 
             <div className="color-showcase animate-on-scroll">
-              <div className="color-chip gold" title="Or"></div>
-              <div className="color-chip coral" title="Corail"></div>
-              <div className="color-chip teal" title="Teal"></div>
+              <div className="color-chip gold"   title="Or"></div>
+              <div className="color-chip coral"  title="Corail"></div>
+              <div className="color-chip teal"   title="Teal"></div>
               <div className="color-chip violet" title="Violet"></div>
-              <div className="color-chip amber" title="Ambre"></div>
-              <div className="color-chip rose" title="Rose"></div>
+              <div className="color-chip amber"  title="Ambre"></div>
+              <div className="color-chip rose"   title="Rose"></div>
             </div>
           </section>
 
-          {/* Stats */}
           <div className="stats-section animate-on-scroll">
             <div className="stats-grid">
               <div className="stat-item">
@@ -785,7 +750,7 @@ export default async function Home() {
                 <div className="stat-label">PIÈCES EXCLUSIVES</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">48<span style={{fontSize: '1.2rem'}}>H</span></div>
+                <div className="stat-number">48<span style={{fontSize:'1.2rem'}}>H</span></div>
                 <div className="stat-label">LIVRAISON EXPRESS</div>
               </div>
               <div className="stat-item">
@@ -793,13 +758,12 @@ export default async function Home() {
                 <div className="stat-label">NOTE MOYENNE</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">14<span style={{fontSize: '1.2rem'}}>J</span></div>
+                <div className="stat-number">14<span style={{fontSize:'1.2rem'}}>J</span></div>
                 <div className="stat-label">RETOUR GRATUIT</div>
               </div>
             </div>
           </div>
 
-          {/* CTA */}
           <div className="cta-section animate-on-scroll">
             <div style={{ marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
               <Award size={44} color="#D4AF37" />
