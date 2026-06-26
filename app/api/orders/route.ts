@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { sendStockAlertIfNeeded } from "@/utils/stock-alert";
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,31 +49,54 @@ export async function POST(req: NextRequest) {
     // Vérification stock
     for (const item of cart.items) {
       if (item.product.stock < item.quantity) {
-        return NextResponse.json({ error: `Stock insuffisant pour ${item.product.name}` }, { status: 400 });
+        return NextResponse.json(
+          { error: `Stock insuffisant pour ${item.product.name}` },
+          { status: 400 }
+        );
       }
     }
 
     const validatedDeliveryFee = deliveryMethod === "DELIVERY" ? 7 : 0;
-    const subtotal = cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const subtotal = cart.items.reduce(
+      (sum, item) => sum + item.product.price * item.quantity,
+      0
+    );
     const total = subtotal + validatedDeliveryFee;
 
-    // Création de la commande (seulement les champs existants)
+    // Création de la commande
     const order = await prisma.order.create({
       data: {
         userId: user.clerkId,
         total,
         status: "pending",
         deliveryMethod,
-        // Pas de "notes" pour éviter l'erreur
       },
     });
 
-    // Mise à jour du stock
+    // Mise à jour du stock + calcul stockStatus + alerte
     for (const item of cart.items) {
+      const newStock = item.product.stock - item.quantity;
+
+      // Calcul du nouveau statut
+      let stockStatus: "NORMAL" | "LOW" | "CRITICAL" | "OUT_OF_STOCK";
+      if (newStock === 0) stockStatus = "OUT_OF_STOCK";
+      else if (newStock <= 3) stockStatus = "CRITICAL";
+      else if (newStock <= 10) stockStatus = "LOW";
+      else stockStatus = "NORMAL";
+
+      // Mise à jour stock + stockStatus en une seule opération
       await prisma.product.update({
         where: { id: item.productId },
-        data: { stock: { decrement: item.quantity } },
+        data: { stock: newStock, stockStatus },
       });
+
+      // Envoi alerte si nécessaire (non bloquant)
+      sendStockAlertIfNeeded({
+        id: item.productId,
+        name: item.product.name,
+        stock: newStock,
+        stockStatus,
+      }).catch((err) => console.error("Alerte stock échouée:", err));
     }
 
     // Vider le panier
@@ -85,9 +109,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("❌ Erreur création commande:", error);
-    return NextResponse.json({ 
-      error: "Erreur lors de la création de la commande", 
-      message: error.message 
-    }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erreur lors de la création de la commande", message: error.message },
+      { status: 500 }
+    );
   }
 }
