@@ -41,10 +41,3 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
-
-# next-video
-video/*
-!video/*.json
-!video/*.js
-!video/*.ts
-public/_next-video
