@@ -148,7 +148,7 @@ export default function ClientDashboard() {
           }}
           onError={(e) => { e.currentTarget.style.display = "none"; }}
         >
-          <source src="/video/mm.mp4" type="video/mp4" />
+          <source src="/video/pp.mp4" type="video/mp4" />
         </video>
       </div>
 
