@@ -237,7 +237,9 @@ export default function SignUpPage() {
         .role-btn.admin span { color: var(--blue-neon); }
         .role-btn .role-icon { width: 20px; height: 20px; }
 
-        /* --- CLERK CUSTOM AVEC CHAMPS RÉDUITS --- */
+        /* ====================================================== */
+        /* --- CLERK CUSTOM : champs et boutons réduits et centrés --- */
+        /* ====================================================== */
         .clerk-sign-up {
           background: transparent !important;
           width: 100%;
@@ -263,6 +265,15 @@ export default function SignUpPage() {
           display: none;
         }
 
+        /* Conteneur des champs : centrage */
+        .clerk-sign-up .cl-formField {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          margin-bottom: 0.7rem !important;
+        }
+
+        /* Champs de saisie : largeur réduite */
         .clerk-sign-up .cl-formFieldInput {
           background: rgba(8,8,12,0.8) !important;
           border: 1px solid rgba(212,175,55,0.4) !important;
@@ -272,6 +283,10 @@ export default function SignUpPage() {
           padding: 8px 14px !important;
           font-size: 0.85rem !important;
           height: 40px !important;
+          width: 85% !important;
+          max-width: 300px !important;
+          margin: 0 auto !important;
+          display: block !important;
         }
         .clerk-sign-up .cl-formFieldInput::placeholder {
           color: rgba(255,255,255,0.5) !important;
@@ -281,17 +296,23 @@ export default function SignUpPage() {
           border-color: var(--blue-neon) !important;
           box-shadow: 0 0 0 3px rgba(0,212,255,0.2) !important;
         }
+
+        /* Labels : centrés et alignés à gauche */
         .clerk-sign-up .cl-formFieldLabel {
           color: rgba(244,241,236,0.8) !important;
           font-weight: 500 !important;
           font-size: 0.8rem !important;
           margin-bottom: 4px !important;
+          width: 85% !important;
+          max-width: 300px !important;
+          text-align: left !important;
         }
 
-        /* OTP */
+        /* OTP : centrage */
         .clerk-sign-up .cl-otpCodeField,
         .clerk-sign-up .cl-otpCodeFieldInputs {
           background: transparent !important;
+          justify-content: center !important;
         }
         .clerk-sign-up .cl-otpCodeFieldInput,
         .clerk-sign-up input[type="text"][maxlength="1"] {
@@ -314,11 +335,15 @@ export default function SignUpPage() {
           background: rgba(0,212,255,0.1) !important;
         }
 
+        /* Aperçu de l'email pendant la vérification */
         .clerk-sign-up .cl-identityPreview {
           background: rgba(20,20,30,0.6) !important;
           border: 1px solid rgba(212,175,55,0.3) !important;
           border-radius: 14px !important;
           padding: 8px 12px !important;
+          width: 85% !important;
+          max-width: 300px !important;
+          margin: 0 auto !important;
         }
         .clerk-sign-up .cl-identityPreviewText {
           color: var(--off-white) !important;
@@ -329,6 +354,7 @@ export default function SignUpPage() {
           font-size: 0.8rem !important;
         }
 
+        /* Bouton principal */
         .clerk-sign-up .cl-formButtonPrimary {
           background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important;
           color: #0A0A0C !important;
@@ -339,6 +365,10 @@ export default function SignUpPage() {
           letter-spacing: 1px !important;
           font-size: 0.85rem !important;
           height: 44px !important;
+          width: 85% !important;
+          max-width: 300px !important;
+          margin: 0 auto !important;
+          display: block !important;
         }
         .clerk-sign-up .cl-formButtonPrimary:hover {
           background: linear-gradient(135deg, #E5C05A, #C9A142) !important;
@@ -346,6 +376,7 @@ export default function SignUpPage() {
           box-shadow: 0 8px 20px rgba(212,175,55,0.3);
         }
 
+        /* Boutons sociaux */
         .clerk-sign-up .cl-socialButtonsBlockButton {
           background: rgba(20,20,30,0.7) !important;
           border: 1px solid rgba(212,175,55,0.4) !important;
@@ -354,14 +385,22 @@ export default function SignUpPage() {
           padding: 0.5rem !important;
           font-size: 0.8rem !important;
           height: 40px !important;
+          width: 85% !important;
+          max-width: 300px !important;
+          margin: 0 auto !important;
+          display: block !important;
         }
         .clerk-sign-up .cl-socialButtonsBlockButton:hover {
           background: rgba(212,175,55,0.15) !important;
           border-color: var(--gold);
         }
 
+        /* Diviseur */
         .clerk-sign-up .cl-dividerLine {
           background: linear-gradient(90deg, transparent, var(--gold), var(--blue-neon), transparent) !important;
+          width: 85% !important;
+          max-width: 300px !important;
+          margin: 0 auto !important;
         }
         .clerk-sign-up .cl-dividerText {
           color: rgba(244,241,236,0.6) !important;
@@ -414,10 +453,8 @@ export default function SignUpPage() {
           padding: 8px !important;
           font-size: 0.8rem !important;
         }
-        .clerk-sign-up .cl-formField {
-          margin-bottom: 0.7rem !important;
-        }
 
+        /* Responsive : largeur plus large sur petits écrans */
         @media (max-width: 640px) {
           .signup-card { padding: 24px 16px; }
           .role-buttons { gap: 0.5rem; }
@@ -427,6 +464,13 @@ export default function SignUpPage() {
             width: 34px !important;
             height: 40px !important;
             font-size: 1rem !important;
+          }
+          .clerk-sign-up .cl-formFieldInput,
+          .clerk-sign-up .cl-formButtonPrimary,
+          .clerk-sign-up .cl-socialButtonsBlockButton,
+          .clerk-sign-up .cl-dividerLine,
+          .clerk-sign-up .cl-identityPreview {
+            width: 92% !important;
           }
         }
       `}</style>
