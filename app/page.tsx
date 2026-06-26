@@ -33,7 +33,7 @@ export default function HomePage() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("/api/admin/product");
+      const res = await fetch("/api/products");
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
