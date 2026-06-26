@@ -2,7 +2,69 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const category = searchParams.get("category");
+    const gender = searchParams.get("gender");
+    const search = searchParams.get("search");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+ 
+    const where: Record<string, unknown> = {};
+ 
+    if (category) {
+      where.category = category;
+    }
+ 
+    if (gender) {
+      where.gender = gender;
+    }
+ 
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
+ 
+    const products = await prisma.product.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        gender: true,
+        color: true,
+        colorHex: true,
+        stock: true,
+        images: true,
+        sizes: true,
+        material: true,
+        fit: true,
+        isNew: true,
+        stockStatus: true,
+        category: true,
+        createdAt: true,
+      },
+      orderBy: [
+        { isNew: "desc" },
+        { createdAt: "desc" },
+      ],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+ 
+    return NextResponse.json(products);
+  } catch (error) {
+    console.error("[GET /api/products]", error);
+    return NextResponse.json(
+      { error: "Erreur lors du chargement des produits" },
+      { status: 500 }
+    );
+  }
+}
 export async function POST(req: NextRequest) {
   try {
     const { userId: clerkId } = await auth();

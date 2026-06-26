@@ -1,238 +1,262 @@
 // app/api/cart/route.ts
-import { prisma } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+// (Complet - GET, POST, PATCH, DELETE)
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 
-// ✅ S'assure que l'utilisateur existe en DB (clerkId = référence dans Cart)
-async function ensureUserExists(clerkId: string) {
-  let user = await prisma.user.findUnique({ where: { clerkId } });
-
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        clerkId,
-        email: `${clerkId}@temp.com`,
-      },
-    });
-  }
-  return user;
-}
-
-const normalizeSize = (size: string | undefined | null): string => size ?? "";
-
-// ──────────────────────────────────────────────────────────────
-// GET /api/cart
-// ──────────────────────────────────────────────────────────────
-export async function GET(req: NextRequest) {
+// GET - Récupérer le panier
+export async function GET() {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    const { userId } = await auth();
 
-    await ensureUserExists(clerkId);
+    if (!userId) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
 
-    // ✅ Cart.userId référence clerkId directement
     const cart = await prisma.cart.findUnique({
-      where: { userId: clerkId },
-      include: { items: { include: { product: true } } },
+      where: { userId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                images: true,
+                stock: true,
+                category: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     return NextResponse.json(cart || { items: [] });
-  } catch (error: any) {
-    console.error("❌ GET /api/cart:", error);
+  } catch (error) {
+    console.error("[GET /api/cart]", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
 
-// ──────────────────────────────────────────────────────────────
-// POST /api/cart  — Ajouter un article
-// ──────────────────────────────────────────────────────────────
+// POST - Ajouter un article
 export async function POST(req: NextRequest) {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    const { userId } = await auth();
 
-    const { productId, quantity = 1, size } = await req.json();
-
-    if (!productId) return NextResponse.json({ error: "productId requis" }, { status: 400 });
-
-    await ensureUserExists(clerkId);
-
-    const product = await prisma.product.findUnique({ where: { id: Number(productId) } });
-    if (!product) return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
-
-    if (product.stock < quantity) {
-      return NextResponse.json({ error: "Stock insuffisant" }, { status: 400 });
+    if (!userId) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    // ✅ Cart.userId = clerkId
-    let cart = await prisma.cart.findUnique({ where: { userId: clerkId } });
+    const body = await req.json();
+    const { productId, quantity = 1, size = null } = body;
+
+    if (!productId) {
+      return NextResponse.json({ error: "productId requis" }, { status: 400 });
+    }
+
+    // Vérifier le produit
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
+    }
+
+    if (product.stock === 0 || product.stockStatus === "OUT_OF_STOCK") {
+      return NextResponse.json({ error: "Produit épuisé" }, { status: 400 });
+    }
+
+    // Créer le panier si inexistant
+    let cart = await prisma.cart.findUnique({ where: { userId } });
+
     if (!cart) {
-      cart = await prisma.cart.create({ data: { userId: clerkId } });
+      // Vérifier que l'utilisateur existe dans la DB
+      const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+      if (!user) {
+        return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+      }
+      cart = await prisma.cart.create({ data: { userId } });
     }
 
-    const normalizedSize = normalizeSize(size);
-
+    // Chercher si l'article existe déjà (même produit + taille)
     const existingItem = await prisma.cartItem.findUnique({
       where: {
         cartId_productId_size: {
           cartId: cart.id,
-          productId: Number(productId),
-          size: normalizedSize,
+          productId,
+          size: size || "",
         },
       },
     });
 
     if (existingItem) {
-      const newQuantity = existingItem.quantity + quantity;
-      if (newQuantity > product.stock) {
-        return NextResponse.json({ error: "Stock insuffisant" }, { status: 400 });
+      // Mettre à jour la quantité
+      const newQty = existingItem.quantity + quantity;
+      if (newQty > product.stock) {
+        return NextResponse.json(
+          { error: `Stock insuffisant (max: ${product.stock})` },
+          { status: 400 }
+        );
       }
       await prisma.cartItem.update({
         where: { id: existingItem.id },
-        data: { quantity: newQuantity },
+        data: { quantity: newQty },
       });
     } else {
+      // Créer un nouvel article
       await prisma.cartItem.create({
         data: {
           cartId: cart.id,
-          productId: Number(productId),
+          productId,
           quantity,
-          size: normalizedSize,
+          size: size || "",
         },
       });
     }
 
-    const updatedCart = await prisma.cart.findUnique({
-      where: { id: cart.id },
-      include: { items: { include: { product: true } } },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Produit ajouté au panier",
-      cart: updatedCart,
-    });
-  } catch (error: any) {
-    console.error("❌ POST /api/cart error:", error);
-    return NextResponse.json({
-      error: "Erreur lors de l'ajout",
-      details: error.message,
-    }, { status: 500 });
+    return NextResponse.json({ success: true, message: "Ajouté au panier" });
+  } catch (error) {
+    console.error("[POST /api/cart]", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
 
-// ──────────────────────────────────────────────────────────────
-// DELETE /api/cart?productId=X&size=Y  — Retirer un article
-// ──────────────────────────────────────────────────────────────
-export async function DELETE(req: NextRequest) {
-  try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-
-    const { searchParams } = new URL(req.url);
-    const productId = searchParams.get("productId");
-    const size = searchParams.get("size");
-
-    if (!productId) return NextResponse.json({ error: "productId manquant" }, { status: 400 });
-
-    // ✅ Cart.userId = clerkId
-    const cart = await prisma.cart.findUnique({ where: { userId: clerkId } });
-    if (!cart) return NextResponse.json({ error: "Panier introuvable" }, { status: 404 });
-
-    const normalizedSize = normalizeSize(size);
-
-    const itemToDelete = await prisma.cartItem.findUnique({
-      where: {
-        cartId_productId_size: {
-          cartId: cart.id,
-          productId: Number(productId),
-          size: normalizedSize,
-        },
-      },
-    });
-
-    if (!itemToDelete) {
-      return NextResponse.json({ error: "Article non trouvé dans le panier" }, { status: 404 });
-    }
-
-    await prisma.cartItem.delete({ where: { id: itemToDelete.id } });
-
-    const updatedCart = await prisma.cart.findUnique({
-      where: { id: cart.id },
-      include: { items: { include: { product: true } } },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Article retiré du panier",
-      cart: updatedCart,
-    });
-  } catch (error: any) {
-    console.error("❌ DELETE /api/cart error:", error);
-    return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 });
-  }
-}
-
-// ──────────────────────────────────────────────────────────────
-// PATCH /api/cart  — Mettre à jour la quantité
-// ──────────────────────────────────────────────────────────────
+// PATCH - Modifier la quantité
 export async function PATCH(req: NextRequest) {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    const { userId } = await auth();
 
-    const { productId, quantity, size } = await req.json();
-
-    if (!productId || typeof quantity !== "number" || quantity < 1) {
-      return NextResponse.json({ error: "Données invalides" }, { status: 400 });
+    if (!userId) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    // ✅ Cart.userId = clerkId
-    const cart = await prisma.cart.findUnique({ where: { userId: clerkId } });
-    if (!cart) return NextResponse.json({ error: "Panier introuvable" }, { status: 404 });
+    const body = await req.json();
+    const { productId, quantity, size = "" } = body;
 
-    const product = await prisma.product.findUnique({ where: { id: Number(productId) } });
-    if (!product) return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
+    if (!productId || quantity === undefined) {
+      return NextResponse.json(
+        { error: "productId et quantity requis" },
+        { status: 400 }
+      );
+    }
+
+    if (quantity < 1) {
+      return NextResponse.json({ error: "Quantité invalide" }, { status: 400 });
+    }
+
+    const cart = await prisma.cart.findUnique({ where: { userId } });
+    if (!cart) {
+      return NextResponse.json({ error: "Panier introuvable" }, { status: 404 });
+    }
+
+    const product = await prisma.product.findUnique({ where: { id: productId } });
+    if (!product) {
+      return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
+    }
 
     if (quantity > product.stock) {
-      return NextResponse.json({
-        error: `Stock insuffisant. Disponible : ${product.stock}`,
-      }, { status: 400 });
-    }
-
-    const normalizedSize = normalizeSize(size);
-
-    const cartItem = await prisma.cartItem.findUnique({
-      where: {
-        cartId_productId_size: {
-          cartId: cart.id,
-          productId: Number(productId),
-          size: normalizedSize,
-        },
-      },
-    });
-
-    if (!cartItem) {
-      return NextResponse.json({ error: "Article non trouvé dans le panier" }, { status: 404 });
+      return NextResponse.json(
+        { error: `Stock insuffisant (max: ${product.stock})` },
+        { status: 400 }
+      );
     }
 
     await prisma.cartItem.update({
-      where: { id: cartItem.id },
+      where: {
+        cartId_productId_size: {
+          cartId: cart.id,
+          productId,
+          size: size || "",
+        },
+      },
       data: { quantity },
     });
 
     const updatedCart = await prisma.cart.findUnique({
-      where: { id: cart.id },
-      include: { items: { include: { product: true } } },
+      where: { userId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                images: true,
+                stock: true,
+                category: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Quantité mise à jour",
-      cart: updatedCart,
+    return NextResponse.json({ success: true, cart: updatedCart });
+  } catch (error) {
+    console.error("[PATCH /api/cart]", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
+
+// DELETE - Supprimer un article
+export async function DELETE(req: NextRequest) {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const productId = parseInt(searchParams.get("productId") || "0");
+    const size = searchParams.get("size") || "";
+
+    if (!productId) {
+      return NextResponse.json({ error: "productId requis" }, { status: 400 });
+    }
+
+    const cart = await prisma.cart.findUnique({ where: { userId } });
+    if (!cart) {
+      return NextResponse.json({ error: "Panier introuvable" }, { status: 404 });
+    }
+
+    await prisma.cartItem.delete({
+      where: {
+        cartId_productId_size: {
+          cartId: cart.id,
+          productId,
+          size: size || "",
+        },
+      },
     });
-  } catch (error: any) {
-    console.error("❌ PATCH /api/cart error:", error);
-    return NextResponse.json({ error: "Erreur lors de la mise à jour" }, { status: 500 });
+
+    const updatedCart = await prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                images: true,
+                stock: true,
+                category: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ success: true, cart: updatedCart });
+  } catch (error) {
+    console.error("[DELETE /api/cart]", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
