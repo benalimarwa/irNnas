@@ -276,7 +276,7 @@ const TUNISIA_DATA: Record<string, string[]> = {
   "Nabeul": [
     "Béni Khiar", "Beni Khalled", "Bou Argoub", "Dar Chaâbane el-Fehri",
     "El Haouaria", "El Mida", "Grombalia", "Hammamet", "Kelibia",
-    "Korba", "Menzel Bouzelfa", "Menzel Temime", "Nabeul","Grombelia",
+    "Korba", "Menzel Bouzelfa", "Menzel Temime", "Nabeul",
     "Soliman", "Takelsa",
   ],
   "Sfax": [
@@ -414,7 +414,6 @@ export default function CheckoutPage() {
     setProcessing(true);
     try {
       const city = addressCountry === "TN" ? selectedCity : form.freeCity;
-      const addressParts = [form.streetAddress, city, addressCountry === "TN" ? selectedGov : ""].filter(Boolean);
 
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -423,12 +422,15 @@ export default function CheckoutPage() {
           deliveryMethod,
           deliveryFee: deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
           customerInfo: {
-            name: `${form.firstName.trim()} ${form.lastName.trim()}`,
-            phone: `${phoneCountry.dial} ${form.phone}`,
-            address: deliveryMethod === "DELIVERY" ? addressParts.join(", ") : null,
-            city: deliveryMethod === "DELIVERY" ? city : null,
-            postalCode: deliveryMethod === "DELIVERY" ? (form.postalCode || null) : null,
-            notes: form.notes || null,
+            firstName:   form.firstName.trim(),
+            lastName:    form.lastName.trim(),
+            phone:       `${phoneCountry.dial} ${form.phone.trim()}`,
+            address:     deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
+            city:        deliveryMethod === "DELIVERY" ? (city || null) : null,
+            governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
+            postalCode:  deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
+            country:     deliveryMethod === "DELIVERY" ? addressCountry : null,
+            notes:       form.notes.trim() || null,
           },
         }),
       });

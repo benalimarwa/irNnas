@@ -3,6 +3,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
+// ─── Helper pour parser le deliveryMethod ────────────────────────────────────
+function parseDeliveryMethod(raw: string) {
+  if (raw.startsWith("DELIVERY::")) {
+    try {
+      const json = raw.slice("DELIVERY::".length); // tout ce qui suit "::"
+      const info = JSON.parse(json);
+      return {
+        method: "DELIVERY" as const,
+        phone:       info.phone       ?? null,
+        address:     info.address     ?? null,
+        city:        info.city        ?? null,
+        governorate: info.governorate ?? null,
+        postalCode:  info.postalCode  ?? null,
+        country:     info.country     ?? null,
+        notes:       info.notes       ?? null,
+      };
+    } catch {
+      // JSON corrompu → fallback
+      return { method: "DELIVERY" as const };
+    }
+  }
+  return { method: "PICKUP" as const };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { userId } = await auth();
@@ -15,7 +39,7 @@ export async function GET(req: NextRequest) {
         },
         items: {
           include: {
-            product: {                       // ✅ product (pas perfume)
+            product: {
               select: { id: true, name: true, price: true },
             },
           },
@@ -24,27 +48,49 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    const formattedOrders = orders.map((order) => ({
-      id: order.id,                          // ✅ Int
-      userId: order.userId,
-      userName: `${order.user.firstName || ""} ${order.user.lastName || ""}`.trim() || "Utilisateur",
-      userEmail: order.user.email,
-      total: order.total,                    // ✅ total (pas totalAmount)
-      status: order.status,                  // ✅ minuscules (pending, confirmed…)
-      deliveryMethod: (order as any).deliveryMethod ?? "DELIVERY",
-      createdAt: order.createdAt.toISOString(),
-      items: order.items.map((item) => ({
-        id: item.id,
-        productName: item.product.name,      // ✅ productName (pas perfumeName)
-        quantity: item.quantity,
-        price: item.price,
-      })),
-    }));
+    const formattedOrders = orders.map((order) => {
+      // ─── Parser les infos de livraison ───────────────────────────────────
+      const delivery = parseDeliveryMethod(order.deliveryMethod ?? "PICKUP");
+
+      return {
+        id:           order.id,
+        userId:       order.userId,
+        userName:     `${order.user.firstName || ""} ${order.user.lastName || ""}`.trim() || "Utilisateur",
+        userEmail:    order.user.email,
+        total:        order.total,
+        status:       order.status,
+        createdAt:    order.createdAt.toISOString(),
+
+        // ─── Infos livraison parsées ──────────────────────────────────────
+        deliveryMethod: delivery.method,          // "PICKUP" | "DELIVERY"
+        deliveryInfo: delivery.method === "DELIVERY"
+          ? {
+              phone:       delivery.phone       ?? null,
+              address:     delivery.address     ?? null,
+              city:        delivery.city        ?? null,
+              governorate: delivery.governorate ?? null,
+              postalCode:  delivery.postalCode  ?? null,
+              country:     delivery.country     ?? null,
+              notes:       delivery.notes       ?? null,
+            }
+          : null,                                 // null si retrait en magasin
+
+        items: order.items.map((item) => ({
+          id:          item.id,
+          productName: item.product.name,
+          quantity:    item.quantity,
+          price:       item.price,
+        })),
+      };
+    });
 
     return NextResponse.json(formattedOrders);
   } catch (error) {
     console.error("Error fetching orders:", error);
-    return NextResponse.json({ error: "Erreur lors de la récupération des commandes" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erreur lors de la récupération des commandes" },
+      { status: 500 }
+    );
   }
 }
 
@@ -65,7 +111,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const updatedOrder = await prisma.order.update({
-      where: { id: parseInt(orderId) },      // ✅ parseInt (id est un Int)
+      where: { id: parseInt(orderId) },
       data: { status },
     });
 

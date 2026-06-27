@@ -15,16 +15,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { customerInfo, deliveryMethod } = body;
 
-    // ── Validation ────────────────────────────────────────────────────────────
-    if (!customerInfo?.firstName?.trim() && !customerInfo?.name?.trim()) {
+    // Validation
+    if (!customerInfo?.firstName || !customerInfo?.lastName) {
       return NextResponse.json(
-        { error: "Le prénom est obligatoire" },
+        { error: "Prénom et nom sont obligatoires" },
         { status: 400 }
       );
     }
-    if (!customerInfo?.phone?.trim()) {
+    if (!customerInfo?.phone) {
       return NextResponse.json(
-        { error: "Le numéro de téléphone est obligatoire" },
+        { error: "Téléphone est obligatoire" },
         { status: 400 }
       );
     }
@@ -34,49 +34,31 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (deliveryMethod === "DELIVERY") {
-      if (!customerInfo?.city?.trim()) {
-        return NextResponse.json(
-          { error: "La ville est obligatoire pour la livraison" },
-          { status: 400 }
-        );
-      }
-    }
 
-    // ── Extraire les champs (compatibilité ancien/nouveau format) ─────────────
-    // Le checkout envoie firstName/lastName séparément ; on gère aussi
-    // l'ancien champ "name" au cas où.
-    const firstName: string =
-      customerInfo.firstName?.trim() ||
-      customerInfo.name?.split(" ")[0]?.trim() ||
-      "";
-    const lastName: string =
-      customerInfo.lastName?.trim() ||
-      customerInfo.name?.split(" ").slice(1).join(" ")?.trim() ||
-      "";
-
-    const phone: string       = customerInfo.phone?.trim()       ?? "";
-    const address: string     = customerInfo.address?.trim()     ?? "";
-    const city: string        = customerInfo.city?.trim()        ?? "";
-    const governorate: string = customerInfo.governorate?.trim() ?? "";
-    const postalCode: string  = customerInfo.postalCode?.trim()  ?? "";
-    const country: string     = customerInfo.country?.trim()     ?? "TN";
-    const notes: string       = customerInfo.notes?.trim()       ?? "";
-
-    // ── Récupérer / créer l'utilisateur ───────────────────────────────────────
+    // Récupérer ou créer l'utilisateur
+    // On met à jour firstName/lastName s'ils existent déjà dans User
     let user = await prisma.user.findUnique({ where: { clerkId: userId } });
     if (!user) {
       user = await prisma.user.create({
         data: {
-          clerkId:   userId,
-          email:     `${userId}@temp.com`,
-          firstName: firstName || null,
-          lastName:  lastName  || null,
+          clerkId: userId,
+          email: `${userId}@temp.com`,
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+        },
+      });
+    } else {
+      // Mettre à jour le nom si le User existe déjà
+      user = await prisma.user.update({
+        where: { clerkId: userId },
+        data: {
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
         },
       });
     }
 
-    // ── Panier ────────────────────────────────────────────────────────────────
+    // Récupérer le panier
     const cart = await prisma.cart.findUnique({
       where: { userId: user.clerkId },
       include: { items: { include: { product: true } } },
@@ -86,17 +68,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Panier vide" }, { status: 400 });
     }
 
-    // ── Vérification stock ────────────────────────────────────────────────────
+    // Vérification stock
     for (const item of cart.items) {
       if (item.product.stock < item.quantity) {
         return NextResponse.json(
-          { error: `Stock insuffisant pour « ${item.product.name} »` },
+          { error: `Stock insuffisant pour ${item.product.name}` },
           { status: 400 }
         );
       }
     }
 
-    // ── Calcul totaux ─────────────────────────────────────────────────────────
     const validatedDeliveryFee = deliveryMethod === "DELIVERY" ? 7 : 0;
     const subtotal = cart.items.reduce(
       (sum, item) => sum + item.product.price * item.quantity,
@@ -104,29 +85,38 @@ export async function POST(req: NextRequest) {
     );
     const total = subtotal + validatedDeliveryFee;
 
-    // ── Créer la commande avec toutes les infos client ────────────────────────
+    // ─── Encoder toutes les infos client dans deliveryMethod ──────────────────
+    // Format : "PICKUP" ou "DELIVERY::{...json...}"
+    // Cela évite de modifier le schéma Prisma.
+    let deliveryMethodValue: string;
+
+    if (deliveryMethod === "PICKUP") {
+      deliveryMethodValue = "PICKUP";
+    } else {
+      const deliveryData = {
+        phone:       customerInfo.phone       ?? null,
+        address:     customerInfo.address     ?? null,
+        city:        customerInfo.city        ?? null,
+        governorate: customerInfo.governorate ?? null,
+        postalCode:  customerInfo.postalCode  ?? null,
+        country:     customerInfo.country     ?? null,
+        notes:       customerInfo.notes       ?? null,
+      };
+      // "DELIVERY::{...}" — on peut parser côté admin avec .split("::")[1]
+      deliveryMethodValue = `DELIVERY::${JSON.stringify(deliveryData)}`;
+    }
+
+    // Création de la commande
     const order = await prisma.order.create({
       data: {
-        userId:        user.clerkId,
+        userId: user.clerkId,
         total,
-        deliveryFee:   validatedDeliveryFee,
-        status:        "pending",
-        deliveryMethod,
-
-        // Informations client
-        customerFirstName:   firstName   || null,
-        customerLastName:    lastName    || null,
-        customerPhone:       phone       || null,
-        customerAddress:     address     || null,
-        customerCity:        city        || null,
-        customerGovernorate: governorate || null,
-        customerPostalCode:  postalCode  || null,
-        customerCountry:     country     || null,
-        customerNotes:       notes       || null,
+        status: "pending",
+        deliveryMethod: deliveryMethodValue, // contient tout
       },
     });
 
-    // ── Créer les OrderItems ──────────────────────────────────────────────────
+    // Créer les OrderItems
     await prisma.orderItem.createMany({
       data: cart.items.map((item) => ({
         orderId:   order.id,
@@ -137,7 +127,7 @@ export async function POST(req: NextRequest) {
       })),
     });
 
-    // ── Mise à jour stock + alerte ────────────────────────────────────────────
+    // Mise à jour du stock
     for (const item of cart.items) {
       const newStock = item.product.stock - item.quantity;
 
@@ -149,18 +139,18 @@ export async function POST(req: NextRequest) {
 
       await prisma.product.update({
         where: { id: item.productId },
-        data:  { stock: newStock, stockStatus },
+        data: { stock: newStock, stockStatus },
       });
 
       sendStockAlertIfNeeded({
-        id:          item.productId,
-        name:        item.product.name,
-        stock:       newStock,
+        id: item.productId,
+        name: item.product.name,
+        stock: newStock,
         stockStatus,
-      }).catch((err) => console.error("Alerte stock échouée :", err));
+      }).catch((err) => console.error("Alerte stock échouée:", err));
     }
 
-    // ── Vider le panier ───────────────────────────────────────────────────────
+    // Vider le panier
     await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
     return NextResponse.json({
@@ -169,12 +159,9 @@ export async function POST(req: NextRequest) {
       orderId: order.id,
     });
   } catch (error: any) {
-    console.error("❌ Erreur création commande :", error);
+    console.error("❌ Erreur création commande:", error);
     return NextResponse.json(
-      {
-        error:   "Erreur lors de la création de la commande",
-        message: error.message,
-      },
+      { error: "Erreur lors de la création de la commande", message: error.message },
       { status: 500 }
     );
   }
