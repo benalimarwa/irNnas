@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Heart, ChevronDown } from "lucide-react";
+import { ShoppingCart, Heart, ChevronDown, X, ChevronRight } from "lucide-react";
 
 type Product = {
     id: number;
@@ -28,6 +28,27 @@ type CategoryOption = {
     label: string;
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+    pantalon: "Pantalon",
+    pull: "Pull",
+    veste: "Veste",
+    chemise: "Chemise",
+    accessoire: "Accessoire",
+    robe: "Robe",
+    jupe: "Jupe",
+    "t-shirt": "T-shirt",
+    chaussure: "Chaussure",
+    manteau: "Manteau",
+};
+
+const MENU_LINKS = [
+    { label: "Accueil", href: "/" },
+    { label: "Nos Produits", href: "#shop" },
+    { label: "Nouveautés", href: "#shop" },
+    { label: "Promotions", href: "#shop" },
+    { label: "À propos", href: "#" },
+];
+
 export default function HomePage() {
     const router = useRouter();
     const [products, setProducts] = useState<Product[]>([]);
@@ -40,10 +61,14 @@ export default function HomePage() {
     const [selectedCategory, setSelectedCategory] = useState<string>("");
     const [selectedGender, setSelectedGender] = useState<string>("");
     const [searchQuery, setSearchQuery] = useState<string>("");
-    const [showFilters, setShowFilters] = useState(false);
+    const [showMoreCats, setShowMoreCats] = useState(false);
 
     const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
     const [genderOptions, setGenderOptions] = useState<CategoryOption[]>([]);
+
+    // Drawer mobile
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [drawerTab, setDrawerTab] = useState<"menu" | "categories">("menu");
 
     useEffect(() => {
         fetchProducts();
@@ -59,14 +84,17 @@ export default function HomePage() {
                 setFilteredProducts(data);
 
                 const categories: CategoryOption[] = (Array.from(
-  new Set(data.map((p: Product) => p.category))
-) as string[]).map(cat => ({ value: cat, label: cat }));
-setCategoryOptions(categories);
+                    new Set(data.map((p: Product) => p.category))
+                ) as string[]).map(cat => ({
+                    value: cat,
+                    label: CATEGORY_LABELS[cat] ?? cat,
+                }));
+                setCategoryOptions(categories);
 
-const genders: CategoryOption[] = (Array.from(
-  new Set(data.map((p: Product) => p.gender))
-) as string[]).filter(Boolean).map(g => ({ value: g, label: g }));
-setGenderOptions(genders);
+                const genders: CategoryOption[] = (Array.from(
+                    new Set(data.map((p: Product) => p.gender))
+                ) as string[]).filter(Boolean).map(g => ({ value: g, label: g }));
+                setGenderOptions(genders);
             }
         } catch (err) {
             console.error(err);
@@ -80,7 +108,9 @@ setGenderOptions(genders);
             const res = await fetch("/api/cart");
             if (res.ok) {
                 const data = await res.json();
-                setCartCount(data.items?.length || 0);
+                setCartCount(
+                    data.items?.reduce((s: number, i: { quantity: number }) => s + i.quantity, 0) || 0
+                );
             }
         } catch { }
     };
@@ -92,7 +122,6 @@ setGenderOptions(genders);
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ productId, quantity: 1 }),
             });
-
             if (res.ok) {
                 setCartCount((prev) => prev + 1);
                 alert("✅ Produit ajouté au panier !");
@@ -102,24 +131,22 @@ setGenderOptions(genders);
         }
     };
 
-    // Acheter directement : vide le panier, ajoute ce produit, redirige vers le panier
     const handleBuyNow = async (productId: number) => {
         try {
-            // 1. Vider le panier
-            await fetch("/api/cart", { method: "DELETE" });
-
-            // 2. Ajouter le produit
-            const res = await fetch("/api/cart", {
+            const res = await fetch("/api/orders", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId, quantity: 1 }),
+                body: JSON.stringify({
+                    items: [{ productId, quantity: 1 }],
+                    deliveryMethod: "livraison",
+                }),
             });
-
             if (res.ok) {
-                setCartCount(1);
-                router.push("/client/panier");
+                const data = await res.json();
+                const orderId = data.order?.id || data.id;
+                router.push(`/client/orders/${orderId}`);
             } else {
-                alert("Erreur lors de l'achat");
+                alert("Erreur lors de la commande");
             }
         } catch {
             alert("Erreur réseau");
@@ -134,50 +161,42 @@ setGenderOptions(genders);
         );
     };
 
-    const applyFilters = () => {
+    useEffect(() => {
         let filtered = [...products];
-
-        if (selectedCategory) {
-            filtered = filtered.filter(p => p.category === selectedCategory);
-        }
-
-        if (selectedGender) {
-            filtered = filtered.filter(p => p.gender === selectedGender);
-        }
-
+        if (selectedCategory) filtered = filtered.filter(p => p.category === selectedCategory);
+        if (selectedGender) filtered = filtered.filter(p => p.gender === selectedGender);
         if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase().trim();
+            const q = searchQuery.toLowerCase().trim();
             filtered = filtered.filter(p =>
-                p.name.toLowerCase().includes(query) ||
-                p.color.toLowerCase().includes(query) ||
-                p.description?.toLowerCase().includes(query) ||
-                p.category.toLowerCase().includes(query)
+                p.name.toLowerCase().includes(q) ||
+                p.color.toLowerCase().includes(q) ||
+                p.description?.toLowerCase().includes(q) ||
+                p.category.toLowerCase().includes(q)
             );
         }
-
         setFilteredProducts(filtered);
-    };
-
-    useEffect(() => {
-        applyFilters();
     }, [selectedCategory, selectedGender, searchQuery, products]);
 
     const resetFilters = () => {
         setSelectedCategory("");
         setSelectedGender("");
         setSearchQuery("");
-        setShowFilters(false);
     };
 
     const hasActiveFilters = selectedCategory || selectedGender || searchQuery;
+
+    const selectCategory = (val: string) => {
+        setSelectedCategory(val);
+        setDrawerOpen(false);
+    };
 
     if (loading) {
         return (
             <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
                 <div className="relative">
                     <div className="w-20 h-20 border-2 border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" />
-                    <div className="absolute inset-0 flex items-center justify-center text-[#3b82f6] text-xs font-light tracking-[0.3em] animate-pulse">
-                        CHARGEMENT
+                    <div className="absolute inset-0 flex items-center justify-center text-[#3b82f6] text-[10px] font-light tracking-[0.3em] animate-pulse">
+                        IRNAS
                     </div>
                 </div>
             </div>
@@ -187,11 +206,132 @@ setGenderOptions(genders);
     return (
         <div className="min-h-screen bg-[#0a1628] text-white">
 
-            {/* ============================================ */}
-            {/* HEADER — Bleu nuit professionnel */}
-            {/* ============================================ */}
+            {/* ===== MOBILE DRAWER ===== */}
+            {drawerOpen && (
+                <div className="fixed inset-0 z-[100] flex">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setDrawerOpen(false)}
+                    />
+
+                    {/* Drawer panel — côté gauche comme les screenshots */}
+                    <div className="relative w-[78%] max-w-sm bg-white text-[#1a1a1a] flex flex-col h-full shadow-2xl">
+
+                        {/* Search bar en haut */}
+                        <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+                            <input
+                                type="text"
+                                placeholder="Rechercher..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="flex-1 text-sm text-gray-700 placeholder:text-gray-400 outline-none"
+                            />
+                            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+
+                        {/* Tabs MENU / CATÉGORIES */}
+                        <div className="flex border-b border-gray-100">
+                            <button
+                                onClick={() => setDrawerTab("menu")}
+                                className={`flex-1 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] border-b-2 transition ${
+                                    drawerTab === "menu"
+                                        ? "border-[#3b82f6] text-[#3b82f6] bg-gray-50"
+                                        : "border-transparent text-gray-400 bg-white"
+                                }`}
+                            >
+                                Menu
+                            </button>
+                            <button
+                                onClick={() => setDrawerTab("categories")}
+                                className={`flex-1 py-3.5 text-xs font-semibold uppercase tracking-[0.2em] border-b-2 transition ${
+                                    drawerTab === "categories"
+                                        ? "border-[#3b82f6] text-[#3b82f6] bg-gray-50"
+                                        : "border-transparent text-gray-400 bg-white"
+                                }`}
+                            >
+                                Catégories
+                            </button>
+                        </div>
+
+                        {/* Contenu des tabs */}
+                        <div className="flex-1 overflow-y-auto">
+                            {drawerTab === "menu" ? (
+                                <ul>
+                                    {MENU_LINKS.map((item) => (
+                                        <li key={item.label} className="border-b border-gray-100">
+                                            <Link
+                                                href={item.href}
+                                                onClick={() => setDrawerOpen(false)}
+                                                className="flex items-center justify-between px-5 py-4 text-sm font-medium text-[#1a2a44] hover:text-[#3b82f6] hover:bg-gray-50 transition"
+                                            >
+                                                {item.label}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <ul>
+                                    <li className="border-b border-gray-100">
+                                        <button
+                                            onClick={() => selectCategory("")}
+                                            className={`w-full flex items-center justify-between px-5 py-4 text-sm font-medium transition ${
+                                                selectedCategory === ""
+                                                    ? "text-[#3b82f6] bg-blue-50"
+                                                    : "text-[#1a2a44] hover:text-[#3b82f6] hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            Tous les produits
+                                        </button>
+                                    </li>
+                                    {categoryOptions.map((cat) => (
+                                        <li key={cat.value} className="border-b border-gray-100">
+                                            <button
+                                                onClick={() => selectCategory(cat.value)}
+                                                className={`w-full flex items-center justify-between px-5 py-4 text-sm font-medium transition ${
+                                                    selectedCategory === cat.value
+                                                        ? "text-[#3b82f6] bg-blue-50"
+                                                        : "text-[#1a2a44] hover:text-[#3b82f6] hover:bg-gray-50"
+                                                }`}
+                                            >
+                                                {cat.label}
+                                                <ChevronRight className="w-4 h-4 text-gray-300" />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+
+                        {/* Fermer */}
+                        <div className="p-4 border-t border-gray-100">
+                            <button
+                                onClick={() => setDrawerOpen(false)}
+                                className="w-full py-3 text-xs uppercase tracking-[0.2em] text-gray-400 hover:text-gray-600 transition flex items-center justify-center gap-2"
+                            >
+                                <X className="w-4 h-4" /> Fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ===== HEADER ===== */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/95 backdrop-blur-sm border-b border-[#1e3a5f]">
                 <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+
+                    {/* Burger mobile */}
+                    <button
+                        onClick={() => setDrawerOpen(true)}
+                        className="lg:hidden text-white hover:text-[#3b82f6] transition mr-3"
+                        aria-label="Menu"
+                    >
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
 
                     <Link href="/" className="group flex items-end gap-3">
                         <span className="text-3xl font-light tracking-[0.2em] text-white group-hover:text-[#3b82f6] transition duration-500">
@@ -203,18 +343,10 @@ setGenderOptions(genders);
                     </Link>
 
                     <nav className="hidden lg:flex items-center gap-12 text-xs uppercase tracking-[0.25em] font-light">
-                        <Link href="/" className="text-[#3b82f6] hover:text-[#60a5fa] transition border-b border-[#3b82f6]/30 pb-1">
-                            Accueil
-                        </Link>
-                        <Link href="#shop" className="hover:text-[#3b82f6] transition pb-1 border-b border-transparent hover:border-[#3b82f6]/30">
-                            Boutique
-                        </Link>
-                        <Link href="#" className="hover:text-[#3b82f6] transition pb-1 border-b border-transparent hover:border-[#3b82f6]/30">
-                            Collections
-                        </Link>
-                        <Link href="#" className="hover:text-[#3b82f6] transition pb-1 border-b border-transparent hover:border-[#3b82f6]/30">
-                            À propos
-                        </Link>
+                        <Link href="/" className="text-[#3b82f6] border-b border-[#3b82f6]/30 pb-1">Accueil</Link>
+                        <Link href="#shop" className="hover:text-[#3b82f6] transition pb-1 border-b border-transparent hover:border-[#3b82f6]/30">Boutique</Link>
+                        <Link href="#" className="hover:text-[#3b82f6] transition pb-1 border-b border-transparent hover:border-[#3b82f6]/30">Collections</Link>
+                        <Link href="#" className="hover:text-[#3b82f6] transition pb-1 border-b border-transparent hover:border-[#3b82f6]/30">À propos</Link>
                     </nav>
 
                     <div className="flex items-center gap-5">
@@ -243,19 +375,11 @@ setGenderOptions(genders);
                                 </span>
                             )}
                         </Link>
-
-                        <button className="lg:hidden text-white hover:text-[#3b82f6] transition">
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
                     </div>
                 </div>
             </header>
 
-            {/* ============================================ */}
-            {/* HERO — Élégance bleue */}
-            {/* ============================================ */}
+            {/* ===== HERO ===== */}
             <section className="relative pt-36 pb-24 text-center overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-[#3b82f6]/5 via-transparent to-transparent pointer-events-none" />
                 <div className="relative z-10 max-w-4xl mx-auto px-6">
@@ -268,33 +392,25 @@ setGenderOptions(genders);
                         <br className="hidden sm:block" />
                         <span className="text-white">Professionnelle</span>
                     </h1>
-                    <p className="mt-6 text-base md:text-lg text-[#8aabca] font-light tracking-[0.15em] max-w-lg mx-auto">
+                    <p className="mt-6 text-base text-[#8aabca] font-light tracking-[0.15em] max-w-lg mx-auto">
                         Le style moderne, réinventé avec une touche de luxe discret.
                     </p>
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                        <Link
-                            href="#shop"
-                            className="px-10 py-3.5 bg-[#3b82f6] text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#2563eb] transition shadow-lg shadow-[#3b82f6]/20"
-                        >
+                        <Link href="#shop" className="px-10 py-3.5 bg-[#3b82f6] text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#2563eb] transition shadow-lg shadow-[#3b82f6]/20">
                             Découvrir
                         </Link>
-                        <Link
-                            href="#"
-                            className="px-10 py-3.5 border border-[#3b82f6]/30 text-[#3b82f6] text-xs uppercase tracking-[0.25em] font-light rounded-full hover:bg-[#3b82f6]/10 transition"
-                        >
+                        <Link href="#" className="px-10 py-3.5 border border-[#3b82f6]/30 text-[#3b82f6] text-xs uppercase tracking-[0.25em] font-light rounded-full hover:bg-[#3b82f6]/10 transition">
                             Nos Collections
                         </Link>
                     </div>
                 </div>
-
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-px h-16 bg-gradient-to-b from-[#3b82f6]/30 to-transparent" />
             </section>
 
-            {/* ============================================ */}
-            {/* SHOP — Grille produits avec filtres */}
-            {/* ============================================ */}
+            {/* ===== SHOP ===== */}
             <section id="shop" className="max-w-7xl mx-auto px-6 pb-24">
 
+                {/* Toolbar */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14">
                     <div>
                         <h2 className="text-4xl md:text-5xl font-light tracking-tight">
@@ -303,73 +419,57 @@ setGenderOptions(genders);
                         <p className="mt-2 text-sm text-[#4a6a8a] tracking-widest uppercase font-light">
                             {filteredProducts.length} produits
                             {hasActiveFilters && (
-                                <button
-                                    onClick={resetFilters}
-                                    className="ml-4 text-[#3b82f6] hover:underline text-xs"
-                                >
+                                <button onClick={resetFilters} className="ml-4 text-[#3b82f6] hover:underline text-xs">
                                     Réinitialiser
                                 </button>
                             )}
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
-                        {/* Filtres catégorie — "trois points" */}
-                        <div className="flex flex-wrap items-center gap-2">
-                            {categoryOptions.slice(0, 3).map((cat) => (
-                                <button
-                                    key={cat.value}
-                                    onClick={() => setSelectedCategory(
-                                        selectedCategory === cat.value ? "" : cat.value
-                                    )}
-                                    className={`
-                                        px-5 py-2 text-xs uppercase tracking-[0.15em] font-light rounded-full border transition
-                                        ${selectedCategory === cat.value
-                                            ? 'border-[#3b82f6] bg-[#3b82f6]/10 text-[#3b82f6]'
-                                            : 'border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/30 hover:text-white'
-                                        }
-                                    `}
-                                >
-                                    {cat.label}
-                                </button>
-                            ))}
+                    {/* Filtres desktop */}
+                    <div className="hidden md:flex flex-wrap items-center gap-3">
+                        {categoryOptions.slice(0, 3).map((cat) => (
+                            <button
+                                key={cat.value}
+                                onClick={() => setSelectedCategory(selectedCategory === cat.value ? "" : cat.value)}
+                                className={`px-5 py-2 text-xs uppercase tracking-[0.15em] font-light rounded-full border transition ${
+                                    selectedCategory === cat.value
+                                        ? "border-[#3b82f6] bg-[#3b82f6]/10 text-[#3b82f6]"
+                                        : "border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/30 hover:text-white"
+                                }`}
+                            >
+                                {cat.label}
+                            </button>
+                        ))}
 
-                            {categoryOptions.length > 3 && (
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowFilters(!showFilters)}
-                                        className="px-5 py-2 text-xs uppercase tracking-[0.15em] font-light rounded-full border border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/30 hover:text-white transition flex items-center gap-1"
-                                    >
-                                        + {categoryOptions.length - 3}
-                                        <ChevronDown className={`w-3 h-3 transition ${showFilters ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    {showFilters && (
-                                        <div className="absolute top-full left-0 mt-2 w-56 bg-[#0f1f33] border border-[#1e3a5f] rounded-2xl p-3 shadow-2xl z-20">
-                                            {categoryOptions.slice(3).map((cat) => (
-                                                <button
-                                                    key={cat.value}
-                                                    onClick={() => {
-                                                        setSelectedCategory(
-                                                            selectedCategory === cat.value ? "" : cat.value
-                                                        );
-                                                        setShowFilters(false);
-                                                    }}
-                                                    className={`
-                                                        w-full text-left px-4 py-2.5 text-xs uppercase tracking-[0.1em] font-light rounded-xl transition
-                                                        ${selectedCategory === cat.value
-                                                            ? 'text-[#3b82f6] bg-[#3b82f6]/10'
-                                                            : 'text-[#8aabca] hover:bg-[#1a2a44] hover:text-white'
-                                                        }
-                                                    `}
-                                                >
-                                                    {cat.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                        {categoryOptions.length > 3 && (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowMoreCats(!showMoreCats)}
+                                    className="px-5 py-2 text-xs uppercase tracking-[0.15em] font-light rounded-full border border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/30 hover:text-white transition flex items-center gap-1"
+                                >
+                                    +{categoryOptions.length - 3}
+                                    <ChevronDown className={`w-3 h-3 transition ${showMoreCats ? "rotate-180" : ""}`} />
+                                </button>
+                                {showMoreCats && (
+                                    <div className="absolute top-full left-0 mt-2 w-56 bg-[#0f1f33] border border-[#1e3a5f] rounded-2xl p-3 shadow-2xl z-20">
+                                        {categoryOptions.slice(3).map((cat) => (
+                                            <button
+                                                key={cat.value}
+                                                onClick={() => { setSelectedCategory(selectedCategory === cat.value ? "" : cat.value); setShowMoreCats(false); }}
+                                                className={`w-full text-left px-4 py-2.5 text-xs uppercase tracking-[0.1em] font-light rounded-xl transition ${
+                                                    selectedCategory === cat.value
+                                                        ? "text-[#3b82f6] bg-[#3b82f6]/10"
+                                                        : "text-[#8aabca] hover:bg-[#1a2a44] hover:text-white"
+                                                }`}
+                                            >
+                                                {cat.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {genderOptions.length > 0 && (
                             <select
@@ -383,35 +483,30 @@ setGenderOptions(genders);
                                 ))}
                             </select>
                         )}
-
-                        <div className="md:hidden relative w-full mt-2">
-                            <input
-                                type="text"
-                                placeholder="Rechercher..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-[#0f1f33] border border-[#1e3a5f] rounded-full py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-[#4a6a8a] focus:outline-none focus:border-[#3b82f6]/40 transition"
-                            />
-                            <svg className="w-4 h-4 absolute left-3.5 top-3 text-[#4a6a8a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
                     </div>
+
+                    {/* Filtre mobile — bouton ouvre le drawer sur l'onglet catégories */}
+                    <button
+                        onClick={() => { setDrawerTab("categories"); setDrawerOpen(true); }}
+                        className="md:hidden flex items-center gap-2 px-5 py-2.5 border border-[#1e3a5f] rounded-full text-xs uppercase tracking-[0.15em] text-[#8aabca] hover:border-[#3b82f6]/30 hover:text-white transition self-start"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4h18M6 8h12M9 12h6" />
+                        </svg>
+                        Filtrer {selectedCategory && `· ${CATEGORY_LABELS[selectedCategory] ?? selectedCategory}`}
+                    </button>
                 </div>
 
+                {/* Grille */}
                 {filteredProducts.length === 0 ? (
                     <div className="text-center py-20 border border-[#1e3a5f] rounded-3xl">
                         <p className="text-[#4a6a8a] text-sm uppercase tracking-[0.2em]">Aucun produit ne correspond</p>
-                        <button
-                            onClick={resetFilters}
-                            className="mt-4 text-[#3b82f6] text-xs uppercase tracking-[0.2em] hover:underline"
-                        >
+                        <button onClick={resetFilters} className="mt-4 text-[#3b82f6] text-xs uppercase tracking-[0.2em] hover:underline">
                             Voir tous les produits
                         </button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-
                         {filteredProducts.map((product) => {
                             const isFavorite = favorites.includes(product.id);
                             const isOnSale = product.originalPrice && product.originalPrice > product.price;
@@ -434,7 +529,7 @@ setGenderOptions(genders);
                                         )}
                                     </div>
 
-                                    <div className="relative h-[340px] flex items-center justify-center bg-[#0a1628] overflow-hidden">
+                                    <div className="relative h-[320px] flex items-center justify-center bg-[#0a1628] overflow-hidden">
                                         <Image
                                             src={product.images[0] || "https://via.placeholder.com/400"}
                                             alt={product.name}
@@ -448,112 +543,66 @@ setGenderOptions(genders);
                                     <div className="p-5 md:p-6">
                                         <div className="flex justify-between items-start gap-4">
                                             <div className="min-w-0 flex-1">
-                                                <h3 className="text-base font-medium text-white truncate">
-                                                    {product.name}
-                                                </h3>
+                                                <h3 className="text-base font-medium text-white truncate">{product.name}</h3>
                                                 <p className="text-xs text-[#4a6a8a] mt-1 uppercase tracking-widest font-light">
-                                                    {product.color} • {product.category}
+                                                    {product.color} • {CATEGORY_LABELS[product.category] ?? product.category}
                                                 </p>
                                             </div>
                                             <button
                                                 onClick={() => toggleFavorite(product.id)}
                                                 className="flex-shrink-0 text-[#4a6a8a] hover:text-[#3b82f6] transition mt-1"
                                             >
-                                                <Heart
-                                                    className={`w-5 h-5 transition ${isFavorite ? 'fill-[#3b82f6] text-[#3b82f6]' : ''}`}
-                                                />
+                                                <Heart className={`w-5 h-5 transition ${isFavorite ? "fill-[#3b82f6] text-[#3b82f6]" : ""}`} />
                                             </button>
                                         </div>
 
                                         <div className="mt-4 flex items-baseline gap-3">
-                                            {isOnSale ? (
-                                                <>
-                                                    <span className="text-2xl font-light text-white">
-                                                        {product.price.toFixed(2)} TND
-                                                    </span>
-                                                    <span className="text-sm text-[#4a6a8a] line-through">
-                                                        {product.originalPrice?.toFixed(2)} TND
-                                                    </span>
-                                                </>
-                                            ) : (
-                                                <span className="text-2xl font-light text-white">
-                                                    {product.price.toFixed(2)} TND
-                                                </span>
+                                            <span className="text-2xl font-light text-white">{product.price.toFixed(2)} TND</span>
+                                            {isOnSale && (
+                                                <span className="text-sm text-[#4a6a8a] line-through">{product.originalPrice?.toFixed(2)} TND</span>
                                             )}
                                         </div>
 
-                                        {/* Deux boutons : Ajouter et Acheter maintenant */}
                                         <div className="mt-5 flex gap-3">
                                             <button
                                                 onClick={() => addToCart(product.id)}
                                                 disabled={product.stock <= 0}
-                                                className={`
-                                                    flex-1 py-3.5 rounded-2xl text-xs uppercase tracking-[0.25em] font-medium transition
-                                                    ${product.stock > 0
-                                                        ? 'bg-[#3b82f6] text-white hover:bg-[#2563eb] shadow-lg shadow-[#3b82f6]/10'
-                                                        : 'bg-[#1a2a44] text-[#4a6a8a] cursor-not-allowed'
-                                                    }
-                                                `}
+                                                className={`flex-1 py-3.5 rounded-2xl text-xs uppercase tracking-[0.2em] font-medium transition ${
+                                                    product.stock > 0
+                                                        ? "bg-[#3b82f6] text-white hover:bg-[#2563eb] shadow-lg shadow-[#3b82f6]/10"
+                                                        : "bg-[#1a2a44] text-[#4a6a8a] cursor-not-allowed"
+                                                }`}
                                             >
-                                                {product.stock > 0 ? 'AJOUTER' : 'RUPTURE'}
+                                                {product.stock > 0 ? "Ajouter" : "Rupture"}
                                             </button>
                                             <button
                                                 onClick={() => handleBuyNow(product.id)}
                                                 disabled={product.stock <= 0}
-                                                className={`
-                                                    flex-1 py-3.5 rounded-2xl text-xs uppercase tracking-[0.25em] font-medium transition border
-                                                    ${product.stock > 0
-                                                        ? 'border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10'
-                                                        : 'border-[#1a2a44] text-[#4a6a8a] cursor-not-allowed'
-                                                    }
-                                                `}
+                                                className={`flex-1 py-3.5 rounded-2xl text-xs uppercase tracking-[0.2em] font-medium border transition ${
+                                                    product.stock > 0
+                                                        ? "border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10"
+                                                        : "border-[#1a2a44] text-[#4a6a8a] cursor-not-allowed"
+                                                }`}
                                             >
-                                                ACHETER
+                                                Acheter
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             );
                         })}
-
-                    </div>
-                )}
-
-                {filteredProducts.length > 0 && (
-                    <div className="mt-16 flex justify-center">
-                        <div className="flex items-center gap-2 text-xs text-[#4a6a8a] uppercase tracking-[0.2em]">
-                            <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/30">
-                                1
-                            </span>
-                            <span className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#1a2a44] transition cursor-pointer">
-                                2
-                            </span>
-                            <span className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#1a2a44] transition cursor-pointer">
-                                3
-                            </span>
-                            <span className="text-[#1a2a44]">···</span>
-                            <span className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#1a2a44] transition cursor-pointer">
-                                8
-                            </span>
-                        </div>
                     </div>
                 )}
             </section>
 
-            {/* ============================================ */}
-            {/* FOOTER */}
-            {/* ============================================ */}
+            {/* ===== FOOTER ===== */}
             <footer className="border-t border-[#1a2a44] py-12 px-6">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
                         <span className="text-xl font-light tracking-[0.2em] text-white">IRNAS</span>
-                        <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">
-                            Fashion
-                        </span>
+                        <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
                     </div>
-                    <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">
-                        © 2026 IRNAS — Tous droits réservés
-                    </p>
+                    <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2026 IRNAS — Tous droits réservés</p>
                     <div className="flex items-center gap-6 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
                         <Link href="#" className="hover:text-[#3b82f6] transition">Mentions</Link>
                         <Link href="#" className="hover:text-[#3b82f6] transition">Confidentialité</Link>
@@ -561,7 +610,6 @@ setGenderOptions(genders);
                     </div>
                 </div>
             </footer>
-
         </div>
     );
 }
