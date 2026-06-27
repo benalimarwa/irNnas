@@ -1,19 +1,13 @@
-// app/orders/page.tsx
+// app/client/orders/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Package,
-  ShoppingBag,
-  ArrowLeft,
-  Truck,
-  Store,
-  ChevronRight,
-  Calendar,
-  Eye,
-  AlertCircle,
+  Package, ShoppingBag, ArrowLeft, Truck, Store,
+  ChevronRight, AlertCircle,
 } from "lucide-react";
+import Navbar from "@/components/ClientNavbar";
 
 type OrderItem = {
   id: number;
@@ -37,240 +31,221 @@ type Order = {
   items: OrderItem[];
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  pending:   "En attente",
+  confirmed: "Confirmée",
+  shipped:   "Expédiée",
+  delivered: "Livrée",
+  cancelled: "Annulée",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  pending:   "bg-amber-500/10 text-amber-400 border border-amber-500/30",
+  confirmed: "bg-[#3b82f6]/10 text-[#60a5fa] border border-[#3b82f6]/30",
+  shipped:   "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30",
+  delivered: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
+  cancelled: "bg-red-500/10 text-red-400 border border-red-500/30",
+};
+
 export default function MyOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders]   = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter]   = useState<string>("all");
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await fetch("/api/orders");
-        if (res.ok) {
-          const data = await res.json();
-          setOrders(data.orders || []);
-        }
-      } catch (error) {
-        console.error("Erreur:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
+    fetch("/api/orders")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setOrders(d.orders || []); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  const statusLabels: Record<string, string> = {
-    pending: "En attente",
-    confirmed: "Confirmée",
-    shipped: "Expédiée",
-    delivered: "Livrée",
-    cancelled: "Annulée",
-  };
+  const filteredOrders = filter === "all"
+    ? orders
+    : orders.filter(o => o.status === filter);
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-amber-500/10 text-amber-400 border border-amber-500/30",
-    confirmed: "bg-sky-500/10 text-sky-400 border border-sky-500/30",
-    shipped: "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30",
-    delivered: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
-    cancelled: "bg-red-500/10 text-red-400 border border-red-500/30",
-  };
-
-  const filteredOrders = filter === "all" 
-    ? orders 
-    : orders.filter((order) => order.status === filter);
-
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center relative overflow-hidden">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="fixed inset-0 w-full h-full object-cover z-[-2] opacity-30"
-          src="/video/mm.mp4"
-        />
-        <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/80 z-[-1]" />
-        
-        <div className="flex flex-col items-center relative z-10">
-          <div className="w-16 h-16 border-4 border-white/20 border-t-[#D4AF37] rounded-full animate-spin" />
-          <p className="mt-6 text-lg text-white/70">Chargement de vos commandes...</p>
+      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
+        <div className="relative">
+          <div className="w-20 h-20 border-2 border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center text-[#3b82f6] text-[10px] font-light tracking-[0.3em] animate-pulse">
+            IRNAS
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white relative overflow-hidden overflow-x-hidden">
-      {/* === VIDÉO D'ARRIÈRE-PLAN === */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="fixed inset-0 w-full h-full object-cover z-[-2] opacity-40"
-        src="/video/mm.mp4"
+    <div className="min-h-screen bg-[#0a1628] text-white">
+      <Navbar />
+
+      {/* Dot grid background */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-[0.07]"
+        style={{
+          backgroundImage: "radial-gradient(#3b82f6 0.8px, transparent 1px)",
+          backgroundSize: "60px 60px",
+        }}
       />
-      
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/80 z-[-1]" />
-      
-      {/* Texture subtile */}
-      <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-[-1]" />
 
-      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-16 sm:pb-20 relative z-10">
-        
-        {/* Header */}
-        <div className="mb-8 sm:mb-12">
-          <Link
-            href="/client"
-            className="inline-flex items-center gap-2 text-white/60 hover:text-white transition mb-6 sm:mb-8 group"
-          >
-            <ArrowLeft className="group-hover:-translate-x-1 transition" size={20} />
-            Retour à l’accueil
-          </Link>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-20 relative z-10">
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            
-          </div>
+        {/* ── Back link ──────────────────────────────────────────────────────── */}
+        <Link
+          href="/client"
+          className="inline-flex items-center gap-2 text-[#4a6a8a] hover:text-[#3b82f6] transition mb-10 group text-sm uppercase tracking-[0.15em] font-light"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition" />
+          Retour à l'accueil
+        </Link>
+
+        {/* ── Title ──────────────────────────────────────────────────────────── */}
+        <div className="mb-10">
+          <h1 className="text-4xl md:text-5xl font-light tracking-tight">
+            Mes <span className="text-[#3b82f6]">Commandes</span>
+          </h1>
+          <p className="mt-2 text-sm text-[#4a6a8a] tracking-widest uppercase font-light">
+            {orders.length} commande{orders.length !== 1 ? "s" : ""} au total
+          </p>
         </div>
 
-        {/* Filtres */}
-        <div className="mb-10 sm:mb-12 flex flex-wrap gap-2 sm:gap-3">
+        {/* ── Filtres ────────────────────────────────────────────────────────── */}
+        <div className="flex flex-wrap gap-2 sm:gap-3 mb-12">
           <button
             onClick={() => setFilter("all")}
-            className={`px-6 sm:px-8 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-3xl font-semibold transition-all duration-300 text-sm ${
+            className={`px-6 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-light border transition ${
               filter === "all"
-                ? "bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] text-black shadow-xl shadow-[#D4AF37]/40"
-                : "bg-white/5 hover:bg-white/10 border border-white/10 text-white/80"
+                ? "border-[#3b82f6] bg-[#3b82f6]/10 text-[#3b82f6]"
+                : "border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/40 hover:text-white"
             }`}
           >
             Toutes ({orders.length})
           </button>
 
-          {Object.entries(statusLabels).map(([status, label]) => {
-            const count = orders.filter((o) => o.status === status).length;
+          {Object.entries(STATUS_LABELS).map(([status, label]) => {
+            const count = orders.filter(o => o.status === status).length;
             if (count === 0) return null;
-
             return (
               <button
                 key={status}
                 onClick={() => setFilter(status)}
-                className={`px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-2xl sm:rounded-3xl font-semibold transition-all duration-300 text-sm flex items-center gap-2 ${
+                className={`px-6 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-light border transition flex items-center gap-2 ${
                   filter === status
-                    ? "bg-gradient-to-r from-[#D4AF37] to-[#F5E6A3] text-black shadow-xl shadow-[#D4AF37]/40"
-                    : "bg-white/5 hover:bg-white/10 border border-white/10 text-white/80"
+                    ? "border-[#3b82f6] bg-[#3b82f6]/10 text-[#3b82f6]"
+                    : "border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/40 hover:text-white"
                 }`}
               >
-                <span className={`p-1 rounded-xl ${statusColors[status]}`}>
-                  {status === "pending" || status === "cancelled" ? (
-                    <AlertCircle className="w-4 h-4" />
-                  ) : (
-                    <Package className="w-4 h-4" />
-                  )}
-                </span>
                 {label}
-                <span className="text-xs opacity-75">({count})</span>
+                <span className="opacity-60">({count})</span>
               </button>
             );
           })}
         </div>
 
-        {/* Liste des commandes */}
+        {/* ── Empty state ────────────────────────────────────────────────────── */}
         {filteredOrders.length === 0 ? (
-          <div className="text-center py-20 sm:py-28">
-            <div className="mx-auto w-24 h-24 sm:w-28 sm:h-28 bg-white/5 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/10 mb-6 sm:mb-8">
-              <ShoppingBag size={48} className="text-white/40" />
+          <div className="text-center py-28 border border-[#1e3a5f] rounded-3xl">
+            <div className="mx-auto w-20 h-20 bg-[#0f1f33] border border-[#1e3a5f] rounded-full flex items-center justify-center mb-6">
+              <ShoppingBag size={36} className="text-[#4a6a8a]" />
             </div>
-            <h2 className="text-3xl sm:text-4xl font-semibold mb-4">Aucune commande trouvée</h2>
-            <p className="text-white/60 max-w-md mx-auto text-base sm:text-lg">
-              {filter === "all" 
-                ? "Vous n'avez pas encore passé de commande." 
-                : "Aucune commande correspond à ce filtre."}
+            <h2 className="text-2xl font-light mb-3">Aucune commande trouvée</h2>
+            <p className="text-[#4a6a8a] text-sm font-light max-w-sm mx-auto">
+              {filter === "all"
+                ? "Vous n'avez pas encore passé de commande."
+                : "Aucune commande ne correspond à ce filtre."}
             </p>
             {filter === "all" && (
               <Link
-                href="/catalog"
-                className="mt-8 sm:mt-10 inline-block bg-gradient-to-r from-[#D4AF37] to-white text-black px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl font-semibold text-base sm:text-lg hover:scale-105 transition"
+                href="/client/catalog"
+                className="mt-8 inline-block px-8 py-3 rounded-full border border-[#3b82f6] text-[#3b82f6] text-xs uppercase tracking-[0.15em] font-light hover:bg-[#3b82f6]/10 transition"
               >
-                Explorer la Collection
+                Explorer la collection
               </Link>
             )}
           </div>
         ) : (
-          <div className="space-y-6 sm:space-y-8">
-            {filteredOrders.map((order) => {
-              const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+          // ── Order cards ──────────────────────────────────────────────────────
+          <div className="space-y-6">
+            {filteredOrders.map(order => {
+              const totalItems      = order.items.reduce((s, i) => s + i.quantity, 0);
               const firstThreeItems = order.items.slice(0, 3);
 
               return (
                 <div
                   key={order.id}
-                  className="group bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden hover:border-[#D4AF37]/40 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/10"
+                  className="group bg-[#0f1f33] border border-[#1a2a44] rounded-3xl overflow-hidden transition-all duration-500 hover:border-[#3b82f6]/40 hover:shadow-2xl hover:shadow-[#3b82f6]/5"
                 >
-                  <div className="p-6 sm:p-9">
-                    {/* En-tête */}
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 sm:pb-8 border-b border-white/10">
-                      <div className="flex items-center gap-4 sm:gap-6">
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#D4AF37]/10 to-white/5 flex items-center justify-center border border-[#D4AF37]/20">
-                          {order.deliveryMethod === "DELIVERY" ? (
-                            <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-[#D4AF37]" />
-                          ) : (
-                            <Store className="w-6 h-6 sm:w-8 sm:h-8 text-[#D4AF37]" />
-                          )}
+                  <div className="p-6 sm:p-8">
+
+                    {/* Card header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#1e3a5f]">
+                      <div className="flex items-center gap-4">
+
+                        {/* Icon */}
+                        <div className="w-12 h-12 rounded-2xl bg-[#3b82f6]/10 border border-[#3b82f6]/20 flex items-center justify-center flex-shrink-0">
+                          {order.deliveryMethod === "DELIVERY"
+                            ? <Truck className="w-5 h-5 text-[#3b82f6]" />
+                            : <Store className="w-5 h-5 text-[#3b82f6]" />
+                          }
                         </div>
 
                         <div>
-                          <p className="text-xs sm:text-sm text-white/50">Commande #{String(order.id).padStart(6, "0")}</p>
-                          <p className="text-lg sm:text-2xl font-semibold mt-1 break-words">
+                          <p className="text-[10px] text-[#4a6a8a] uppercase tracking-widest font-light">
+                            Commande #{String(order.id).padStart(6, "0")}
+                          </p>
+                          <p className="text-base font-light text-white mt-0.5">
                             {new Date(order.createdAt).toLocaleDateString("fr-FR", {
-                              weekday: "long",
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
+                              weekday: "long", day: "numeric",
+                              month: "long",   year: "numeric",
                             })}
                           </p>
                         </div>
                       </div>
 
-                      <div className={`inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl sm:rounded-3xl text-xs sm:text-sm font-medium ${statusColors[order.status]}`}>
-                        {order.status === "delivered" ? (
-                          <Package className="w-3 h-3 sm:w-4 sm:h-4" />
-                        ) : (
-                          <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                        )}
-                        {statusLabels[order.status]}
-                      </div>
+                      {/* Status badge */}
+                      <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-light uppercase tracking-[0.15em] ${STATUS_COLORS[order.status]}`}>
+                        {["delivered", "confirmed", "shipped"].includes(order.status)
+                          ? <Package className="w-3 h-3" />
+                          : <AlertCircle className="w-3 h-3" />
+                        }
+                        {STATUS_LABELS[order.status]}
+                      </span>
                     </div>
 
-                    <div className="grid lg:grid-cols-12 gap-8 sm:gap-10 mt-8 sm:mt-10">
-                      {/* Articles */}
+                    {/* Card body */}
+                    <div className="grid lg:grid-cols-12 gap-6 mt-6">
+
+                      {/* Product thumbnails */}
                       <div className="lg:col-span-7">
-                        <p className="uppercase text-xs tracking-widest text-white/50 mb-4">Articles commandés</p>
-                        <div className="flex gap-3 sm:gap-5 overflow-x-auto pb-4">
-                          {firstThreeItems.map((item) => (
+                        <p className="text-[10px] uppercase tracking-widest text-[#4a6a8a] font-light mb-4">
+                          Articles commandés
+                        </p>
+                        <div className="flex gap-3 overflow-x-auto pb-2">
+                          {firstThreeItems.map(item => (
                             <div
                               key={item.id}
-                              className="flex-shrink-0 w-20 h-20 sm:w-28 sm:h-28 bg-black/60 rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 relative"
+                              className="relative flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-[#0a1628] border border-[#1e3a5f] rounded-2xl overflow-hidden"
                             >
                               {item.product.images?.[0] ? (
                                 <img
                                   src={item.product.images[0]}
                                   alt={item.product.name}
-                                  className="w-full h-full object-contain p-2 sm:p-3"
+                                  className="w-full h-full object-contain p-2"
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-3xl sm:text-5xl">👕</div>
+                                <div className="w-full h-full flex items-center justify-center text-3xl">👕</div>
                               )}
 
                               {item.quantity > 1 && (
-                                <div className="absolute top-1 sm:top-3 right-1 sm:right-3 bg-[#D4AF37] text-black text-xs font-bold w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ring-2 ring-black">
+                                <div className="absolute top-1.5 right-1.5 bg-[#3b82f6] text-white text-[9px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                                   {item.quantity}
                                 </div>
                               )}
                               {item.size && (
-                                <div className="absolute bottom-1 sm:bottom-3 left-1 sm:left-3 text-[10px] sm:text-xs font-mono bg-black/80 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded text-[#D4AF37]">
+                                <div className="absolute bottom-1.5 left-1.5 text-[9px] font-mono bg-[#0a1628]/90 px-1.5 py-0.5 rounded text-[#60a5fa]">
                                   {item.size}
                                 </div>
                               )}
@@ -278,32 +253,39 @@ export default function MyOrdersPage() {
                           ))}
 
                           {order.items.length > 3 && (
-                            <div className="flex-shrink-0 w-20 h-20 sm:w-28 sm:h-28 bg-black/60 rounded-xl sm:rounded-2xl flex items-center justify-center border border-dashed border-white/20">
+                            <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-[#0a1628] border border-dashed border-[#1e3a5f] rounded-2xl flex items-center justify-center">
                               <div className="text-center">
-                                <p className="text-xl sm:text-2xl font-semibold text-[#D4AF37]">+{order.items.length - 3}</p>
-                                <p className="text-[10px] sm:text-xs text-white/50">autres</p>
+                                <p className="text-lg font-light text-[#3b82f6]">+{order.items.length - 3}</p>
+                                <p className="text-[9px] text-[#4a6a8a] uppercase tracking-widest">autres</p>
                               </div>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Total & Action */}
-                      <div className="lg:col-span-5 flex flex-col justify-between">
-                        <div className="text-right">
-                          <p className="text-sm text-white/50">Montant total</p>
-                          <p className="text-3xl sm:text-5xl font-bold bg-gradient-to-r from-[#D4AF37] to-white bg-clip-text text-transparent tracking-tighter mt-2">
-                            {order.total.toFixed(2)} <span className="text-xl sm:text-2xl font-normal text-white/60">TND</span>
+                      {/* Total + CTA */}
+                      <div className="lg:col-span-5 flex flex-col justify-between gap-5">
+                        <div className="sm:text-right">
+                          <p className="text-[10px] text-[#4a6a8a] uppercase tracking-widest font-light">
+                            Montant total
                           </p>
-                          <p className="text-white/60 mt-1">{totalItems} article{totalItems > 1 ? "s" : ""}</p>
+                          <p className="text-3xl sm:text-4xl font-light text-white mt-1 tracking-tight">
+                            {order.total.toFixed(2)}{" "}
+                            <span className="text-lg text-[#4a6a8a]">TND</span>
+                          </p>
+                          <p className="text-xs text-[#4a6a8a] mt-1 font-light">
+                            {totalItems} article{totalItems > 1 ? "s" : ""}
+                            {" · "}
+                            {order.deliveryMethod === "DELIVERY" ? "Livraison" : "Retrait magasin"}
+                          </p>
                         </div>
 
                         <Link
                           href={`/client/orders/${order.id}`}
-                          className="mt-6 sm:mt-8 lg:mt-0 group flex items-center justify-center gap-3 bg-gradient-to-r from-[#D4AF37] to-white hover:brightness-110 text-black font-semibold py-4 sm:py-5 px-8 sm:px-10 rounded-2xl sm:rounded-3xl transition-all duration-300 hover:scale-[1.03]"
+                          className="flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-[#3b82f6] text-[#3b82f6] text-xs uppercase tracking-[0.15em] font-light hover:bg-[#3b82f6]/10 transition group/btn"
                         >
                           Voir les détails
-                          <ChevronRight className="group-hover:translate-x-1 transition" />
+                          <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition" />
                         </Link>
                       </div>
                     </div>
@@ -314,6 +296,22 @@ export default function MyOrdersPage() {
           </div>
         )}
       </div>
+
+      {/* ── Footer ─────────────────────────────────────────────────────────── */}
+      <footer className="border-t border-[#1a2a44] py-10 px-6 mt-10">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-light tracking-[0.2em] text-white">IRNAS</span>
+            <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
+          </div>
+          <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2026 IRNAS — Tous droits réservés</p>
+          <div className="flex items-center gap-6 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
+            <Link href="#" className="hover:text-[#3b82f6] transition">Mentions</Link>
+            <Link href="#" className="hover:text-[#3b82f6] transition">Confidentialité</Link>
+            <Link href="#" className="hover:text-[#3b82f6] transition">Contact</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
