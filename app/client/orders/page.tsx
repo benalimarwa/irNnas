@@ -132,14 +132,7 @@ export default function MyOrdersPage() {
           </Link>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tighter bg-gradient-to-r from-white via-[#D4AF37] to-white bg-clip-text text-transparent">
-                Mes Commandes
-              </h1>
-              <p className="mt-2 sm:mt-3 text-lg sm:text-xl text-white/70">
-                {orders.length} commande{orders.length > 1 ? "s" : ""} • Suivi en temps réel
-              </p>
-            </div>
+            
           </div>
         </div>
 

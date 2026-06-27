@@ -57,9 +57,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen pt-24 max-w-6xl mx-auto px-6">
-      <h1 className="text-5xl font-black text-center mb-12 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-        Mon Panier
-      </h1>
+     
 
       <div className="grid md:grid-cols-3 gap-10">
         <div className="md:col-span-2 space-y-6">

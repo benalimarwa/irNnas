@@ -174,10 +174,7 @@ export default function FavorisPage() {
 
         <div className="favs-hero">
           <Heart size={28} className="favs-heart" fill="var(--accent-coral)" stroke="var(--accent-coral)" />
-          <h1 className="favs-title">Mes Favoris</h1>
-          <p className="favs-subtitle">
-            {loading ? "" : `${products.length} article${products.length !== 1 ? "s" : ""} sauvegardé${products.length !== 1 ? "s" : ""}`}
-          </p>
+          
         </div>
 
         <main className="favs-main">
