@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,85 +8,236 @@ import {
   XCircle, AlertCircle, X, User, CreditCard, ChevronDown,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type CartItem = {
   id: number;
   quantity: number;
   size: string | null;
-  product: {
-    id: number;
-    name: string;
-    price: number;
-    images: string[];
-    category: string;
-  };
+  product: { id: number; name: string; price: number; images: string[]; category: string };
 };
-
 type DeliveryMethod = "PICKUP" | "DELIVERY";
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const DELIVERY_FEE = 7;
 
-/** Country list with dial codes — Tunisie first, then alphabetical */
+// ─── Full country list (200+) ─────────────────────────────────────────────────
 const COUNTRIES = [
-  { code: "TN", name: "Tunisie", dial: "+216", flag: "🇹🇳" },
-  { code: "DZ", name: "Algérie", dial: "+213", flag: "🇩🇿" },
-  { code: "MA", name: "Maroc", dial: "+212", flag: "🇲🇦" },
-  { code: "LY", name: "Libye", dial: "+218", flag: "🇱🇾" },
-  { code: "EG", name: "Égypte", dial: "+20",  flag: "🇪🇬" },
-  { code: "FR", name: "France", dial: "+33",  flag: "🇫🇷" },
-  { code: "BE", name: "Belgique", dial: "+32", flag: "🇧🇪" },
-  { code: "DE", name: "Allemagne", dial: "+49", flag: "🇩🇪" },
-  { code: "IT", name: "Italie", dial: "+39",  flag: "🇮🇹" },
-  { code: "ES", name: "Espagne", dial: "+34", flag: "🇪🇸" },
-  { code: "GB", name: "Royaume-Uni", dial: "+44", flag: "🇬🇧" },
-  { code: "US", name: "États-Unis", dial: "+1",  flag: "🇺🇸" },
-  { code: "CA", name: "Canada", dial: "+1",   flag: "🇨🇦" },
-  { code: "SA", name: "Arabie Saoudite", dial: "+966", flag: "🇸🇦" },
-  { code: "AE", name: "Émirats arabes unis", dial: "+971", flag: "🇦🇪" },
-  { code: "QA", name: "Qatar", dial: "+974", flag: "🇶🇦" },
-  { code: "KW", name: "Koweït", dial: "+965", flag: "🇰🇼" },
-  { code: "TR", name: "Turquie", dial: "+90",  flag: "🇹🇷" },
-  { code: "SE", name: "Suède", dial: "+46",   flag: "🇸🇪" },
-  { code: "NL", name: "Pays-Bas", dial: "+31", flag: "🇳🇱" },
+  { code: "TN", name: "Tunisie",               dial: "+216", flag: "🇹🇳" },
+  { code: "DZ", name: "Algérie",               dial: "+213", flag: "🇩🇿" },
+  { code: "MA", name: "Maroc",                 dial: "+212", flag: "🇲🇦" },
+  { code: "LY", name: "Libye",                 dial: "+218", flag: "🇱🇾" },
+  { code: "EG", name: "Égypte",                dial: "+20",  flag: "🇪🇬" },
+  { code: "MR", name: "Mauritanie",            dial: "+222", flag: "🇲🇷" },
+  { code: "SD", name: "Soudan",                dial: "+249", flag: "🇸🇩" },
+  { code: "SO", name: "Somalie",               dial: "+252", flag: "🇸🇴" },
+  { code: "DJ", name: "Djibouti",              dial: "+253", flag: "🇩🇯" },
+  { code: "KM", name: "Comores",               dial: "+269", flag: "🇰🇲" },
+  { code: "SA", name: "Arabie Saoudite",       dial: "+966", flag: "🇸🇦" },
+  { code: "AE", name: "Émirats arabes unis",   dial: "+971", flag: "🇦🇪" },
+  { code: "QA", name: "Qatar",                 dial: "+974", flag: "🇶🇦" },
+  { code: "KW", name: "Koweït",                dial: "+965", flag: "🇰🇼" },
+  { code: "BH", name: "Bahreïn",               dial: "+973", flag: "🇧🇭" },
+  { code: "OM", name: "Oman",                  dial: "+968", flag: "🇴🇲" },
+  { code: "YE", name: "Yémen",                 dial: "+967", flag: "🇾🇪" },
+  { code: "IQ", name: "Irak",                  dial: "+964", flag: "🇮🇶" },
+  { code: "SY", name: "Syrie",                 dial: "+963", flag: "🇸🇾" },
+  { code: "JO", name: "Jordanie",              dial: "+962", flag: "🇯🇴" },
+  { code: "LB", name: "Liban",                 dial: "+961", flag: "🇱🇧" },
+  { code: "PS", name: "Palestine",             dial: "+970", flag: "🇵🇸" },
+  { code: "IL", name: "Israël",                dial: "+972", flag: "🇮🇱" },
+  { code: "TR", name: "Turquie",               dial: "+90",  flag: "🇹🇷" },
+  { code: "IR", name: "Iran",                  dial: "+98",  flag: "🇮🇷" },
+  { code: "AF", name: "Afghanistan",           dial: "+93",  flag: "🇦🇫" },
+  { code: "PK", name: "Pakistan",              dial: "+92",  flag: "🇵🇰" },
+  { code: "IN", name: "Inde",                  dial: "+91",  flag: "🇮🇳" },
+  { code: "BD", name: "Bangladesh",            dial: "+880", flag: "🇧🇩" },
+  { code: "LK", name: "Sri Lanka",             dial: "+94",  flag: "🇱🇰" },
+  { code: "NP", name: "Népal",                 dial: "+977", flag: "🇳🇵" },
+  { code: "BT", name: "Bhoutan",               dial: "+975", flag: "🇧🇹" },
+  { code: "MV", name: "Maldives",              dial: "+960", flag: "🇲🇻" },
+  { code: "CN", name: "Chine",                 dial: "+86",  flag: "🇨🇳" },
+  { code: "JP", name: "Japon",                 dial: "+81",  flag: "🇯🇵" },
+  { code: "KR", name: "Corée du Sud",          dial: "+82",  flag: "🇰🇷" },
+  { code: "KP", name: "Corée du Nord",         dial: "+850", flag: "🇰🇵" },
+  { code: "MN", name: "Mongolie",              dial: "+976", flag: "🇲🇳" },
+  { code: "TW", name: "Taïwan",                dial: "+886", flag: "🇹🇼" },
+  { code: "HK", name: "Hong Kong",             dial: "+852", flag: "🇭🇰" },
+  { code: "MO", name: "Macao",                 dial: "+853", flag: "🇲🇴" },
+  { code: "VN", name: "Viêt Nam",              dial: "+84",  flag: "🇻🇳" },
+  { code: "TH", name: "Thaïlande",             dial: "+66",  flag: "🇹🇭" },
+  { code: "MY", name: "Malaisie",              dial: "+60",  flag: "🇲🇾" },
+  { code: "SG", name: "Singapour",             dial: "+65",  flag: "🇸🇬" },
+  { code: "ID", name: "Indonésie",             dial: "+62",  flag: "🇮🇩" },
+  { code: "PH", name: "Philippines",           dial: "+63",  flag: "🇵🇭" },
+  { code: "KH", name: "Cambodge",              dial: "+855", flag: "🇰🇭" },
+  { code: "LA", name: "Laos",                  dial: "+856", flag: "🇱🇦" },
+  { code: "MM", name: "Myanmar",               dial: "+95",  flag: "🇲🇲" },
+  { code: "BN", name: "Brunei",                dial: "+673", flag: "🇧🇳" },
+  { code: "TL", name: "Timor oriental",        dial: "+670", flag: "🇹🇱" },
+  { code: "KZ", name: "Kazakhstan",            dial: "+7",   flag: "🇰🇿" },
+  { code: "UZ", name: "Ouzbékistan",           dial: "+998", flag: "🇺🇿" },
+  { code: "TM", name: "Turkménistan",          dial: "+993", flag: "🇹🇲" },
+  { code: "KG", name: "Kirghizistan",          dial: "+996", flag: "🇰🇬" },
+  { code: "TJ", name: "Tadjikistan",           dial: "+992", flag: "🇹🇯" },
+  { code: "AZ", name: "Azerbaïdjan",           dial: "+994", flag: "🇦🇿" },
+  { code: "AM", name: "Arménie",               dial: "+374", flag: "🇦🇲" },
+  { code: "GE", name: "Géorgie",               dial: "+995", flag: "🇬🇪" },
+  { code: "FR", name: "France",                dial: "+33",  flag: "🇫🇷" },
+  { code: "BE", name: "Belgique",              dial: "+32",  flag: "🇧🇪" },
+  { code: "CH", name: "Suisse",                dial: "+41",  flag: "🇨🇭" },
+  { code: "DE", name: "Allemagne",             dial: "+49",  flag: "🇩🇪" },
+  { code: "AT", name: "Autriche",              dial: "+43",  flag: "🇦🇹" },
+  { code: "NL", name: "Pays-Bas",              dial: "+31",  flag: "🇳🇱" },
+  { code: "LU", name: "Luxembourg",            dial: "+352", flag: "🇱🇺" },
+  { code: "GB", name: "Royaume-Uni",           dial: "+44",  flag: "🇬🇧" },
+  { code: "IE", name: "Irlande",               dial: "+353", flag: "🇮🇪" },
+  { code: "ES", name: "Espagne",               dial: "+34",  flag: "🇪🇸" },
+  { code: "PT", name: "Portugal",              dial: "+351", flag: "🇵🇹" },
+  { code: "IT", name: "Italie",                dial: "+39",  flag: "🇮🇹" },
+  { code: "GR", name: "Grèce",                 dial: "+30",  flag: "🇬🇷" },
+  { code: "CY", name: "Chypre",                dial: "+357", flag: "🇨🇾" },
+  { code: "MT", name: "Malte",                 dial: "+356", flag: "🇲🇹" },
+  { code: "SE", name: "Suède",                 dial: "+46",  flag: "🇸🇪" },
+  { code: "NO", name: "Norvège",               dial: "+47",  flag: "🇳🇴" },
+  { code: "DK", name: "Danemark",              dial: "+45",  flag: "🇩🇰" },
+  { code: "FI", name: "Finlande",              dial: "+358", flag: "🇫🇮" },
+  { code: "IS", name: "Islande",               dial: "+354", flag: "🇮🇸" },
+  { code: "PL", name: "Pologne",               dial: "+48",  flag: "🇵🇱" },
+  { code: "CZ", name: "République tchèque",    dial: "+420", flag: "🇨🇿" },
+  { code: "SK", name: "Slovaquie",             dial: "+421", flag: "🇸🇰" },
+  { code: "HU", name: "Hongrie",               dial: "+36",  flag: "🇭🇺" },
+  { code: "RO", name: "Roumanie",              dial: "+40",  flag: "🇷🇴" },
+  { code: "BG", name: "Bulgarie",              dial: "+359", flag: "🇧🇬" },
+  { code: "HR", name: "Croatie",               dial: "+385", flag: "🇭🇷" },
+  { code: "SI", name: "Slovénie",              dial: "+386", flag: "🇸🇮" },
+  { code: "RS", name: "Serbie",                dial: "+381", flag: "🇷🇸" },
+  { code: "BA", name: "Bosnie-Herzégovine",    dial: "+387", flag: "🇧🇦" },
+  { code: "ME", name: "Monténégro",            dial: "+382", flag: "🇲🇪" },
+  { code: "MK", name: "Macédoine du Nord",     dial: "+389", flag: "🇲🇰" },
+  { code: "AL", name: "Albanie",               dial: "+355", flag: "🇦🇱" },
+  { code: "XK", name: "Kosovo",                dial: "+383", flag: "🇽🇰" },
+  { code: "UA", name: "Ukraine",               dial: "+380", flag: "🇺🇦" },
+  { code: "MD", name: "Moldavie",              dial: "+373", flag: "🇲🇩" },
+  { code: "BY", name: "Biélorussie",           dial: "+375", flag: "🇧🇾" },
+  { code: "LT", name: "Lituanie",              dial: "+370", flag: "🇱🇹" },
+  { code: "LV", name: "Lettonie",              dial: "+371", flag: "🇱🇻" },
+  { code: "EE", name: "Estonie",               dial: "+372", flag: "🇪🇪" },
+  { code: "RU", name: "Russie",                dial: "+7",   flag: "🇷🇺" },
+  { code: "US", name: "États-Unis",            dial: "+1",   flag: "🇺🇸" },
+  { code: "CA", name: "Canada",                dial: "+1",   flag: "🇨🇦" },
+  { code: "MX", name: "Mexique",               dial: "+52",  flag: "🇲🇽" },
+  { code: "GT", name: "Guatemala",             dial: "+502", flag: "🇬🇹" },
+  { code: "BZ", name: "Belize",                dial: "+501", flag: "🇧🇿" },
+  { code: "HN", name: "Honduras",              dial: "+504", flag: "🇭🇳" },
+  { code: "SV", name: "Salvador",              dial: "+503", flag: "🇸🇻" },
+  { code: "NI", name: "Nicaragua",             dial: "+505", flag: "🇳🇮" },
+  { code: "CR", name: "Costa Rica",            dial: "+506", flag: "🇨🇷" },
+  { code: "PA", name: "Panama",                dial: "+507", flag: "🇵🇦" },
+  { code: "CU", name: "Cuba",                  dial: "+53",  flag: "🇨🇺" },
+  { code: "JM", name: "Jamaïque",              dial: "+1876",flag: "🇯🇲" },
+  { code: "HT", name: "Haïti",                 dial: "+509", flag: "🇭🇹" },
+  { code: "DO", name: "Rép. dominicaine",      dial: "+1809",flag: "🇩🇴" },
+  { code: "PR", name: "Porto Rico",            dial: "+1787",flag: "🇵🇷" },
+  { code: "TT", name: "Trinité-et-Tobago",     dial: "+1868",flag: "🇹🇹" },
+  { code: "BB", name: "Barbade",               dial: "+1246",flag: "🇧🇧" },
+  { code: "CO", name: "Colombie",              dial: "+57",  flag: "🇨🇴" },
+  { code: "VE", name: "Venezuela",             dial: "+58",  flag: "🇻🇪" },
+  { code: "EC", name: "Équateur",              dial: "+593", flag: "🇪🇨" },
+  { code: "PE", name: "Pérou",                 dial: "+51",  flag: "🇵🇪" },
+  { code: "BO", name: "Bolivie",               dial: "+591", flag: "🇧🇴" },
+  { code: "CL", name: "Chili",                 dial: "+56",  flag: "🇨🇱" },
+  { code: "AR", name: "Argentine",             dial: "+54",  flag: "🇦🇷" },
+  { code: "UY", name: "Uruguay",               dial: "+598", flag: "🇺🇾" },
+  { code: "PY", name: "Paraguay",              dial: "+595", flag: "🇵🇾" },
+  { code: "BR", name: "Brésil",                dial: "+55",  flag: "🇧🇷" },
+  { code: "GY", name: "Guyana",                dial: "+592", flag: "🇬🇾" },
+  { code: "SR", name: "Suriname",              dial: "+597", flag: "🇸🇷" },
+  { code: "NG", name: "Nigeria",               dial: "+234", flag: "🇳🇬" },
+  { code: "GH", name: "Ghana",                 dial: "+233", flag: "🇬🇭" },
+  { code: "SN", name: "Sénégal",               dial: "+221", flag: "🇸🇳" },
+  { code: "CI", name: "Côte d'Ivoire",         dial: "+225", flag: "🇨🇮" },
+  { code: "ML", name: "Mali",                  dial: "+223", flag: "🇲🇱" },
+  { code: "BF", name: "Burkina Faso",          dial: "+226", flag: "🇧🇫" },
+  { code: "NE", name: "Niger",                 dial: "+227", flag: "🇳🇪" },
+  { code: "TD", name: "Tchad",                 dial: "+235", flag: "🇹🇩" },
+  { code: "CM", name: "Cameroun",              dial: "+237", flag: "🇨🇲" },
+  { code: "GA", name: "Gabon",                 dial: "+241", flag: "🇬🇦" },
+  { code: "CG", name: "Congo",                 dial: "+242", flag: "🇨🇬" },
+  { code: "CD", name: "RD Congo",              dial: "+243", flag: "🇨🇩" },
+  { code: "CF", name: "Centrafrique",          dial: "+236", flag: "🇨🇫" },
+  { code: "GQ", name: "Guinée équatoriale",    dial: "+240", flag: "🇬🇶" },
+  { code: "ST", name: "São Tomé-et-Príncipe",  dial: "+239", flag: "🇸🇹" },
+  { code: "AO", name: "Angola",                dial: "+244", flag: "🇦🇴" },
+  { code: "ZM", name: "Zambie",                dial: "+260", flag: "🇿🇲" },
+  { code: "ZW", name: "Zimbabwe",              dial: "+263", flag: "🇿🇼" },
+  { code: "MZ", name: "Mozambique",            dial: "+258", flag: "🇲🇿" },
+  { code: "MW", name: "Malawi",                dial: "+265", flag: "🇲🇼" },
+  { code: "TZ", name: "Tanzanie",              dial: "+255", flag: "🇹🇿" },
+  { code: "KE", name: "Kenya",                 dial: "+254", flag: "🇰🇪" },
+  { code: "UG", name: "Ouganda",               dial: "+256", flag: "🇺🇬" },
+  { code: "RW", name: "Rwanda",                dial: "+250", flag: "🇷🇼" },
+  { code: "BI", name: "Burundi",               dial: "+257", flag: "🇧🇮" },
+  { code: "ET", name: "Éthiopie",              dial: "+251", flag: "🇪🇹" },
+  { code: "ER", name: "Érythrée",              dial: "+291", flag: "🇪🇷" },
+  { code: "SS", name: "Soudan du Sud",         dial: "+211", flag: "🇸🇸" },
+  { code: "ZA", name: "Afrique du Sud",        dial: "+27",  flag: "🇿🇦" },
+  { code: "NA", name: "Namibie",               dial: "+264", flag: "🇳🇦" },
+  { code: "BW", name: "Botswana",              dial: "+267", flag: "🇧🇼" },
+  { code: "LS", name: "Lesotho",               dial: "+266", flag: "🇱🇸" },
+  { code: "SZ", name: "Eswatini",              dial: "+268", flag: "🇸🇿" },
+  { code: "MG", name: "Madagascar",            dial: "+261", flag: "🇲🇬" },
+  { code: "MU", name: "Maurice",               dial: "+230", flag: "🇲🇺" },
+  { code: "SC", name: "Seychelles",            dial: "+248", flag: "🇸🇨" },
+  { code: "GN", name: "Guinée",                dial: "+224", flag: "🇬🇳" },
+  { code: "GW", name: "Guinée-Bissau",         dial: "+245", flag: "🇬🇼" },
+  { code: "SL", name: "Sierra Leone",          dial: "+232", flag: "🇸🇱" },
+  { code: "LR", name: "Libéria",               dial: "+231", flag: "🇱🇷" },
+  { code: "TG", name: "Togo",                  dial: "+228", flag: "🇹🇬" },
+  { code: "BJ", name: "Bénin",                 dial: "+229", flag: "🇧🇯" },
+  { code: "GM", name: "Gambie",                dial: "+220", flag: "🇬🇲" },
+  { code: "CV", name: "Cap-Vert",              dial: "+238", flag: "🇨🇻" },
+  { code: "AU", name: "Australie",             dial: "+61",  flag: "🇦🇺" },
+  { code: "NZ", name: "Nouvelle-Zélande",      dial: "+64",  flag: "🇳🇿" },
+  { code: "FJ", name: "Fidji",                 dial: "+679", flag: "🇫🇯" },
+  { code: "PG", name: "Papouasie-N.-Guinée",   dial: "+675", flag: "🇵🇬" },
+  { code: "SB", name: "Îles Salomon",          dial: "+677", flag: "🇸🇧" },
+  { code: "VU", name: "Vanuatu",               dial: "+678", flag: "🇻🇺" },
+  { code: "WS", name: "Samoa",                 dial: "+685", flag: "🇼🇸" },
+  { code: "TO", name: "Tonga",                 dial: "+676", flag: "🇹🇴" },
 ];
 
-/** Tunisia governorates → cities */
+// ─── Tunisia data ──────────────────────────────────────────────────────────────
 const TUNISIA_DATA: Record<string, string[]> = {
-  "Tunis": ["Tunis", "Le Bardo", "La Marsa", "Carthage", "Le Kram", "Sidi Bou Saïd", "La Goulette", "Ariana (ville)", "Ben Arous"],
-  "Ariana": ["Ariana", "Raoued", "Kalâat el-Andalous", "Sidi Thabet", "Mnihla", "Ettadhamen", "Ghazela"],
-  "Ben Arous": ["Ben Arous", "Mégrine", "Mourouj", "Hammam Lif", "Hammam Chott", "Bou Mhel el-Bassatine", "Ezzahra", "Radès", "Fouchana", "Mornag"],
-  "Manouba": ["Manouba", "Oued Ellil", "Tébourba", "Djedeida", "El Battan", "Borj El Amri", "Douar Hicher", "Mornaguia"],
-  "Nabeul": ["Nabeul", "Hammamet", "Kelibia", "Grombalia", "Soliman", "Menzel Bouzelfa", "Korba", "Beni Khalled", "Takelsa", "Haouaria"],
-  "Zaghouan": ["Zaghouan", "Zriba", "Bir Mcherga", "El Fahs", "Nadhour", "Saouaf"],
-  "Bizerte": ["Bizerte", "Menzel Bourguiba", "Mateur", "Ras Jebel", "Ghar El Melh", "El Alia", "Tinja", "Utique", "Sejnane"],
-  "Béja": ["Béja", "Medjez el-Bab", "Testour", "Goubellat", "Téboursouk", "Thibar", "Nefza", "Amdoun"],
-  "Jendouba": ["Jendouba", "Bou Salem", "Tabarka", "Aïn Draham", "Fernana", "Ghardimaou", "Balta-Bou Aouane", "Oued Mliz"],
-  "Le Kef": ["Le Kef", "Dahmani", "Sers", "Tajerouine", "Kalaat Khasba", "Nebeur", "Sakiet Sidi Youssef", "El Ksour"],
-  "Siliana": ["Siliana", "Bouarada", "Gaâfour", "El Krib", "Makthar", "Rouhia", "Kesra", "Bargou", "Sidi Morched"],
-  "Sousse": ["Sousse", "Msaken", "Kalâa Kebira", "Sidi Bou Ali", "Hammam Sousse", "Akouda", "Kantaoui", "Enfidha"],
-  "Monastir": ["Monastir", "Jemmal", "Ksar Hellal", "Bembla", "Sayada", "Téboulba", "Moknine", "Bekalta"],
-  "Mahdia": ["Mahdia", "Ksour Essef", "El Jem", "Chebba", "Bou Merdes", "Melloulèche", "Sidi Alouane"],
-  "Sfax": ["Sfax", "Sakiet Eddaier", "Sakiet Ezzit", "Chihia", "Agareb", "Djebeniana", "El Hencha", "Mahres", "Bir Ali Ben Khalifa", "Graïba", "Skhira"],
-  "Kairouan": ["Kairouan", "Sbikha", "El Alaa", "Haffouz", "Bouhajla", "Oueslatia", "Nasrallah", "Cherarda"],
-  "Kasserine": ["Kasserine", "Sbeitla", "Thala", "Haïdra", "Fériana", "Foussana", "Majel Bel Abbès", "Jedeliane"],
-  "Sidi Bouzid": ["Sidi Bouzid", "Jilma", "Regueb", "Bir El Hafey", "Souk Jedid", "Mezzouna", "Meknassy", "Menzel Bouzaiane"],
-  "Gabès": ["Gabès", "Mareth", "El Hamma", "Matmata", "Ghannouch", "Métouia", "Nouvelle Matmata"],
-  "Médenine": ["Médenine", "Zarzis", "Houmt Souk (Djerba)", "Midoun", "Ben Gardane", "Beni Khedache", "Sidi Makhlouf"],
-  "Tataouine": ["Tataouine", "Ghomrassen", "Remada", "Dehiba", "Bir Lahmar", "Smâr"],
-  "Gafsa": ["Gafsa", "El Ksar", "Métlaoui", "Redeyef", "Mdhilla", "Sned", "Belkhir", "Sidi Aïch"],
-  "Tozeur": ["Tozeur", "Nefta", "Hazoua", "Degache", "Tamaghza"],
-  "Kébili": ["Kébili", "Douz", "Souk Lahad", "El Faouar", "Jemna"],
+  "Ariana":      ["Ariana", "Ettadhamen", "Ghazela", "Kalâat el-Andalous", "Mnihla", "Raoued", "Sidi Thabet"],
+  "Béja":        ["Amdoun", "Béja", "Goubellat", "Medjez el-Bab", "Nefza", "Téboursouk", "Testour", "Thibar"],
+  "Ben Arous":   ["Ben Arous", "Bou Mhel el-Bassatine", "Ezzahra", "Fouchana", "Hammam Chott", "Hammam Lif", "Mégrine", "Mourouj", "Mornag", "Radès"],
+  "Bizerte":     ["Bizerte", "El Alia", "Ghar El Melh", "Mateur", "Menzel Bourguiba", "Ras Jebel", "Sejnane", "Tinja", "Utique"],
+  "Gabès":       ["El Hamma", "Gabès", "Ghannouch", "Mareth", "Matmata", "Métouia", "Nouvelle Matmata"],
+  "Gafsa":       ["Belkhir", "El Ksar", "Gafsa", "Mdhilla", "Métlaoui", "Redeyef", "Sidi Aïch", "Sned"],
+  "Jendouba":    ["Aïn Draham", "Balta-Bou Aouane", "Bou Salem", "Fernana", "Ghardimaou", "Jendouba", "Oued Mliz", "Tabarka"],
+  "Kairouan":    ["Bouhajla", "Cherarda", "El Alaa", "Haffouz", "Kairouan", "Nasrallah", "Oueslatia", "Sbikha"],
+  "Kasserine":   ["Fériana", "Foussana", "Haïdra", "Jedeliane", "Kasserine", "Majel Bel Abbès", "Sbeitla", "Thala"],
+  "Kébili":      ["Douz", "El Faouar", "Jemna", "Kébili", "Souk Lahad"],
+  "Le Kef":      ["Dahmani", "El Ksour", "Kalaat Khasba", "Le Kef", "Nebeur", "Sakiet Sidi Youssef", "Sers", "Tajerouine"],
+  "Mahdia":      ["Bou Merdes", "Chebba", "El Jem", "Ksour Essef", "Mahdia", "Melloulèche", "Sidi Alouane"],
+  "Manouba":     ["Borj El Amri", "Djedeida", "Douar Hicher", "El Battan", "Manouba", "Mornaguia", "Oued Ellil", "Tébourba"],
+  "Médenine":    ["Ben Gardane", "Beni Khedache", "Houmt Souk (Djerba)", "Médenine", "Midoun", "Sidi Makhlouf", "Zarzis"],
+  "Monastir":    ["Bekalta", "Bembla", "Jemmal", "Ksar Hellal", "Monastir", "Moknine", "Sayada", "Téboulba"],
+  "Nabeul":      ["Beni Khalled", "Grombalia", "Hammamet", "Haouaria", "Kelibia", "Korba", "Menzel Bouzelfa", "Nabeul", "Soliman", "Takelsa"],
+  "Sfax":        ["Agareb", "Bir Ali Ben Khalifa", "Chihia", "Djebeniana", "El Hencha", "Graïba", "Mahres", "Sakiet Eddaier", "Sakiet Ezzit", "Sfax", "Skhira"],
+  "Sidi Bouzid": ["Bir El Hafey", "Jilma", "Meknassy", "Menzel Bouzaiane", "Mezzouna", "Regueb", "Sidi Bouzid", "Souk Jedid"],
+  "Siliana":     ["Bargou", "Bouarada", "El Krib", "Gaâfour", "Kesra", "Makthar", "Rouhia", "Sidi Morched", "Siliana"],
+  "Sousse":      ["Akouda", "Enfidha", "Hammam Sousse", "Kalâa Kebira", "Kantaoui", "Msaken", "Sidi Bou Ali", "Sousse"],
+  "Tataouine":   ["Bir Lahmar", "Dehiba", "Ghomrassen", "Remada", "Smâr", "Tataouine"],
+  "Tozeur":      ["Degache", "Hazoua", "Nefta", "Tamaghza", "Tozeur"],
+  "Tunis":       ["Ariana (ville)", "Ben Arous (ville)", "Carthage", "La Goulette", "La Marsa", "Le Bardo", "Le Kram", "Sidi Bou Saïd", "Tunis"],
+  "Zaghouan":    ["Bir Mcherga", "El Fahs", "Nadhour", "Saouaf", "Zriba", "Zaghouan"],
 };
 
 const GOVERNORATES = Object.keys(TUNISIA_DATA).sort();
 
 // ─── Component ────────────────────────────────────────────────────────────────
-
 export default function CheckoutPage() {
   const router = useRouter();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [cart, setCart] = useState<{ items: CartItem[] }>({ items: [] });
   const [loading, setLoading] = useState(true);
@@ -97,29 +248,41 @@ export default function CheckoutPage() {
 
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("PICKUP");
 
-  // Phone country selector state
-  const [phoneCountry, setPhoneCountry] = useState(COUNTRIES[0]); // Tunisie default
+  // Phone
+  const [phoneCountry, setPhoneCountry] = useState(COUNTRIES[0]);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
 
-  // Address country
+  // Address
   const [addressCountry, setAddressCountry] = useState("TN");
   const [selectedGov, setSelectedGov] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
 
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    phone: "",
-    address: "",
-    postalCode: "",
-    notes: "",
+    firstName: "", lastName: "", phone: "",
+    streetAddress: "", postalCode: "", notes: "",
+    freeCity: "",   // for non-TN countries
   });
 
   const showAlert = (type: "success" | "error" | "warning", message: string) => {
     setAlert({ show: true, type, message });
-    setTimeout(() => setAlert({ show: false, type: "success", message: "" }), 3000);
+    setTimeout(() => setAlert({ show: false, type: "success", message: "" }), 3500);
   };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handle = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowCountryDropdown(false);
+        setCountrySearch("");
+      }
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  useEffect(() => { setSelectedCity(""); }, [selectedGov]);
+  useEffect(() => { setSelectedGov(""); setSelectedCity(""); }, [addressCountry]);
 
   const fetchCart = async () => {
     try {
@@ -131,8 +294,7 @@ export default function CheckoutPage() {
       } else {
         showAlert("error", "Erreur lors du chargement du panier");
       }
-    } catch (err) {
-      console.error("Cart fetch error:", err);
+    } catch {
       showAlert("error", "Impossible de charger le panier");
     } finally {
       setLoading(false);
@@ -141,34 +303,27 @@ export default function CheckoutPage() {
 
   useEffect(() => { fetchCart(); }, []);
 
-  // Reset city when governorate changes
-  useEffect(() => { setSelectedCity(""); }, [selectedGov]);
-  // Reset governorate when address country changes
-  useEffect(() => { setSelectedGov(""); setSelectedCity(""); }, [addressCountry]);
-
   const handleSubmit = async () => {
-    const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
     if (!form.firstName.trim() || !form.lastName.trim()) {
-      showAlert("warning", "Prénom et nom sont obligatoires");
-      return;
+      showAlert("warning", "Prénom et nom sont obligatoires"); return;
     }
     if (!form.phone.trim()) {
-      showAlert("warning", "Le numéro de téléphone est obligatoire");
-      return;
+      showAlert("warning", "Le numéro de téléphone est obligatoire"); return;
     }
     if (deliveryMethod === "DELIVERY") {
       if (addressCountry === "TN" && (!selectedGov || !selectedCity)) {
-        showAlert("warning", "Veuillez sélectionner le gouvernorat et la ville");
-        return;
+        showAlert("warning", "Veuillez sélectionner le gouvernorat et la ville"); return;
       }
-      if (addressCountry !== "TN" && !form.address.trim()) {
-        showAlert("warning", "Veuillez remplir l'adresse de livraison");
-        return;
+      if (addressCountry !== "TN" && !form.freeCity.trim()) {
+        showAlert("warning", "Veuillez remplir la ville"); return;
       }
     }
 
     setProcessing(true);
     try {
+      const city = addressCountry === "TN" ? selectedCity : form.freeCity;
+      const addressParts = [form.streetAddress, city, addressCountry === "TN" ? selectedGov : ""].filter(Boolean);
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -176,16 +331,10 @@ export default function CheckoutPage() {
           deliveryMethod,
           deliveryFee: deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
           customerInfo: {
-            name: fullName,
+            name: `${form.firstName.trim()} ${form.lastName.trim()}`,
             phone: `${phoneCountry.dial} ${form.phone}`,
-            address: deliveryMethod === "DELIVERY"
-              ? (addressCountry === "TN"
-                  ? `${form.address || ""}, ${selectedCity}, ${selectedGov}`.replace(/^,\s*/, "")
-                  : form.address)
-              : null,
-            city: deliveryMethod === "DELIVERY"
-              ? (addressCountry === "TN" ? selectedCity : null)
-              : null,
+            address: deliveryMethod === "DELIVERY" ? addressParts.join(", ") : null,
+            city: deliveryMethod === "DELIVERY" ? city : null,
             postalCode: deliveryMethod === "DELIVERY" ? (form.postalCode || null) : null,
             notes: form.notes || null,
           },
@@ -199,15 +348,14 @@ export default function CheckoutPage() {
       } else {
         showAlert("error", data.error || "Erreur lors de la commande");
       }
-    } catch (err) {
-      console.error("Order submit error:", err);
+    } catch {
       showAlert("error", "Erreur réseau");
     } finally {
       setProcessing(false);
     }
   };
 
-  const subtotal = cart.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const subtotal = cart.items.reduce((s, i) => s + i.product.price * i.quantity, 0);
   const deliveryFee = deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0;
   const total = subtotal + deliveryFee;
 
@@ -216,404 +364,293 @@ export default function CheckoutPage() {
     c.dial.includes(countrySearch)
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A]">
-        <div className="text-[#D4AF37] text-2xl">Chargement...</div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A]">
+      <div className="text-[#D4AF37] text-2xl">Chargement...</div>
+    </div>
+  );
 
   return (
     <>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
 
-        .checkout-page {
-          font-family: 'Instrument Sans', system-ui, sans-serif;
-          background: #0A0A0A;
-          color: #F8F6F2;
+        .co-page { font-family:'Instrument Sans',system-ui,sans-serif; background:#0A0A0A; color:#F8F6F2; }
+
+        .co-glass {
+          background:rgba(17,17,17,0.88);
+          backdrop-filter:blur(24px);
+          border:1px solid rgba(255,255,255,0.08);
         }
 
-        .glass-card {
-          background: rgba(17, 17, 17, 0.85);
-          backdrop-filter: blur(24px);
-          border: 1px solid rgba(255,255,255,0.08);
+        /* ── inputs ── */
+        .co-input {
+          display:block; width:100%;
+          background:rgba(255,255,255,0.05);
+          border:1px solid rgba(255,255,255,0.12);
+          border-radius:.875rem;
+          padding:.9rem 1.2rem;
+          font-size:1rem; font-family:inherit;
+          color:#F8F6F2; outline:none;
+          transition:border-color .25s,box-shadow .25s;
         }
+        .co-input::placeholder{color:rgba(255,255,255,0.28);}
+        .co-input:focus{border-color:#D4AF37;box-shadow:0 0 0 3px rgba(212,175,55,.18);}
+        .co-input:disabled{opacity:.4;cursor:not-allowed;}
 
-        .input-field {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          transition: all 0.3s ease;
-          color: #F8F6F2;
-          outline: none;
-          width: 100%;
-          border-radius: 1rem;
-          padding: 1rem 1.25rem;
-          font-size: 1rem;
-          font-family: inherit;
+        .co-select-wrap{position:relative;}
+        .co-select-wrap .co-chevron{
+          position:absolute;right:.9rem;top:50%;transform:translateY(-50%);
+          pointer-events:none;color:rgba(255,255,255,.35);
         }
-        .input-field::placeholder { color: rgba(255,255,255,0.3); }
-        .input-field:focus {
-          border-color: #D4AF37;
-          box-shadow: 0 0 0 4px rgba(212,175,55,0.15);
+        select.co-input{
+          appearance:none;-webkit-appearance:none;
+          padding-right:2.5rem;cursor:pointer;
         }
+        select.co-input option{background:#1a1a1a;color:#F8F6F2;}
 
-        /* Select styled like input */
-        .select-field {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          transition: all 0.3s ease;
-          color: #F8F6F2;
-          outline: none;
-          width: 100%;
-          border-radius: 1rem;
-          padding: 1rem 2.5rem 1rem 1.25rem;
-          font-size: 1rem;
-          font-family: inherit;
-          appearance: none;
-          -webkit-appearance: none;
-          cursor: pointer;
+        /* ── phone composite ── */
+        .co-phone-wrap{
+          display:flex;
+          border:1px solid rgba(255,255,255,0.12);
+          border-radius:.875rem;
+          overflow:visible;
+          background:rgba(255,255,255,0.05);
+          transition:border-color .25s,box-shadow .25s;
+          position:relative;
         }
-        .select-field:focus {
-          border-color: #D4AF37;
-          box-shadow: 0 0 0 4px rgba(212,175,55,0.15);
-        }
-        .select-field option {
-          background: #1a1a1a;
-          color: #F8F6F2;
-        }
-        .select-wrapper {
-          position: relative;
-        }
-        .select-wrapper .chevron-icon {
-          position: absolute;
-          right: 1rem;
-          top: 50%;
-          transform: translateY(-50%);
-          pointer-events: none;
-          color: rgba(255,255,255,0.4);
-        }
+        .co-phone-wrap:focus-within{border-color:#D4AF37;box-shadow:0 0 0 3px rgba(212,175,55,.18);}
 
-        /* Phone field composite */
-        .phone-composite {
-          display: flex;
-          gap: 0;
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 1rem;
-          overflow: visible;
-          background: rgba(255,255,255,0.05);
-          transition: border-color 0.3s ease, box-shadow 0.3s ease;
-          position: relative;
+        .co-dial-btn{
+          display:flex;align-items:center;gap:.4rem;
+          padding:.85rem 1rem;
+          border:none;border-right:1px solid rgba(255,255,255,.1);
+          border-radius:.875rem 0 0 .875rem;
+          background:rgba(255,255,255,.06);
+          color:#F8F6F2;cursor:pointer;
+          font-size:.88rem;font-family:inherit;white-space:nowrap;
+          transition:background .2s;min-width:100px;
         }
-        .phone-composite:focus-within {
-          border-color: #D4AF37;
-          box-shadow: 0 0 0 4px rgba(212,175,55,0.15);
-        }
-        .phone-dial-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.875rem 1rem;
-          border: none;
-          background: rgba(255,255,255,0.06);
-          color: #F8F6F2;
-          cursor: pointer;
-          white-space: nowrap;
-          font-size: 0.9rem;
-          font-family: inherit;
-          border-radius: 1rem 0 0 1rem;
-          border-right: 1px solid rgba(255,255,255,0.1);
-          transition: background 0.2s;
-          min-width: 110px;
-        }
-        .phone-dial-btn:hover { background: rgba(255,255,255,0.1); }
-        .phone-input {
-          background: transparent;
-          border: none;
-          outline: none;
-          color: #F8F6F2;
-          font-size: 1rem;
-          font-family: inherit;
-          padding: 0.875rem 1rem;
-          flex: 1;
-          min-width: 0;
-        }
-        .phone-input::placeholder { color: rgba(255,255,255,0.3); }
+        .co-dial-btn:hover{background:rgba(255,255,255,.11);}
+        .co-flag{font-size:1.2rem;line-height:1;}
 
-        /* Country dropdown */
-        .country-dropdown {
-          position: absolute;
-          top: calc(100% + 8px);
-          left: 0;
-          width: 280px;
-          background: #1a1a1a;
-          border: 1px solid rgba(255,255,255,0.15);
-          border-radius: 1rem;
-          z-index: 100;
-          overflow: hidden;
-          box-shadow: 0 16px 48px rgba(0,0,0,0.6);
-          animation: dropIn 0.15s ease;
+        .co-phone-input{
+          flex:1;min-width:0;background:transparent;
+          border:none;outline:none;
+          color:#F8F6F2;font-size:1rem;font-family:inherit;
+          padding:.9rem 1rem;
         }
-        @keyframes dropIn {
-          from { opacity: 0; transform: translateY(-6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .country-search {
-          background: rgba(255,255,255,0.05);
-          border: none;
-          border-bottom: 1px solid rgba(255,255,255,0.08);
-          color: #F8F6F2;
-          outline: none;
-          padding: 0.75rem 1rem;
-          width: 100%;
-          font-size: 0.9rem;
-          font-family: inherit;
-        }
-        .country-search::placeholder { color: rgba(255,255,255,0.3); }
-        .country-list {
-          max-height: 220px;
-          overflow-y: auto;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(212,175,55,0.3) transparent;
-        }
-        .country-item {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          cursor: pointer;
-          transition: background 0.15s;
-          font-size: 0.9rem;
-        }
-        .country-item:hover { background: rgba(255,255,255,0.07); }
-        .country-item.selected { background: rgba(212,175,55,0.12); }
-        .country-dial { color: #D4AF37; font-weight: 600; margin-left: auto; font-size: 0.85rem; }
+        .co-phone-input::placeholder{color:rgba(255,255,255,.28);}
 
-        /* Alert */
-        .checkout-alert {
-          position: fixed;
-          top: 24px;
-          right: 24px;
-          z-index: 9999;
-          padding: 16px 24px;
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-weight: 500;
-          font-size: 1rem;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-          animation: slideIn 0.3s ease;
+        /* ── dropdown ── */
+        .co-dropdown{
+          position:absolute;
+          top:calc(100% + 6px);left:0;
+          width:300px;max-width:90vw;
+          background:#191919;
+          border:1px solid rgba(255,255,255,.15);
+          border-radius:1rem;
+          z-index:200;
+          box-shadow:0 20px 60px rgba(0,0,0,.7);
+          animation:coDropIn .15s ease;
+          overflow:hidden;
         }
-        .checkout-alert.success { background: rgba(110,231,183,0.15); border: 1px solid rgba(110,231,183,0.3); color: #6ee7b7; }
-        .checkout-alert.error   { background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.3); color: #f87171; }
-        .checkout-alert.warning { background: rgba(251,191, 36,0.15); border: 1px solid rgba(251,191, 36,0.3); color: #fbbf24; }
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateX(40px); }
-          to   { opacity: 1; transform: translateX(0); }
+        @keyframes coDropIn{
+          from{opacity:0;transform:translateY(-6px);}
+          to  {opacity:1;transform:translateY(0);}
         }
+        .co-dropdown-search{
+          width:100%;background:rgba(255,255,255,.05);
+          border:none;border-bottom:1px solid rgba(255,255,255,.08);
+          color:#F8F6F2;padding:.75rem 1rem;
+          font-size:.9rem;font-family:inherit;outline:none;
+        }
+        .co-dropdown-search::placeholder{color:rgba(255,255,255,.3);}
+        .co-dropdown-list{
+          max-height:220px;overflow-y:auto;
+          scrollbar-width:thin;scrollbar-color:rgba(212,175,55,.3) transparent;
+        }
+        .co-country-item{
+          display:flex;align-items:center;gap:.75rem;
+          padding:.65rem 1rem;cursor:pointer;
+          font-size:.9rem;transition:background .12s;
+        }
+        .co-country-item:hover{background:rgba(255,255,255,.07);}
+        .co-country-item.sel{background:rgba(212,175,55,.12);}
+        .co-country-dial{color:#D4AF37;font-weight:600;margin-left:auto;font-size:.82rem;}
+        .co-country-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-        /* Delivery buttons */
-        .delivery-btn {
-          padding: 2rem;
-          border-radius: 1.5rem;
-          border: 1px solid rgba(255,255,255,0.1);
-          background: transparent;
-          text-align: left;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          color: #F8F6F2;
-          width: 100%;
+        /* ── delivery btns ── */
+        .co-dlv-btn{
+          padding:1.75rem;border-radius:1.5rem;
+          border:1px solid rgba(255,255,255,.1);
+          background:transparent;text-align:left;
+          cursor:pointer;transition:all .2s;
+          color:#F8F6F2;width:100%;
         }
-        .delivery-btn:hover { border-color: rgba(255,255,255,0.3); }
-        .delivery-btn.active { border-color: #D4AF37; background: rgba(212,175,55,0.1); }
+        .co-dlv-btn:hover{border-color:rgba(255,255,255,.28);}
+        .co-dlv-btn.active{border-color:#D4AF37;background:rgba(212,175,55,.09);}
 
-        /* Confirm button */
-        .confirm-btn {
-          margin-top: 2.5rem;
-          width: 100%;
-          background: linear-gradient(135deg, #D4AF37, #F5E6A3);
-          color: #000;
-          font-weight: 600;
-          padding: 1.25rem;
-          border-radius: 1rem;
-          font-size: 1.2rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.75rem;
-          border: none;
-          cursor: pointer;
-          transition: filter 0.2s ease;
+        /* ── confirm btn ── */
+        .co-confirm-btn{
+          margin-top:2rem;width:100%;
+          background:linear-gradient(135deg,#D4AF37,#F5E6A3);
+          color:#000;font-weight:700;
+          padding:1.2rem;border-radius:1rem;
+          font-size:1.1rem;font-family:inherit;
+          display:flex;align-items:center;justify-content:center;gap:.75rem;
+          border:none;cursor:pointer;
+          transition:filter .2s;
         }
-        .confirm-btn:hover:not(:disabled) { filter: brightness(1.1); }
-        .confirm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .co-confirm-btn:hover:not(:disabled){filter:brightness(1.08);}
+        .co-confirm-btn:disabled{opacity:.55;cursor:not-allowed;}
 
-        /* Field label */
-        .field-label {
-          display: block;
-          font-size: 0.85rem;
-          color: rgba(255,255,255,0.5);
-          margin-bottom: 0.5rem;
-          letter-spacing: 0.02em;
+        /* ── alert ── */
+        .co-alert{
+          position:fixed;top:24px;right:24px;z-index:9999;
+          padding:14px 20px;border-radius:14px;
+          display:flex;align-items:center;gap:10px;
+          font-weight:500;font-size:.95rem;
+          box-shadow:0 8px 32px rgba(0,0,0,.5);
+          animation:coSlideIn .3s ease;
         }
+        @keyframes coSlideIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+        .co-alert.success{background:rgba(110,231,183,.13);border:1px solid rgba(110,231,183,.3);color:#6ee7b7;}
+        .co-alert.error  {background:rgba(248,113,113,.13);border:1px solid rgba(248,113,113,.3);color:#f87171;}
+        .co-alert.warning{background:rgba(251,191, 36,.13);border:1px solid rgba(251,191, 36,.3);color:#fbbf24;}
 
-        @media (max-width: 768px) {
-          .glass-card { padding: 1.75rem !important; }
-          .delivery-btn { padding: 1.5rem !important; }
-          .country-dropdown { width: 100%; }
+        .co-label{display:block;font-size:.82rem;color:rgba(255,255,255,.45);margin-bottom:.45rem;letter-spacing:.025em;}
+
+        @media(max-width:768px){
+          .co-glass{padding:1.5rem!important;}
+          .co-dlv-btn{padding:1.25rem!important;}
+          .co-dropdown{width:92vw;}
         }
       `}</style>
 
-      {/* ── Alert ── */}
+      {/* Alert */}
       {alert.show && (
-        <div className={`checkout-alert ${alert.type}`}>
-          {alert.type === "success" && <CheckCircle size={20} />}
-          {alert.type === "error"   && <XCircle size={20} />}
-          {alert.type === "warning" && <AlertCircle size={20} />}
-          {alert.message}
-          <button
-            type="button"
-            onClick={() => setAlert({ ...alert, show: false })}
-            style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "inherit" }}
-          >
-            <X size={16} />
+        <div className={`co-alert ${alert.type}`}>
+          {alert.type === "success" && <CheckCircle size={18} />}
+          {alert.type === "error"   && <XCircle     size={18} />}
+          {alert.type === "warning" && <AlertCircle size={18} />}
+          <span>{alert.message}</span>
+          <button onClick={() => setAlert(a => ({ ...a, show: false }))}
+            style={{ marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:"inherit",display:"flex" }}>
+            <X size={15} />
           </button>
         </div>
       )}
 
-      {/* ── Page ── */}
-      <div className="checkout-page min-h-screen relative overflow-hidden">
+      <div className="co-page min-h-screen relative overflow-x-hidden">
         {/* Dot grid */}
         <div style={{
-          position: "fixed", inset: 0, zIndex: 0, opacity: 0.1, pointerEvents: "none",
-          backgroundImage: "radial-gradient(#D4AF37 0.8px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }} />
+          position:"fixed",inset:0,zIndex:0,opacity:.08,pointerEvents:"none",
+          backgroundImage:"radial-gradient(#D4AF37 0.8px,transparent 1px)",
+          backgroundSize:"60px 60px",
+        }}/>
 
         <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-8 md:py-12 relative z-10">
-          {/* Back link */}
+          {/* Back */}
           <div className="flex items-center gap-4 mb-8">
             <Link href="/client/panier" className="text-[#D4AF37] flex items-center gap-2 hover:text-white transition-colors">
-              <ArrowLeft size={22} />
-              Retour au panier
+              <ArrowLeft size={20}/> Retour au panier
             </Link>
-            <div className="h-px flex-1 bg-white/10" />
+            <div className="h-px flex-1 bg-white/10"/>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
             {/* ── LEFT ── */}
             <div className="lg:col-span-7 space-y-8">
 
-              {/* Delivery Method */}
-              <div className="glass-card rounded-3xl p-6 md:p-10">
-                <h2 className="text-2xl md:text-[1.75rem] font-semibold mb-8 flex items-center gap-4">
-                  <Truck color="#D4AF37" size={28} />
-                  Mode de livraison
+              {/* Delivery method */}
+              <div className="co-glass rounded-3xl p-6 md:p-10">
+                <h2 className="text-2xl font-semibold mb-7 flex items-center gap-3">
+                  <Truck color="#D4AF37" size={26}/> Mode de livraison
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button type="button" onClick={() => setDeliveryMethod("DELIVERY")}
-                    className={`delivery-btn ${deliveryMethod === "DELIVERY" ? "active" : ""}`}>
-                    <div className="flex justify-between items-start mb-6">
-                      <Truck size={32} color={deliveryMethod === "DELIVERY" ? "#D4AF37" : "rgba(255,255,255,0.3)"} />
-                      <span className="text-sm font-semibold text-[#D4AF37]">{DELIVERY_FEE} TND</span>
+                    className={`co-dlv-btn ${deliveryMethod==="DELIVERY"?"active":""}`}>
+                    <div className="flex justify-between items-start mb-5">
+                      <Truck size={30} color={deliveryMethod==="DELIVERY"?"#D4AF37":"rgba(255,255,255,.28)"}/>
+                      <span className="text-sm font-bold text-[#D4AF37]">{DELIVERY_FEE} TND</span>
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">Livraison à domicile</h3>
-                    <p className="text-sm text-white/60">Votre commande vous sera livrée directement</p>
+                    <h3 className="text-lg font-semibold mb-1">Livraison à domicile</h3>
+                    <p className="text-sm text-white/55">Votre commande vous sera livrée directement</p>
                   </button>
-
                   <button type="button" onClick={() => setDeliveryMethod("PICKUP")}
-                    className={`delivery-btn ${deliveryMethod === "PICKUP" ? "active" : ""}`}>
-                    <div className="flex justify-between items-start mb-6">
-                      <Store size={32} color={deliveryMethod === "PICKUP" ? "#D4AF37" : "rgba(255,255,255,0.3)"} />
-                      <span className="text-sm font-semibold text-[#6ee7b7]">Gratuit</span>
+                    className={`co-dlv-btn ${deliveryMethod==="PICKUP"?"active":""}`}>
+                    <div className="flex justify-between items-start mb-5">
+                      <Store size={30} color={deliveryMethod==="PICKUP"?"#D4AF37":"rgba(255,255,255,.28)"}/>
+                      <span className="text-sm font-bold text-[#6ee7b7]">Gratuit</span>
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">Retrait en magasin</h3>
-                    <p className="text-sm text-white/60">Venez récupérer votre commande sur place</p>
+                    <h3 className="text-lg font-semibold mb-1">Retrait en magasin</h3>
+                    <p className="text-sm text-white/55">Venez récupérer votre commande sur place</p>
                   </button>
                 </div>
               </div>
 
-              {/* Personal Info */}
-              <div className="glass-card rounded-3xl p-6 md:p-10">
-                <h2 className="text-2xl md:text-[1.75rem] font-semibold mb-8 flex items-center gap-4">
-                  <User color="#D4AF37" size={28} />
-                  Informations personnelles
+              {/* Personal info */}
+              <div className="co-glass rounded-3xl p-6 md:p-10">
+                <h2 className="text-2xl font-semibold mb-7 flex items-center gap-3">
+                  <User color="#D4AF37" size={26}/> Informations personnelles
                 </h2>
+                <div className="space-y-5">
 
-                <div className="space-y-6">
-                  {/* First name + Last name */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Prénom + Nom */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <label className="field-label">Prénom *</label>
-                      <input
-                        type="text"
-                        value={form.firstName}
-                        onChange={e => setForm({ ...form, firstName: e.target.value })}
-                        className="input-field"
-                        placeholder="Votre prénom"
-                      />
+                      <label className="co-label">Prénom *</label>
+                      <input type="text" value={form.firstName}
+                        onChange={e => setForm(f=>({...f,firstName:e.target.value}))}
+                        className="co-input" placeholder="Votre prénom"/>
                     </div>
                     <div>
-                      <label className="field-label">Nom *</label>
-                      <input
-                        type="text"
-                        value={form.lastName}
-                        onChange={e => setForm({ ...form, lastName: e.target.value })}
-                        className="input-field"
-                        placeholder="Votre nom de famille"
-                      />
+                      <label className="co-label">Nom *</label>
+                      <input type="text" value={form.lastName}
+                        onChange={e => setForm(f=>({...f,lastName:e.target.value}))}
+                        className="co-input" placeholder="Votre nom de famille"/>
                     </div>
                   </div>
 
-                  {/* Phone with country dial */}
+                  {/* Phone */}
                   <div>
-                    <label className="field-label">Téléphone *</label>
-                    <div className="phone-composite">
-                      {/* Country dial button */}
-                      <button
-                        type="button"
-                        className="phone-dial-btn"
-                        onClick={() => setShowCountryDropdown(v => !v)}
-                      >
-                        <span style={{ fontSize: "1.25rem" }}>{phoneCountry.flag}</span>
+                    <label className="co-label">Téléphone *</label>
+                    <div className="co-phone-wrap" ref={dropdownRef}>
+                      <button type="button" className="co-dial-btn"
+                        onClick={() => setShowCountryDropdown(v=>!v)}>
+                        <span className="co-flag">{phoneCountry.flag}</span>
                         <span>{phoneCountry.dial}</span>
-                        <ChevronDown size={14} style={{ opacity: 0.5, marginLeft: "auto" }} />
+                        <ChevronDown size={13} style={{opacity:.5,marginLeft:"auto"}}/>
                       </button>
-                      <input
-                        type="tel"
-                        value={form.phone}
-                        onChange={e => setForm({ ...form, phone: e.target.value })}
-                        className="phone-input"
-                        placeholder="XX XXX XXX"
-                      />
+                      <input type="tel" value={form.phone}
+                        onChange={e => setForm(f=>({...f,phone:e.target.value}))}
+                        className="co-phone-input" placeholder="XX XXX XXX"/>
 
-                      {/* Dropdown */}
                       {showCountryDropdown && (
-                        <div className="country-dropdown">
-                          <input
-                            type="text"
-                            className="country-search"
-                            placeholder="Rechercher un pays..."
+                        <div className="co-dropdown">
+                          <input type="text" className="co-dropdown-search"
+                            placeholder="Rechercher pays ou indicatif..."
                             value={countrySearch}
                             onChange={e => setCountrySearch(e.target.value)}
-                            autoFocus
-                          />
-                          <div className="country-list">
+                            autoFocus/>
+                          <div className="co-dropdown-list">
+                            {filteredCountries.length === 0 && (
+                              <div style={{padding:"1rem",color:"rgba(255,255,255,.4)",fontSize:".88rem",textAlign:"center"}}>
+                                Aucun résultat
+                              </div>
+                            )}
                             {filteredCountries.map(c => (
-                              <div
-                                key={c.code}
-                                className={`country-item ${phoneCountry.code === c.code ? "selected" : ""}`}
+                              <div key={c.code}
+                                className={`co-country-item ${phoneCountry.code===c.code?"sel":""}`}
                                 onClick={() => {
                                   setPhoneCountry(c);
                                   setShowCountryDropdown(false);
                                   setCountrySearch("");
-                                }}
-                              >
-                                <span style={{ fontSize: "1.2rem" }}>{c.flag}</span>
-                                <span>{c.name}</span>
-                                <span className="country-dial">{c.dial}</span>
+                                }}>
+                                <span className="co-flag">{c.flag}</span>
+                                <span className="co-country-name">{c.name}</span>
+                                <span className="co-country-dial">{c.dial}</span>
                               </div>
                             ))}
                           </div>
@@ -622,147 +659,121 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  {/* Delivery address fields */}
+                  {/* Delivery address — shown only for DELIVERY */}
                   {deliveryMethod === "DELIVERY" && (
                     <>
-                      {/* Address country selector */}
+                      {/* Address country */}
                       <div>
-                        <label className="field-label">Pays de livraison *</label>
-                        <div className="select-wrapper">
-                          <select
-                            value={addressCountry}
+                        <label className="co-label">Pays de livraison *</label>
+                        <div className="co-select-wrap">
+                          <select value={addressCountry}
                             onChange={e => setAddressCountry(e.target.value)}
-                            className="select-field"
-                          >
+                            className="co-input">
                             {COUNTRIES.map(c => (
-                              <option key={c.code} value={c.code}>
-                                {c.flag} {c.name}
-                              </option>
+                              <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
                             ))}
                           </select>
-                          <ChevronDown size={16} className="chevron-icon" />
+                          <ChevronDown size={15} className="co-chevron"/>
                         </div>
                       </div>
 
                       {/* Tunisia: Governorate → City */}
                       {addressCountry === "TN" ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                           <div>
-                            <label className="field-label">Gouvernorat *</label>
-                            <div className="select-wrapper">
-                              <select
-                                value={selectedGov}
+                            <label className="co-label">Gouvernorat *</label>
+                            <div className="co-select-wrap">
+                              <select value={selectedGov}
                                 onChange={e => setSelectedGov(e.target.value)}
-                                className="select-field"
-                              >
-                                <option value="">Sélectionner un gouvernorat</option>
+                                className="co-input">
+                                <option value="">— Choisir un gouvernorat —</option>
                                 {GOVERNORATES.map(g => (
                                   <option key={g} value={g}>{g}</option>
                                 ))}
                               </select>
-                              <ChevronDown size={16} className="chevron-icon" />
+                              <ChevronDown size={15} className="co-chevron"/>
                             </div>
                           </div>
                           <div>
-                            <label className="field-label">Ville *</label>
-                            <div className="select-wrapper">
-                              <select
-                                value={selectedCity}
+                            <label className="co-label">Ville *</label>
+                            <div className="co-select-wrap">
+                              <select value={selectedCity}
                                 onChange={e => setSelectedCity(e.target.value)}
-                                className="select-field"
-                                disabled={!selectedGov}
-                              >
+                                className="co-input"
+                                disabled={!selectedGov}>
                                 <option value="">
-                                  {selectedGov ? "Sélectionner une ville" : "Choisissez d'abord un gouvernorat"}
+                                  {selectedGov ? "— Choisir une ville —" : "Choisissez d'abord un gouvernorat"}
                                 </option>
                                 {selectedGov && TUNISIA_DATA[selectedGov]?.map(city => (
                                   <option key={city} value={city}>{city}</option>
                                 ))}
                               </select>
-                              <ChevronDown size={16} className="chevron-icon" />
+                              <ChevronDown size={15} className="co-chevron"/>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        /* Other countries: free text city */
+                        /* Other country: free text city */
                         <div>
-                          <label className="field-label">Ville *</label>
-                          <input
-                            type="text"
-                            value={form.address}
-                            onChange={e => setForm({ ...form, address: e.target.value })}
-                            className="input-field"
-                            placeholder="Votre ville"
-                          />
+                          <label className="co-label">Ville *</label>
+                          <input type="text" value={form.freeCity}
+                            onChange={e => setForm(f=>({...f,freeCity:e.target.value}))}
+                            className="co-input" placeholder="Votre ville"/>
                         </div>
                       )}
 
                       {/* Street address */}
                       <div>
-                        <label className="field-label">
-                          {addressCountry === "TN" ? "Adresse (rue, immeuble…)" : "Adresse complète *"}
+                        <label className="co-label">
+                          {addressCountry==="TN" ? "Adresse (rue, immeuble…)" : "Adresse complète *"}
                         </label>
-                        <input
-                          type="text"
-                          value={addressCountry === "TN" ? form.address : form.address}
-                          onChange={e => setForm({ ...form, address: e.target.value })}
-                          className="input-field"
-                          placeholder={addressCountry === "TN" ? "Rue, n°, résidence..." : "Adresse complète"}
-                        />
+                        <input type="text" value={form.streetAddress}
+                          onChange={e => setForm(f=>({...f,streetAddress:e.target.value}))}
+                          className="co-input"
+                          placeholder={addressCountry==="TN" ? "Rue, n°, résidence..." : "Adresse complète"}/>
                       </div>
 
                       {/* Postal code */}
-                      <div style={{ maxWidth: "200px" }}>
-                        <label className="field-label">Code postal</label>
-                        <input
-                          type="text"
-                          value={form.postalCode}
-                          onChange={e => setForm({ ...form, postalCode: e.target.value })}
-                          className="input-field"
-                          placeholder="1000"
-                        />
+                      <div style={{maxWidth:180}}>
+                        <label className="co-label">Code postal</label>
+                        <input type="text" value={form.postalCode}
+                          onChange={e => setForm(f=>({...f,postalCode:e.target.value}))}
+                          className="co-input" placeholder="1000"/>
                       </div>
                     </>
                   )}
 
                   {/* Notes */}
                   <div>
-                    <label className="field-label">Notes / Instructions</label>
-                    <textarea
-                      value={form.notes}
-                      onChange={e => setForm({ ...form, notes: e.target.value })}
-                      rows={4}
-                      className="input-field"
-                      style={{ resize: "none" }}
-                      placeholder="Instructions spéciales pour la livraison..."
-                    />
+                    <label className="co-label">Notes / Instructions</label>
+                    <textarea value={form.notes} rows={4}
+                      onChange={e => setForm(f=>({...f,notes:e.target.value}))}
+                      className="co-input" style={{resize:"none"}}
+                      placeholder="Instructions spéciales pour la livraison..."/>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ── RIGHT — Order Summary ── */}
+            {/* ── RIGHT ── */}
             <div className="lg:col-span-5">
-              <div className="glass-card rounded-3xl p-6 md:p-10 sticky top-6 lg:top-8">
-                <h2 className="text-2xl md:text-[1.75rem] font-semibold mb-8 flex items-center gap-3">
-                  <ShoppingBag color="#D4AF37" size={28} />
-                  Résumé de la commande
+              <div className="co-glass rounded-3xl p-6 md:p-10 sticky top-6 lg:top-8">
+                <h2 className="text-2xl font-semibold mb-7 flex items-center gap-3">
+                  <ShoppingBag color="#D4AF37" size={26}/> Résumé de la commande
                 </h2>
 
-                <div className="space-y-6 mb-10 max-h-[420px] overflow-y-auto pr-2">
+                <div className="space-y-5 mb-8 max-h-[380px] overflow-y-auto pr-1"
+                  style={{scrollbarWidth:"thin",scrollbarColor:"rgba(212,175,55,.25) transparent"}}>
                   {cart.items.map(item => (
                     <div key={item.id} className="flex gap-4">
-                      <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 flex-shrink-0">
-                        <img
-                          src={item.product.images[0] || "/placeholder.jpg"}
-                          alt={item.product.name}
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="w-[72px] h-[72px] rounded-2xl overflow-hidden border border-white/10 flex-shrink-0">
+                        <img src={item.product.images[0]||"/placeholder.jpg"} alt={item.product.name}
+                          className="w-full h-full object-cover"/>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-lg leading-tight">{item.product.name}</h4>
-                        {item.size && <p className="text-white/50 text-sm">Taille : {item.size}</p>}
-                        <p className="text-[#D4AF37] font-medium mt-1">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold leading-tight truncate">{item.product.name}</h4>
+                        {item.size && <p className="text-white/45 text-sm">Taille : {item.size}</p>}
+                        <p className="text-[#D4AF37] font-medium mt-1 text-sm">
                           {item.quantity} × {item.product.price} TND
                         </p>
                       </div>
@@ -770,50 +781,32 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                <div className="border-t border-white/10 pt-8 space-y-4">
-                  <div className="flex justify-between text-lg">
-                    <span className="text-white/70">Sous-total</span>
+                <div className="border-t border-white/10 pt-6 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Sous-total</span>
                     <span>{subtotal.toFixed(2)} TND</span>
                   </div>
-                  <div className="flex justify-between text-lg">
-                    <span className="text-white/70">Livraison</span>
-                    <span className={deliveryFee === 0 ? "text-[#6ee7b7]" : ""}>
-                      {deliveryFee === 0 ? "Gratuit" : `${deliveryFee} TND`}
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Livraison</span>
+                    <span className={deliveryFee===0?"text-[#6ee7b7]":""}>
+                      {deliveryFee===0?"Gratuit":`${deliveryFee} TND`}
                     </span>
                   </div>
-                  <div className="flex justify-between text-2xl font-bold pt-6 border-t border-white/10">
+                  <div className="flex justify-between text-xl font-bold pt-5 border-t border-white/10">
                     <span>Total</span>
                     <span className="text-[#D4AF37]">{total.toFixed(2)} TND</span>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={processing}
-                  className="confirm-btn"
-                >
-                  {processing ? "Traitement en cours..." : (
-                    <><CreditCard size={22} /> Confirmer la commande</>
-                  )}
+                <button type="button" onClick={handleSubmit} disabled={processing} className="co-confirm-btn">
+                  {processing ? "Traitement en cours..." : <><CreditCard size={20}/> Confirmer la commande</>}
                 </button>
-
-                <p className="text-center text-white/40 text-sm mt-4">
-                  Paiement à la livraison • Sécurisé
-                </p>
+                <p className="text-center text-white/35 text-sm mt-4">Paiement à la livraison • Sécurisé</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Close country dropdown on outside click */}
-      {showCountryDropdown && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 50 }}
-          onClick={() => { setShowCountryDropdown(false); setCountrySearch(""); }}
-        />
-      )}
     </>
   );
 }
