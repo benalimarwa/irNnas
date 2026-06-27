@@ -716,7 +716,7 @@ export default function CatalogPage() {
         {/* Video bg */}
         <div className="cp-vbg">
           <video autoPlay muted loop playsInline>
-            <source src="/video/mm.mp4" type="video/mp4" />
+            <source src="/video/pp.mp4" type="video/mp4" />
           </video>
         </div>
 
