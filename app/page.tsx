@@ -457,39 +457,7 @@ export default function HomePage() {
             {/* ================================================================ */}
             {/* HERO                                                             */}
             {/* ================================================================ */}
-            <section className="relative pt-36 pb-24 text-center overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-[#3b82f6]/5 via-transparent to-transparent pointer-events-none" />
-                <div className="relative z-10 max-w-4xl mx-auto px-6">
-                    <div className="inline-block mb-6 px-6 py-1.5 border border-[#3b82f6]/20 rounded-full text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/60">
-                        Collection Printemps-Été 2026
-                    </div>
-                    <h1 className="text-6xl md:text-8xl font-light tracking-[-0.02em] leading-[1.05]">
-                        <span className="text-white">L&apos;</span>
-                        <span className="text-[#3b82f6]">Élégance</span>
-                        <br className="hidden sm:block" />
-                        <span className="text-white">Professionnelle</span>
-                    </h1>
-                    <p className="mt-6 text-base text-[#8aabca] font-light tracking-[0.1em] max-w-lg mx-auto">
-                        Le style moderne, réinventé avec une touche de luxe discret.
-                    </p>
-                    <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                        <Link
-                            href="#shop"
-                            className="px-10 py-3.5 bg-[#3b82f6] text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#2563eb] transition shadow-lg shadow-[#3b82f6]/20"
-                        >
-                            Découvrir
-                        </Link>
-                        <Link
-                            href="#"
-                            className="px-10 py-3.5 border border-[#3b82f6]/30 text-[#3b82f6] text-xs uppercase tracking-[0.25em] font-light rounded-full hover:bg-[#3b82f6]/10 transition"
-                        >
-                            Nos Collections
-                        </Link>
-                    </div>
-                </div>
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-px h-16 bg-gradient-to-b from-[#3b82f6]/30 to-transparent" />
-            </section>
-
+           
             {/* ================================================================ */}
             {/* SHOP                                                             */}
             {/* ================================================================ */}
