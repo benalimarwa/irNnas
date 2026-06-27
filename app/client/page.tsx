@@ -183,16 +183,9 @@ export default function ClientDashboard() {
                 ESPACE CLIENT EXCLUSIF
               </div>
 
-              <h1 className="hero-title" style={{ marginBottom: '1.25rem' }}>
-                Bonjour,<br />
-                <span className="gradient-text">
-                  {user?.firstName || 'Cher Client'}
-                </span>
-              </h1>
+              
 
-              <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
-                Bienvenue dans votre univers. Découvrez l'excellence, suivez vos commandes et affinez votre signature stylistique.
-              </p>
+             
             </div>
           </div>
 
