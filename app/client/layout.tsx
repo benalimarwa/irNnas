@@ -3,12 +3,13 @@
 import ClientNavbar from "@/components/ClientNavbar";
 import { ClerkProvider } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
-
+import { useSyncGuestCart } from "@/hooks/useSyncGuestCart";
 export default function ClientLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+    useSyncGuestCart();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
