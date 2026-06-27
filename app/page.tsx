@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { ShoppingCart, Heart, ChevronDown, X, ChevronRight } from "lucide-react";
+import Navbar from "@/components/ClientNavbar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Product = {
@@ -386,80 +387,7 @@ export default function HomePage() {
 
             {/* ================================================================ */}
             {/* HEADER                                                           */}
-            {/* ================================================================ */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/95 backdrop-blur-sm border-b border-[#1e3a5f]">
-                <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between gap-4">
-
-                    {/* Burger mobile */}
-                    <button
-                        onClick={() => { setDrawerTab("menu"); setDrawerOpen(true); }}
-                        className="lg:hidden text-white hover:text-[#3b82f6] transition flex-shrink-0"
-                        aria-label="Ouvrir le menu"
-                    >
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-
-                    {/* Logo */}
-                    <Link href="/" className="group flex items-end gap-2 flex-shrink-0">
-                        <span className="text-2xl md:text-3xl font-light tracking-[0.2em] text-white group-hover:text-[#3b82f6] transition duration-500">
-                            IRNAS
-                        </span> <Image
-              src="/llogo.png"
-              alt="IRNAS"
-              width={140}
-              height={50}
-              className="object-contain h-10 w-auto transition-transform duration-300 group-hover:scale-105"
-              priority
-            />
-                        <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/70 font-light hidden sm:block pb-0.5">
-                            Fashion
-                        </span>
-                    </Link>
-
-                    {/* Nav desktop */}
-                    <nav className="hidden lg:flex items-center gap-10 text-xs uppercase tracking-[0.25em] font-light flex-1 justify-center">
-                        <Link href="/" className="text-[#3b82f6] border-b border-[#3b82f6]/40 pb-0.5">Accueil</Link>
-                        <Link href="#shop" className="hover:text-[#3b82f6] transition border-b border-transparent hover:border-[#3b82f6]/40 pb-0.5">Boutique</Link>
-                        <Link href="#" className="hover:text-[#3b82f6] transition border-b border-transparent hover:border-[#3b82f6]/40 pb-0.5">Collections</Link>
-                        <Link href="#" className="hover:text-[#3b82f6] transition border-b border-transparent hover:border-[#3b82f6]/40 pb-0.5">À propos</Link>
-                    </nav>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-4 flex-shrink-0">
-                        <div className="relative hidden md:block w-56">
-                            <input
-                                type="text"
-                                placeholder="Rechercher..."
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full bg-[#0f1f33] border border-[#1e3a5f] rounded-full py-2 pl-9 pr-4 text-sm text-white placeholder:text-[#4a6a8a] focus:outline-none focus:border-[#3b82f6]/50 transition"
-                            />
-                            <svg className="w-4 h-4 absolute left-3 top-2.5 text-[#4a6a8a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-
-                        <button className="text-white hover:text-[#3b82f6] transition" aria-label="Favoris">
-                            <Heart className="w-5 h-5" />
-                        </button>
-
-                        <button
-                            onClick={handleCartClick}
-                            className="relative text-white hover:text-[#3b82f6] transition"
-                            aria-label="Panier"
-                        >
-                            <ShoppingCart className="w-5 h-5" />
-                            {cartCount > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 bg-[#3b82f6] text-white text-[9px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                                    {cartCount}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </header>
+           <Navbar/>
 
             {/* ================================================================ */}
             {/* HERO                                                             */}
