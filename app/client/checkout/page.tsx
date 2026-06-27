@@ -204,32 +204,124 @@ const COUNTRIES = [
   { code: "TO", name: "Tonga",                 dial: "+676", flag: "🇹🇴" },
 ];
 
-// ─── Tunisia data ──────────────────────────────────────────────────────────────
+// ─── Tunisia data — toutes les délégations officielles ────────────────────────
 const TUNISIA_DATA: Record<string, string[]> = {
-  "Ariana":      ["Ariana", "Ettadhamen", "Ghazela", "Kalâat el-Andalous", "Mnihla", "Raoued", "Sidi Thabet"],
-  "Béja":        ["Amdoun", "Béja", "Goubellat", "Medjez el-Bab", "Nefza", "Téboursouk", "Testour", "Thibar"],
-  "Ben Arous":   ["Ben Arous", "Bou Mhel el-Bassatine", "Ezzahra", "Fouchana", "Hammam Chott", "Hammam Lif", "Mégrine", "Mourouj", "Mornag", "Radès"],
-  "Bizerte":     ["Bizerte", "El Alia", "Ghar El Melh", "Mateur", "Menzel Bourguiba", "Ras Jebel", "Sejnane", "Tinja", "Utique"],
-  "Gabès":       ["El Hamma", "Gabès", "Ghannouch", "Mareth", "Matmata", "Métouia", "Nouvelle Matmata"],
-  "Gafsa":       ["Belkhir", "El Ksar", "Gafsa", "Mdhilla", "Métlaoui", "Redeyef", "Sidi Aïch", "Sned"],
-  "Jendouba":    ["Aïn Draham", "Balta-Bou Aouane", "Bou Salem", "Fernana", "Ghardimaou", "Jendouba", "Oued Mliz", "Tabarka"],
-  "Kairouan":    ["Bouhajla", "Cherarda", "El Alaa", "Haffouz", "Kairouan", "Nasrallah", "Oueslatia", "Sbikha"],
-  "Kasserine":   ["Fériana", "Foussana", "Haïdra", "Jedeliane", "Kasserine", "Majel Bel Abbès", "Sbeitla", "Thala"],
-  "Kébili":      ["Douz", "El Faouar", "Jemna", "Kébili", "Souk Lahad"],
-  "Le Kef":      ["Dahmani", "El Ksour", "Kalaat Khasba", "Le Kef", "Nebeur", "Sakiet Sidi Youssef", "Sers", "Tajerouine"],
-  "Mahdia":      ["Bou Merdes", "Chebba", "El Jem", "Ksour Essef", "Mahdia", "Melloulèche", "Sidi Alouane"],
-  "Manouba":     ["Borj El Amri", "Djedeida", "Douar Hicher", "El Battan", "Manouba", "Mornaguia", "Oued Ellil", "Tébourba"],
-  "Médenine":    ["Ben Gardane", "Beni Khedache", "Houmt Souk (Djerba)", "Médenine", "Midoun", "Sidi Makhlouf", "Zarzis"],
-  "Monastir":    ["Bekalta", "Bembla", "Jemmal", "Ksar Hellal", "Monastir", "Moknine", "Sayada", "Téboulba"],
-  "Nabeul":      ["Beni Khalled", "Grombalia", "Hammamet", "Haouaria", "Kelibia", "Korba", "Menzel Bouzelfa", "Nabeul", "Soliman", "Takelsa"],
-  "Sfax":        ["Agareb", "Bir Ali Ben Khalifa", "Chihia", "Djebeniana", "El Hencha", "Graïba", "Mahres", "Sakiet Eddaier", "Sakiet Ezzit", "Sfax", "Skhira"],
-  "Sidi Bouzid": ["Bir El Hafey", "Jilma", "Meknassy", "Menzel Bouzaiane", "Mezzouna", "Regueb", "Sidi Bouzid", "Souk Jedid"],
-  "Siliana":     ["Bargou", "Bouarada", "El Krib", "Gaâfour", "Kesra", "Makthar", "Rouhia", "Sidi Morched", "Siliana"],
-  "Sousse":      ["Akouda", "Enfidha", "Hammam Sousse", "Kalâa Kebira", "Kantaoui", "Msaken", "Sidi Bou Ali", "Sousse"],
-  "Tataouine":   ["Bir Lahmar", "Dehiba", "Ghomrassen", "Remada", "Smâr", "Tataouine"],
-  "Tozeur":      ["Degache", "Hazoua", "Nefta", "Tamaghza", "Tozeur"],
-  "Tunis":       ["Ariana (ville)", "Ben Arous (ville)", "Carthage", "La Goulette", "La Marsa", "Le Bardo", "Le Kram", "Sidi Bou Saïd", "Tunis"],
-  "Zaghouan":    ["Bir Mcherga", "El Fahs", "Nadhour", "Saouaf", "Zriba", "Zaghouan"],
+  "Ariana": [
+    "Ariana Ville", "Ettadhamen", "Ghazela", "Kalâat el-Andalous",
+    "Mnihla", "Raoued", "Sidi Thabet",
+  ],
+  "Béja": [
+    "Amdoun", "Béja Nord", "Béja Sud", "Goubellat",
+    "Medjez el-Bab", "Nefza", "Téboursouk", "Testour", "Thibar",
+  ],
+  "Ben Arous": [
+    "Ben Arous", "Bou Mhel el-Bassatine", "El Mourouj", "Ezzahra",
+    "Fouchana", "Hammam Chott", "Hammam Lif", "Mégrine", "Mornag", "Radès",
+  ],
+  "Bizerte": [
+    "Bizerte Nord", "Bizerte Sud", "El Alia", "Ghar El Melh",
+    "Ghezala", "Joumine", "Mateur", "Menzel Bourguiba", "Menzel Jemil",
+    "Ras Jebel", "Sejnane", "Tinja", "Utique",
+  ],
+  "Gabès": [
+    "El Hamma", "Gabès Médina", "Gabès Ouest", "Gabès Sud",
+    "Ghannouch", "Mareth", "Matmata", "Menzel el-Habib", "Métouia",
+    "Nouvelle Matmata",
+  ],
+  "Gafsa": [
+    "Belkhir", "El Guettar", "El Ksar", "Gafsa Nord", "Gafsa Sud",
+    "Mdhilla", "Métlaoui", "Redeyef", "Sidi Aïch", "Sned",
+  ],
+  "Jendouba": [
+    "Aïn Draham", "Balta-Bou Aouane", "Bou Salem", "Fernana",
+    "Ghardimaou", "Jendouba", "Jendouba Nord", "Oued Mliz", "Tabarka",
+  ],
+  "Kairouan": [
+    "Bouhajla", "Cherarda", "El Alaa", "Haffouz", "Hajeb El Ayoun",
+    "Kairouan Nord", "Kairouan Sud", "Nasrallah", "Oueslatia",
+    "Sbikha", "Echbika",
+  ],
+  "Kasserine": [
+    "Ezzouhour", "Fériana", "Foussana", "Haïdra", "Hassi El Frid",
+    "Jedeliane", "Kasserine Nord", "Kasserine Sud", "Majel Bel Abbès",
+    "Sbeitla", "Sbiba", "Thala",
+  ],
+  "Kébili": [
+    "Douz Nord", "Douz Sud", "El Faouar", "Kébili Nord",
+    "Kébili Sud", "Souk Lahad",
+  ],
+  "Le Kef": [
+    "Dahmani", "El Ksour", "Jerissa", "Kalaat Khasba", "Kalâat Sinane",
+    "Le Kef Est", "Le Kef Ouest", "Nebeur", "Sakiet Sidi Youssef",
+    "Sers", "Tajerouine",
+  ],
+  "Mahdia": [
+    "Bou Merdes", "Chebba", "Chorbane", "El Bradaa", "El Jem",
+    "Ksour Essef", "Mahdia", "Melloulèche", "Ouled Chamekh", "Sidi Alouane",
+  ],
+  "Manouba": [
+    "Borj El Amri", "Djedeida", "Douar Hicher", "El Battan",
+    "Manouba", "Mornaguia", "Oued Ellil", "Tébourba",
+  ],
+  "Médenine": [
+    "Ben Gardane", "Beni Khedache", "Djerba — Ajim", "Djerba — Houmt Souk",
+    "Djerba — Midoun", "Médenine Nord", "Médenine Sud",
+    "Sidi Makhlouf", "Zarzis",
+  ],
+  "Monastir": [
+    "Bekalta", "Bembla", "Beni Hassen", "Jammel", "Ksar Hellal",
+    "Ksibet el-Médiouni", "Moknine", "Monastir", "Ouerdanine",
+    "Sahline", "Sayada-Lamta-Bou Hajar", "Téboulba", "Zeramdine",
+  ],
+  "Nabeul": [
+    "Béni Khiar", "Beni Khalled", "Bou Argoub", "Dar Chaâbane el-Fehri",
+    "El Haouaria", "El Mida", "Grombalia", "Hammamet", "Kelibia",
+    "Korba", "Menzel Bouzelfa", "Menzel Temime", "Nabeul","Grombelia",
+    "Soliman", "Takelsa",
+  ],
+  "Sfax": [
+    "Agareb", "Bir Ali Ben Khalifa", "Chihia", "Djebeniana",
+    "El Amra", "El Hencha", "Graïba", "Jebiniana", "Kerkennah",
+    "Mahres", "Menzel Chaker", "Sakiet Eddaier", "Sakiet Ezzit",
+    "Sfax Est", "Sfax Médina", "Sfax Ouest", "Sfax Sud", "Skhira",
+  ],
+  "Sidi Bouzid": [
+    "Bir El Hafey", "Cebbala Ouled Asker", "Jilma", "Maknassy",
+    "Menzel Bouzaiane", "Mezzouna", "Ouled Haffouz", "Regueb",
+    "Sidi Ali Ben Aoun", "Sidi Bouzid Est", "Sidi Bouzid Ouest",
+    "Souk Jedid",
+  ],
+  "Siliana": [
+    "Bargou", "Bouarada", "El Aroussa", "El Krib", "Gaâfour",
+    "Kesra", "Makthar", "Rouhia", "Sidi Morched", "Siliana Nord",
+    "Siliana Sud",
+  ],
+  "Sousse": [
+    "Akouda", "Bouficha", "Enfidha", "Hammam Sousse", "Hergla",
+    "Kalâa Kebira", "Kalâa Seghira", "Kondar", "Msaken",
+    "M'saken", "Sidi Bou Ali", "Sidi El Hani", "Sousse Jawhara",
+    "Sousse Khzama", "Sousse Médina", "Sousse Riadh",
+  ],
+  "Tataouine": [
+    "Bir Lahmar", "Dehiba", "Ghomrassen", "Remada",
+    "Smâr", "Tataouine Nord", "Tataouine Sud",
+  ],
+  "Tozeur": [
+    "Degache", "Hazoua", "Nefta", "Tamaghza", "Tozeur",
+  ],
+  "Tunis": [
+    "Bab Bhar", "Bab Souika", "Carthage", "Djebel Jelloud",
+    "El Hrairia", "El Kabaria", "El Kram", "El Menzah",
+    "El Mourouj (Tunis)", "El Omrane", "El Omrane Supérieur",
+    "El Ouardia", "Ettahrir", "Ezzouhour (Tunis)", "Jebel Jelloud",
+    "Kalâat el-Andalous (Tunis)", "La Goulette", "La Marsa",
+    "Le Bardo", "Séjoumi", "Sidi Bou Saïd", "Sidi El Béchir",
+    "Sidi Hassine", "Tunis Médina",
+  ],
+  "Zaghouan": [
+    "Bir Mcherga", "El Fahs", "En-Nadhour", "Saouaf",
+    "Zaghouan", "Zriba",
+  ],
 };
 
 const GOVERNORATES = Object.keys(TUNISIA_DATA).sort();
