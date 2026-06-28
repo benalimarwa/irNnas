@@ -3,6 +3,7 @@
 import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 
 export default function SignInPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -16,280 +17,152 @@ export default function SignInPage() {
   return (
     <>
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Instrument+Sans:wght@300;400;500;600;700&display=swap');
-
         html, body {
           margin: 0;
           padding: 0;
           overflow-x: hidden !important;
           width: 100%;
-          max-width: 100%;
-          background: #0A0A0C;
+          background: #0a1628;
         }
+        * { box-sizing: border-box; }
 
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-
-        :root {
-          --ink: #0A0A0C;
-          --off-white: #F4F1EC;
-          --gold: #D4AF37;
-          --gold-dark: #B8942E;
-          --blue-neon: #00D4FF;
-        }
-
-        .sign-root {
-          position: relative;
-          min-height: 100vh;
-          width: 100%;
-          max-width: 100vw;
-          font-family: 'Instrument Sans', sans-serif;
-          background: var(--ink);
-          overflow-x: hidden;
-        }
-
-        .sign-vid {
-          position: fixed;
-          inset: 0;
-          z-index: 0;
-          overflow: hidden;
-          width: 100%;
-          height: 100%;
-        }
-        .sign-vid video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          opacity: 0.4;
-          filter: brightness(0.7) contrast(1.1) saturate(1.3);
-        }
-
-        .sign-overlay {
-          position: fixed;
-          inset: 0;
-          background: radial-gradient(circle at 20% 30%, rgba(212,175,55,0.15), rgba(0,212,255,0.1), rgba(10,10,12,0.92));
-          z-index: 1;
-        }
-
-        .sign-nav {
-          position: relative;
-          z-index: 20;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px 5vw;
-          background: rgba(10,10,12,0.7);
-          backdrop-filter: blur(12px);
-          border-bottom: 1px solid rgba(212,175,55,0.2);
-          width: 100%;
-          max-width: 100vw;
-        }
-
-        .nav-logo {
-          font-family: 'Syne', sans-serif;
-          font-size: 24px;
-          font-weight: 800;
-          letter-spacing: -1.5px;
-          background: linear-gradient(135deg, var(--gold), var(--blue-neon));
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-          text-decoration: none;
-        }
-
-        .sign-container {
-          position: relative;
-          z-index: 15;
-          min-height: calc(100vh - 64px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 30px 20px 60px;
-          width: 100%;
-        }
-
-        .sign-card {
-          background: rgba(12, 12, 16, 0.85);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(212,175,55,0.35);
-          border-radius: 28px;
-          padding: 32px 24px;
-          width: 100%;
-          max-width: 400px;
-          box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
-          overflow: hidden;
-        }
-
-        @media (max-width: 480px) {
-          .sign-card {
-            padding: 24px 16px;
-            border-radius: 20px;
-            max-width: 94%;
-          }
-          .nav-logo {
-            font-size: 20px;
-          }
-        }
-
-        /* --- CLERK CUSTOM : champs et bouton réduits et centrés --- */
-        .clerk-custom .cl-signIn-root {
-          width: 100% !important;
-        }
-        .clerk-custom .cl-card {
+        /* ── Clerk overrides ─────────────────────────────── */
+        .clerk-wrap .cl-card {
           background: transparent !important;
+          box-shadow: none !important;
           padding: 0 !important;
         }
-
-        /* Conteneur des champs : centrage */
-        .clerk-custom .cl-formField {
-          display: flex !important;
-          flex-direction: column !important;
-          align-items: center !important;
-          margin-bottom: 0.75rem !important;
+        .clerk-wrap .cl-rootBox,
+        .clerk-wrap .cl-signIn-root {
+          width: 100% !important;
         }
-
-        /* Champs de saisie : largeur réduite */
-        .clerk-custom .cl-formFieldInput {
-          background: rgba(8,8,12,0.8) !important;
-          border: 1px solid rgba(212,175,55,0.4) !important;
-          border-radius: 16px !important;
+        .clerk-wrap .cl-headerTitle {
           color: #ffffff !important;
-          caret-color: var(--gold) !important;
-          padding: 8px 14px !important;
-          font-size: 0.85rem !important;
-          height: 40px !important;
-          width: 85% !important;          /* ← largeur réduite */
-          max-width: 300px !important;    /* ← limite */
-          margin: 0 auto !important;
-          display: block !important;
+          font-size: 1.1rem !important;
+          font-weight: 300 !important;
+          letter-spacing: 0.1em !important;
         }
-        .clerk-custom .cl-formFieldInput::placeholder {
-          color: rgba(255,255,255,0.5) !important;
-          font-size: 0.8rem !important;
+        .clerk-wrap .cl-headerSubtitle {
+          color: #4a6a8a !important;
+          font-size: 0.78rem !important;
         }
-        .clerk-custom .cl-formFieldInput:focus {
-          border-color: var(--blue-neon) !important;
-          box-shadow: 0 0 0 3px rgba(0,212,255,0.2) !important;
-        }
-
-        /* Labels : centrés */
-        .clerk-custom .cl-formFieldLabel {
-          color: rgba(244,241,236,0.8) !important;
-          font-weight: 500 !important;
-          font-size: 0.8rem !important;
-          margin-bottom: 4px !important;
-          width: 85% !important;
-          max-width: 300px !important;
-          text-align: left !important;
-        }
-
-        /* Bouton principal : réduit et centré */
-        .clerk-custom .cl-formButtonPrimary {
-          background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important;
-          color: #0A0A0C !important;
-          font-weight: 700 !important;
-          border-radius: 60px !important;
-          padding: 0.6rem !important;
+        .clerk-wrap .cl-formFieldLabel {
+          color: #4a6a8a !important;
+          font-size: 0.7rem !important;
           text-transform: uppercase !important;
-          letter-spacing: 1px !important;
-          font-size: 0.85rem !important;
+          letter-spacing: 0.15em !important;
+          font-weight: 300 !important;
+        }
+        .clerk-wrap .cl-formFieldInput {
+          background: #0a1628 !important;
+          border: 1px solid #1e3a5f !important;
+          border-radius: 14px !important;
+          color: #ffffff !important;
+          font-size: 0.875rem !important;
           height: 44px !important;
-          width: 85% !important;          /* ← largeur réduite */
-          max-width: 300px !important;
-          margin: 0 auto !important;
-          display: block !important;
+          padding: 0 14px !important;
+          transition: border-color 0.2s !important;
         }
-        .clerk-custom .cl-formButtonPrimary:hover {
-          background: linear-gradient(135deg, #E5C05A, #C9A142) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(212,175,55,0.3);
+        .clerk-wrap .cl-formFieldInput::placeholder {
+          color: #2a3f6a !important;
         }
-
-        /* Boutons sociaux : également réduits */
-        .clerk-custom .cl-socialButtonsBlockButton {
-          background: rgba(20,20,30,0.7) !important;
-          border: 1px solid rgba(212,175,55,0.4) !important;
-          border-radius: 60px !important;
-          color: var(--off-white) !important;
-          padding: 0.5rem !important;
+        .clerk-wrap .cl-formFieldInput:focus {
+          border-color: rgba(59,130,246,0.5) !important;
+          box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important;
+          outline: none !important;
+        }
+        .clerk-wrap .cl-formButtonPrimary {
+          background: #3b82f6 !important;
+          border-radius: 50px !important;
+          font-size: 0.72rem !important;
+          font-weight: 400 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.2em !important;
+          height: 46px !important;
+          transition: background 0.2s, transform 0.2s !important;
+          box-shadow: 0 4px 20px rgba(59,130,246,0.15) !important;
+        }
+        .clerk-wrap .cl-formButtonPrimary:hover {
+          background: #2563eb !important;
+          transform: translateY(-1px) !important;
+        }
+        .clerk-wrap .cl-socialButtonsBlockButton {
+          background: #0f1f33 !important;
+          border: 1px solid #1e3a5f !important;
+          border-radius: 14px !important;
+          color: #8aabca !important;
           font-size: 0.8rem !important;
-          height: 40px !important;
-          width: 85% !important;
-          max-width: 300px !important;
-          margin: 0 auto !important;
-          display: block !important;
+          height: 42px !important;
+          transition: border-color 0.2s !important;
         }
-        .clerk-custom .cl-socialButtonsBlockButton:hover {
-          background: rgba(212,175,55,0.15) !important;
-          border-color: var(--gold);
+        .clerk-wrap .cl-socialButtonsBlockButton:hover {
+          border-color: rgba(59,130,246,0.4) !important;
+          color: #ffffff !important;
         }
-
-        /* Diviseur */
-        .clerk-custom .cl-dividerLine {
-          background: linear-gradient(90deg, transparent, var(--gold), var(--blue-neon), transparent) !important;
-          width: 85% !important;
-          max-width: 300px !important;
-          margin: 0 auto !important;
+        .clerk-wrap .cl-dividerLine {
+          background: #1e3a5f !important;
         }
-        .clerk-custom .cl-dividerText {
-          color: rgba(244,241,236,0.6) !important;
-          background: rgba(10,10,12,0.8) !important;
-          font-size: 0.75rem !important;
-          padding: 0 8px !important;
+        .clerk-wrap .cl-dividerText {
+          color: #4a6a8a !important;
+          font-size: 0.72rem !important;
+          background: #0f1f33 !important;
+          padding: 0 10px !important;
         }
-
-        .clerk-custom .cl-footerActionLink {
-          color: var(--blue-neon) !important;
+        .clerk-wrap .cl-footerActionLink {
+          color: #3b82f6 !important;
           font-size: 0.8rem !important;
         }
-        .clerk-custom .cl-footerActionLink:hover {
-          color: var(--gold) !important;
+        .clerk-wrap .cl-footerActionLink:hover {
+          color: #60a5fa !important;
         }
-
-        .clerk-custom .cl-footer {
-          background: rgba(10,10,12,0.85) !important;
-          border-top: 1px solid rgba(212,175,55,0.2) !important;
-          border-radius: 0 0 20px 20px !important;
-          padding: 12px 0 !important;
+        .clerk-wrap .cl-footer {
+          background: transparent !important;
+          border-top: 1px solid #1a2a44 !important;
+          padding: 14px 0 !important;
         }
-        .clerk-custom .cl-footerText {
-          color: rgba(244,241,236,0.4) !important;
+        .clerk-wrap .cl-footerText {
+          color: #2a3f6a !important;
           font-size: 0.7rem !important;
         }
-        .clerk-custom .cl-badge {
-          background: rgba(212,175,55,0.15) !important;
-          color: var(--gold) !important;
-          border: 1px solid rgba(212,175,55,0.3) !important;
-          font-size: 0.6rem !important;
+        .clerk-wrap .cl-formFieldErrorText {
+          color: #f87171 !important;
+          font-size: 0.72rem !important;
         }
-        .clerk-custom .cl-formFieldErrorText {
-          color: #FF2D75 !important;
-          font-size: 0.75rem !important;
-        }
-        .clerk-custom .cl-alert {
-          background: rgba(255,45,117,0.1) !important;
-          border: 1px solid #FF2D75 !important;
-          color: var(--off-white) !important;
-          padding: 8px !important;
+        .clerk-wrap .cl-alert {
+          background: rgba(248,113,113,0.08) !important;
+          border: 1px solid rgba(248,113,113,0.3) !important;
+          border-radius: 12px !important;
+          color: #fca5a5 !important;
           font-size: 0.8rem !important;
         }
-
-        /* Ajustement pour les écrans très petits */
-        @media (max-width: 480px) {
-          .clerk-custom .cl-formFieldInput,
-          .clerk-custom .cl-formButtonPrimary,
-          .clerk-custom .cl-socialButtonsBlockButton,
-          .clerk-custom .cl-dividerLine {
-            width: 92% !important;
-          }
+        .clerk-wrap .cl-identityPreviewText {
+          color: #8aabca !important;
+        }
+        .clerk-wrap .cl-identityPreviewEditButton {
+          color: #3b82f6 !important;
+        }
+        .clerk-wrap .cl-formResendCodeLink {
+          color: #3b82f6 !important;
         }
       `}</style>
 
-      <div className="sign-root">
-        <div className="sign-vid">
+      <div className="min-h-screen bg-[#0a1628] text-white relative overflow-hidden">
+
+        {/* Dot grid */}
+        <div
+          className="fixed inset-0 pointer-events-none opacity-[0.07]"
+          style={{
+            backgroundImage: "radial-gradient(#3b82f6 0.8px,transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        {/* Glow blobs */}
+        <div className="fixed top-[-120px] left-[-80px] w-[500px] h-[500px] bg-[#3b82f6]/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="fixed bottom-[-100px] right-[-60px] w-[400px] h-[400px] bg-[#1e3a5f]/20 rounded-full blur-[100px] pointer-events-none" />
+
+        {/* Video background */}
+        <div className="fixed inset-0 z-0 overflow-hidden">
           <video
             ref={videoRef}
             autoPlay
@@ -297,44 +170,141 @@ export default function SignInPage() {
             loop
             playsInline
             preload="metadata"
+            className="w-full h-full object-cover opacity-[0.08]"
           >
             <source src="/video/pp.mp4" type="video/mp4" />
           </video>
         </div>
-        <div className="sign-overlay" />
 
-        <nav className="sign-nav">
-          <Link href="/" className="nav-logo">irNas</Link>
-        </nav>
-
-        <div className="sign-container">
-          <div className="sign-card clerk-custom">
-            <SignIn
-              appearance={{
-                elements: {
-                  rootBox: "cl-signIn-root",
-                  card: "cl-card",
-                  headerTitle: "cl-headerTitle",
-                  headerSubtitle: "cl-headerSubtitle",
-                  formButtonPrimary: "cl-formButtonPrimary",
-                  socialButtonsBlockButton: "cl-socialButtonsBlockButton",
-                  formFieldInput: "cl-formFieldInput",
-                  formFieldLabel: "cl-formFieldLabel",
-                  dividerLine: "cl-dividerLine",
-                  dividerText: "cl-dividerText",
-                  footerActionLink: "cl-footerActionLink",
-                  footer: "cl-footer",
-                  footerText: "cl-footerText",
-                  badge: "cl-badge",
-                  alert: "cl-alert",
-                  formFieldErrorText: "cl-formFieldErrorText",
-                  formField: "cl-formField",
-                },
-              }}
-              fallbackRedirectUrl="/"
+        {/* Navbar */}
+        <header className="relative z-20 flex items-center justify-between px-6 md:px-10 py-5 border-b border-[#1e3a5f] bg-[#0a1628]/80 backdrop-blur-sm">
+          <Link href="/" className="flex items-center gap-2 group">
+            <Image
+              src="/llogo.png"
+              alt="IRNAS"
+              width={120}
+              height={40}
+              className="object-contain h-9 w-auto transition-transform duration-300 group-hover:scale-105"
+              priority
             />
+            <span className="text-2xl font-light tracking-[0.2em] text-white group-hover:text-[#3b82f6] transition duration-300">
+              IRNAS
+            </span>
+            <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light hidden sm:block">
+              Fashion
+            </span>
+          </Link>
+
+          <Link
+            href="/client"
+            className="text-[11px] uppercase tracking-[0.2em] text-[#4a6a8a] hover:text-[#3b82f6] transition font-light"
+          >
+            ← Retour
+          </Link>
+        </header>
+
+        {/* Main */}
+        <main className="relative z-10 flex min-h-[calc(100vh-73px)]">
+
+          {/* LEFT — branding */}
+          <div className="hidden lg:flex flex-col justify-center px-16 xl:px-24 flex-1">
+            <p className="text-[10px] uppercase tracking-[0.4em] text-[#3b82f6] font-light mb-4">
+              Bienvenue
+            </p>
+            <h1 className="text-5xl xl:text-6xl font-light tracking-tight text-white leading-tight mb-6">
+              Connectez-vous<br />
+              à votre <span className="text-[#3b82f6]">espace</span>
+            </h1>
+            <p className="text-[#4a6a8a] font-light text-sm leading-relaxed max-w-sm">
+              Accédez à vos commandes, gérez vos favoris et profitez d'une expérience shopping personnalisée.
+            </p>
+
+            {/* Decorative items */}
+            <div className="mt-12 space-y-4 max-w-xs">
+              {[
+                { label: "Suivi de commandes en temps réel" },
+                { label: "Accès à vos favoris sauvegardés" },
+                { label: "Historique d'achats complet" },
+              ].map(({ label }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] flex-shrink-0" />
+                  <span className="text-[#8aabca] text-xs font-light tracking-wide">{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+
+          {/* Vertical divider */}
+          <div className="hidden lg:block w-px bg-[#1a2a44] self-stretch my-10" />
+
+          {/* RIGHT — form */}
+          <div className="flex flex-col justify-center items-center flex-1 px-6 py-12">
+            <div className="w-full max-w-[400px]">
+
+              {/* Card header */}
+              <div className="mb-8 text-center lg:text-left">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-[#4a6a8a] font-light mb-2">
+                  Connexion
+                </p>
+                <h2 className="text-2xl font-light text-white tracking-tight">
+                  Content de vous revoir
+                </h2>
+              </div>
+
+              {/* Clerk form */}
+              <div className="bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-7 hover:border-[#3b82f6]/20 transition clerk-wrap">
+                <SignIn
+                  appearance={{
+                    elements: {
+                      rootBox:                 "w-full",
+                      card:                    "cl-card",
+                      headerTitle:             "cl-headerTitle",
+                      headerSubtitle:          "cl-headerSubtitle",
+                      formButtonPrimary:       "cl-formButtonPrimary",
+                      socialButtonsBlockButton:"cl-socialButtonsBlockButton",
+                      formFieldInput:          "cl-formFieldInput",
+                      formFieldLabel:          "cl-formFieldLabel",
+                      dividerLine:             "cl-dividerLine",
+                      dividerText:             "cl-dividerText",
+                      footerActionLink:        "cl-footerActionLink",
+                      footer:                  "cl-footer",
+                      footerText:              "cl-footerText",
+                      alert:                   "cl-alert",
+                      formFieldErrorText:      "cl-formFieldErrorText",
+                    },
+                  }}
+                  fallbackRedirectUrl="/"
+                />
+              </div>
+
+              {/* Guest hint */}
+              <p className="text-center text-[10px] text-[#2a3f6a] tracking-widest font-light mt-6 uppercase">
+                Pas encore de compte ?{" "}
+                <Link href="/sign-up" className="text-[#3b82f6] hover:text-[#60a5fa] transition">
+                  S'inscrire
+                </Link>
+              </p>
+            </div>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="relative z-10 border-t border-[#1a2a44] py-6 px-6">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-light tracking-[0.2em] text-white">IRNAS</span>
+              <span className="text-[9px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
+            </div>
+            <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">
+              © 2026 IRNAS — Tous droits réservés
+            </p>
+            <div className="flex items-center gap-5 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
+              <Link href="#" className="hover:text-[#3b82f6] transition">Mentions</Link>
+              <Link href="#" className="hover:text-[#3b82f6] transition">Confidentialité</Link>
+              <Link href="#" className="hover:text-[#3b82f6] transition">Contact</Link>
+            </div>
+          </div>
+        </footer>
       </div>
     </>
   );
