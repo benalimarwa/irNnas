@@ -98,15 +98,6 @@ export default function ClientDashboard() {
             Espace client exclusif
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-[-0.03em] leading-tight mb-4">
-            Bonjour,{' '}
-            <span className="text-[#60a5fa]">
-              {user?.firstName || 'vous'}
-            </span>
-          </h1>
-          <p className="text-[#4a6a8a] font-light text-base sm:text-lg max-w-md">
-            Votre espace personnel IRNAS. Retrouvez vos commandes, vos favoris et bien plus.
-          </p>
         </div>
 
         {/* ── Stats ─────────────────────────────────────────────────────────── */}
