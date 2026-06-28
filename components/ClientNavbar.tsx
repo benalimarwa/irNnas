@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
@@ -22,10 +22,10 @@ const guestCart = {
 };
 
 const MENU_LINKS = [
-  { label: "Accueil",    href: "/client",          icon: Home,    auth: false },
-  { label: "Favoris",    href: "/client/favoris",  icon: Heart,   auth: false },
-  { label: "Collection", href: "/client/catalog",  icon: Package, auth: false },
-  { label: "Commandes",  href: "/client/orders",   icon: Receipt, auth: true  },
+  { label: "Accueil",    href: "/client",         icon: Home,    auth: false },
+  { label: "Favoris",    href: "/client/favoris", icon: Heart,   auth: false },
+  { label: "Collection", href: "/client/catalog", icon: Package, auth: false },
+  { label: "Commandes",  href: "/client/orders",  icon: Receipt, auth: true  },
 ];
 
 export default function Navbar() {
@@ -33,21 +33,38 @@ export default function Navbar() {
   const pathname = usePathname();
   const { isSignedIn, user } = useUser();
 
-  const [cartCount,      setCartCount]      = useState(0);
-  const [mobileOpen,     setMobileOpen]     = useState(false);
-  const [searchQuery,    setSearchQuery]    = useState("");
-  const [isDark,         setIsDark]         = useState(true);
-  const [profileOpen,    setProfileOpen]    = useState(false);
+  const [cartCount,   setCartCount]   = useState(0);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDark,      setIsDark]      = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [guestOrderId, setGuestOrderId] = useState<number | null>(null);
+
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Cart count
   useEffect(() => {
     if (isSignedIn) {
-      fetch("/api/cart").then(r => r.ok ? r.json() : null).then(d => {
-        if (d?.items) setCartCount(d.items.reduce((s: number, i: { quantity: number }) => s + i.quantity, 0));
-      }).catch(() => {});
+      fetch("/api/cart")
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d?.items) setCartCount(d.items.reduce((s: number, i: { quantity: number }) => s + i.quantity, 0));
+        })
+        .catch(() => {});
     } else {
       setCartCount(guestCart.count());
+    }
+  }, [isSignedIn]);
+
+  // Guest last order
+  useEffect(() => {
+    if (!isSignedIn) {
+      try {
+        const orders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
+        if (orders.length > 0) setGuestOrderId(orders[orders.length - 1]);
+      } catch { /* ignore */ }
+    } else {
+      setGuestOrderId(null);
     }
   }, [isSignedIn]);
 
@@ -78,9 +95,7 @@ export default function Navbar() {
 
   const isActive = (href: string) => pathname === href || pathname?.startsWith(href + "/");
 
-  const handleCartClick = () => {
-  router.push("/client/panier");
-};
+  const handleCartClick = () => router.push("/client/panier");
 
   const visibleLinks = MENU_LINKS.filter(l => !l.auth || isSignedIn);
 
@@ -133,6 +148,21 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
+
+            {/* Lien commande guest */}
+            {!isSignedIn && guestOrderId && (
+              <Link
+                href={`/client/orders/${guestOrderId}`}
+                className={`flex items-center gap-2 px-5 py-2 text-xs uppercase tracking-[0.25em] font-light border-b transition pb-0.5 ${
+                  isActive(`/client/orders/${guestOrderId}`)
+                    ? "text-[#3b82f6] border-[#3b82f6]/40"
+                    : "border-transparent text-[#60a5fa]/70 hover:text-[#3b82f6] hover:border-[#3b82f6]/40"
+                }`}
+              >
+                <Receipt className="w-4 h-4" />
+                Ma commande
+              </Link>
+            )}
           </nav>
 
           {/* Actions desktop */}
@@ -175,9 +205,8 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* Auth — desktop */}
+            {/* Auth desktop */}
             {isSignedIn ? (
-              /* Profil dropdown */
               <div className="relative hidden md:block" ref={profileRef}>
                 <button
                   onClick={() => setProfileOpen(v => !v)}
@@ -216,12 +245,22 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              /* Bouton connexion */
-              <SignInButton mode="modal">
-                <button className="hidden md:flex items-center gap-2 px-5 py-2 text-xs uppercase tracking-[0.15em] font-light rounded-full border border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/40 hover:text-[#3b82f6] transition">
-                  <LogIn className="w-4 h-4" /> Connexion
-                </button>
-              </SignInButton>
+              <div className="hidden md:flex items-center gap-2">
+                {/* Lien commande guest (desktop, compact) */}
+                {guestOrderId && (
+                  <Link
+                    href={`/client/orders/${guestOrderId}`}
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs uppercase tracking-[0.15em] font-light rounded-full border border-[#3b82f6]/30 text-[#60a5fa] hover:bg-[#3b82f6]/10 transition"
+                  >
+                    <Receipt className="w-3.5 h-3.5" /> Commande
+                  </Link>
+                )}
+                <SignInButton mode="modal">
+                  <button className="flex items-center gap-2 px-5 py-2 text-xs uppercase tracking-[0.15em] font-light rounded-full border border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/40 hover:text-[#3b82f6] transition">
+                    <LogIn className="w-4 h-4" /> Connexion
+                  </button>
+                </SignInButton>
+              </div>
             )}
           </div>
         </div>
@@ -230,10 +269,8 @@ export default function Navbar() {
       {/* ── DRAWER MOBILE ──────────────────────────────────────────────────── */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] flex lg:hidden">
-          {/* Overlay */}
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
 
-          {/* Panel */}
           <div className="relative w-[78%] max-w-xs bg-[#0a1628] border-r border-[#1e3a5f] flex flex-col h-full shadow-2xl">
 
             {/* Search */}
@@ -250,7 +287,7 @@ export default function Navbar() {
               />
             </div>
 
-            {/* User card (seulement si connecté) */}
+            {/* User card (connecté) */}
             {isSignedIn && (
               <Link
                 href="/client/profile"
@@ -263,6 +300,24 @@ export default function Navbar() {
                 <div>
                   <p className="font-medium text-sm text-white">{user?.firstName} {user?.lastName}</p>
                   <p className="text-[10px] text-[#4a6a8a]">Mon profil</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#4a6a8a] ml-auto" />
+              </Link>
+            )}
+
+            {/* Guest order card (guest avec commande) */}
+            {!isSignedIn && guestOrderId && (
+              <Link
+                href={`/client/orders/${guestOrderId}`}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 mx-4 mt-4 p-4 bg-[#3b82f6]/5 border border-[#3b82f6]/20 rounded-2xl hover:border-[#3b82f6]/40 transition"
+              >
+                <div className="w-10 h-10 bg-[#3b82f6]/10 rounded-full flex items-center justify-center">
+                  <Receipt className="w-5 h-5 text-[#3b82f6]" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm text-white">Ma commande</p>
+                  <p className="text-[10px] text-[#4a6a8a]">#{String(guestOrderId).padStart(8, "0")}</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-[#4a6a8a] ml-auto" />
               </Link>
@@ -290,7 +345,6 @@ export default function Navbar() {
 
             {/* Bottom actions */}
             <div className="p-5 border-t border-[#1e3a5f] space-y-3">
-              {/* Theme */}
               <div className="flex items-center justify-between">
                 <span className="text-xs uppercase tracking-[0.15em] text-[#4a6a8a]">Thème</span>
                 <button onClick={toggleDark} className="p-2 text-white/70 hover:text-[#3b82f6] transition">
@@ -298,7 +352,6 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* Auth */}
               {isSignedIn ? (
                 <SignOutButton>
                   <button
@@ -319,7 +372,6 @@ export default function Navbar() {
                 </SignInButton>
               )}
 
-              {/* Close */}
               <button
                 onClick={() => setMobileOpen(false)}
                 className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#4a6a8a] hover:text-white transition"
