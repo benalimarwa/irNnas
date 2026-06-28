@@ -1,9 +1,9 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
-import { Sparkles, ShoppingBag, Heart, Package, Award } from 'lucide-react';
+import { Sparkles, ShoppingBag, Heart, Package, Award, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type RecentOrder = {
   id: number;
@@ -22,7 +22,6 @@ type DashboardData = {
 
 export default function ClientDashboard() {
   const { user } = useUser();
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   const [data, setData] = useState<DashboardData>({
     ordersCount: 0,
@@ -32,13 +31,6 @@ export default function ClientDashboard() {
     recentOrders: [],
   });
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) {
-      video.play().catch(() => {});
-    }
-  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -58,189 +50,178 @@ export default function ClientDashboard() {
   }, []);
 
   const quickActions = [
-    { title: 'Style Finder', description: 'Personnalisez votre style avec notre IA', icon: Sparkles, href: '/client/quiz', tag: 'IA', accent: 'gold' },
-    { title: 'Collection', description: 'Pièces exclusives & éditions limitées', icon: ShoppingBag, href: '/catalog', tag: 'SS 25', accent: 'coral' },
-    { title: 'Wishlist', description: 'Vos pièces sauvegardées', icon: Heart, href: '/favorites', tag: 'Favoris', accent: 'rose' },
-    { title: 'Commandes', description: "Suivi & historique d'achats", icon: Package, href: '/orders', tag: 'Suivi', accent: 'teal' },
+    { title: 'Style Finder', description: 'Personnalisez votre style avec notre IA', icon: Sparkles, href: '/client/quiz', tag: 'IA', color: '#3b82f6' },
+    { title: 'Collection', description: 'Pièces exclusives & éditions limitées', icon: ShoppingBag, href: '/catalog', tag: 'SS 25', color: '#60a5fa' },
+    { title: 'Wishlist', description: 'Vos pièces sauvegardées', icon: Heart, href: '/favorites', tag: 'Favoris', color: '#818cf8' },
+    { title: 'Commandes', description: "Suivi & historique d'achats", icon: Package, href: '/orders', tag: 'Suivi', color: '#38bdf8' },
   ];
 
-  return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=Instrument+Sans:wght@300;400;500;600;700&display=swap');
-
-        .glass-card {
-          background: rgba(17, 17, 17, 0.85);
-          backdrop-filter: blur(24px);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 1.5rem;
-        }
-
-        .hero-title {
-          font-family: 'Syne', sans-serif;
-          font-size: clamp(2.4rem, 8vw, 4.8rem);
-          font-weight: 800;
-          line-height: 1.05;
-          letter-spacing: -0.04em;
-        }
-
-        .gradient-text {
-          background: linear-gradient(135deg, #D4AF37, #FF6B6B, #4ECDC4);
-          background-size: 200% auto;
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-          animation: shimmer 6s linear infinite;
-        }
-
-        @keyframes shimmer {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-
-        .dashboard-container {
-          max-width: 1280px;
-          margin: 0 auto;
-          padding: 2rem 1rem 4rem;
-          width: 100%;
-          position: relative;
-          z-index: 10;
-        }
-
-        .action-card {
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .action-card:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 25px 50px -12px rgba(212, 175, 55, 0.25);
-        }
-
-        @media (max-width: 768px) {
-          .dashboard-container { padding: 1.5rem 1rem 3rem; }
-          .glass-card { padding: 2rem 1.5rem; border-radius: 1.25rem; }
-          .hero-title { font-size: clamp(2rem, 9vw, 3.5rem); }
-          .stat-card { padding: 1.75rem !important; }
-        }
-      `}</style>
-
-      {/* VIDÉO BACKGROUND */}
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 0,
-        overflow: "hidden",
-        pointerEvents: "none",
-      }}>
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            opacity: 0.25,
-            filter: "brightness(0.65) contrast(1.1)",
-          }}
-          onError={(e) => { e.currentTarget.style.display = "none"; }}
-        >
-          <source src="/video/pp.mp4" type="video/mp4" />
-        </video>
-      </div>
-
-      {/* OVERLAY */}
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        background: "radial-gradient(circle at 30% 20%, rgba(212,175,55,0.12), rgba(0,0,0,0.88))",
-        zIndex: 1,
-        pointerEvents: "none",
-      }} />
-
-      {/* Grille de points dorés */}
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 2,
-        opacity: 0.08,
-        backgroundImage: "radial-gradient(#D4AF37 0.8px, transparent 1px)",
-        backgroundSize: "60px 60px",
-        pointerEvents: "none",
-      }} />
-
-      <div className="dashboard-container">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
-
-          {/* Hero Greeting */}
-          <div className="glass-card" style={{ padding: '3rem 1.75rem', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'relative', zIndex: 2 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1.25rem', borderRadius: '9999px', marginBottom: '1.5rem' }}>
-                <Sparkles size={16} color="#D4AF37" />
-                ESPACE CLIENT EXCLUSIF
-              </div>
-
-              
-
-             
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
-            {[
-              { icon: <Package color="#D4AF37" size={28} />, bg: 'rgba(212,175,55,0.1)', value: data.ordersCount, label: 'Commandes passées' },
-              { icon: <Heart color="#FF85A1" size={28} />, bg: 'rgba(255,133,161,0.1)', value: data.wishlistCount, label: 'Pièces sauvegardées' },
-              { icon: <Award color="#4ECDC4" size={28} />, bg: 'rgba(78,205,196,0.1)', value: data.loyaltyPoints, label: 'Points de fidélité' },
-            ].map((stat, i) => (
-              <div key={i} className="glass-card stat-card" style={{ padding: '2rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                  <div style={{ width: '3.5rem', height: '3.5rem', background: stat.bg, borderRadius: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {stat.icon}
-                  </div>
-                </div>
-                <div style={{ fontSize: '3rem', fontWeight: 700, letterSpacing: '-0.05em', marginBottom: '0.5rem' }}>
-                  {loading ? '—' : stat.value}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1rem' }}>{stat.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick Actions */}
-          <div>
-            <h2 style={{ fontSize: '1.75rem', marginBottom: '2rem' }}>Accès Rapide</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-              {quickActions.map((action, i) => {
-                const accentMap: Record<string, string> = { gold: '#D4AF37', coral: '#FF6B6B', rose: '#FF85A1', teal: '#4ECDC4' };
-                const color = accentMap[action.accent] ?? '#D4AF37';
-                return (
-                  <Link
-                    key={i}
-                    href={action.href}
-                    className="action-card glass-card"
-                    style={{ padding: '2.25rem', border: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none', color: '#F8F6F2', display: 'block' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                      <div style={{ width: '4rem', height: '4rem', borderRadius: '0.75rem', background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <action.icon size={32} color={color} />
-                      </div>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600, letterSpacing: '1px', padding: '0.35rem 1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '9999px' }}>
-                        {action.tag}
-                      </span>
-                    </div>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.75rem' }}>{action.title}</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{action.description}</p>
-                  </Link>
-                );
-              })}
-            </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
+        <div className="relative">
+          <div className="w-20 h-20 border-2 border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center text-[#3b82f6] text-[10px] font-light tracking-[0.3em] animate-pulse">
+            IRNAS
           </div>
         </div>
       </div>
-    </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a1628] text-white">
+
+      {/* Dot grid background */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-[0.07]"
+        style={{
+          backgroundImage: 'radial-gradient(#3b82f6 0.8px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }}
+      />
+
+      {/* Subtle radial glow */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at 20% 10%, rgba(59,130,246,0.08) 0%, transparent 60%)',
+        }}
+      />
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-28 pb-20 relative z-10">
+
+        {/* ── Hero ──────────────────────────────────────────────────────────── */}
+        <div className="mb-14">
+          <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-[#60a5fa]/60 font-light mb-6 border border-[#1e3a5f] px-4 py-2 rounded-full">
+            <Sparkles size={12} className="text-[#3b82f6]" />
+            Espace client exclusif
+          </div>
+
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-[-0.03em] leading-tight mb-4">
+            Bonjour,{' '}
+            <span className="text-[#60a5fa]">
+              {user?.firstName || 'vous'}
+            </span>
+          </h1>
+          <p className="text-[#4a6a8a] font-light text-base sm:text-lg max-w-md">
+            Votre espace personnel IRNAS. Retrouvez vos commandes, vos favoris et bien plus.
+          </p>
+        </div>
+
+        {/* ── Stats ─────────────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-14">
+          {[
+            { icon: Package, label: 'Commandes passées', value: data.ordersCount, color: '#3b82f6' },
+            { icon: Heart,   label: 'Pièces sauvegardées', value: data.wishlistCount, color: '#818cf8' },
+            { icon: Award,   label: 'Points de fidélité',  value: data.loyaltyPoints, color: '#38bdf8' },
+          ].map((stat, i) => (
+            <div
+              key={i}
+              className="bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-6 sm:p-8 transition-all duration-500 hover:border-[#3b82f6]/40 hover:shadow-2xl hover:shadow-[#3b82f6]/5"
+            >
+              <div
+                className="w-11 h-11 rounded-2xl flex items-center justify-center mb-6"
+                style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}30` }}
+              >
+                <stat.icon size={20} style={{ color: stat.color }} />
+              </div>
+              <div className="text-4xl font-light tracking-tight mb-1" style={{ color: stat.color }}>
+                {stat.value}
+              </div>
+              <div className="text-[#4a6a8a] text-xs uppercase tracking-widest font-light">
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Divider ───────────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-4 mb-10">
+          <span className="text-[10px] uppercase tracking-[0.25em] text-[#4a6a8a] font-light">Accès rapide</span>
+          <div className="flex-1 border-t border-[#1e3a5f]" />
+        </div>
+
+        {/* ── Quick Actions ─────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {quickActions.map((action, i) => (
+            <Link
+              key={i}
+              href={action.href}
+              className="group bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-6 sm:p-7 transition-all duration-500 hover:border-[#3b82f6]/40 hover:shadow-2xl hover:shadow-[#3b82f6]/5 block"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <div className="flex items-start justify-between mb-8">
+                <div
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center"
+                  style={{ background: `${action.color}18`, border: `1px solid ${action.color}30` }}
+                >
+                  <action.icon size={20} style={{ color: action.color }} />
+                </div>
+                <span className="text-[10px] uppercase tracking-[0.15em] font-light text-[#4a6a8a] border border-[#1e3a5f] px-3 py-1 rounded-full">
+                  {action.tag}
+                </span>
+              </div>
+
+              <h3 className="text-base font-light text-white mb-2 tracking-wide">
+                {action.title}
+              </h3>
+              <p className="text-[#4a6a8a] text-xs font-light leading-relaxed mb-6">
+                {action.description}
+              </p>
+
+              <div
+                className="flex items-center gap-1 text-[10px] uppercase tracking-[0.15em] font-light transition-colors"
+                style={{ color: action.color }}
+              >
+                Accéder
+                <ChevronRight
+                  size={12}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* ── Total spent teaser ────────────────────────────────────────────── */}
+        {data.totalSpent > 0 && (
+          <div className="mt-6 bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-[#4a6a8a] font-light mb-1">
+                Total de vos achats
+              </p>
+              <p className="text-3xl font-light tracking-tight text-white">
+                {data.totalSpent.toFixed(2)}{' '}
+                <span className="text-base text-[#4a6a8a]">TND</span>
+              </p>
+            </div>
+            <Link
+              href="/orders"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#3b82f6] text-[#3b82f6] text-xs uppercase tracking-[0.15em] font-light hover:bg-[#3b82f6]/10 transition self-start sm:self-auto"
+            >
+              Voir les commandes
+              <ChevronRight size={14} />
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* ── Footer ────────────────────────────────────────────────────────── */}
+      <footer className="border-t border-[#1a2a44] py-10 px-6 mt-10">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-light tracking-[0.2em] text-white">IRNAS</span>
+            <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
+          </div>
+          <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2026 IRNAS — Tous droits réservés</p>
+          <div className="flex items-center gap-6 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
+            <Link href="#" className="hover:text-[#3b82f6] transition">Mentions</Link>
+            <Link href="#" className="hover:text-[#3b82f6] transition">Confidentialité</Link>
+            <Link href="#" className="hover:text-[#3b82f6] transition">Contact</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
