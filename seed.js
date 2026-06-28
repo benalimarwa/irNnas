@@ -17,7 +17,6 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Début du seeding...');
 
-  // Nettoyage dans l'ordre (respecter les clés étrangères)
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.cartItem.deleteMany();
@@ -26,8 +25,6 @@ async function main() {
   await prisma.user.deleteMany();
   console.log('🧹 Base nettoyée');
 
-  // ⚠️ Remplace les clerkId ci-dessous par les vrais ID Clerk
-  // (visibles dans le dashboard Clerk > Users > cliquer sur l'utilisateur)
   const users = [
     {
       clerkId: "user_REMPLACER_ZMORDA",
@@ -45,8 +42,11 @@ async function main() {
     },
   ];
 
+  // ✅ On récupère les users créés pour avoir leur vrai id (cuid)
+  const createdUsers = [];
   for (const user of users) {
-    await prisma.user.create({ data: user });
+    const u = await prisma.user.create({ data: user });
+    createdUsers.push(u);
   }
   console.log('✅ Users créés');
 
@@ -213,8 +213,9 @@ async function main() {
   }
   console.log('✅ Produits créés');
 
-  const adminId = users[0].clerkId;
-  const clientId = users[1].clerkId;
+  // ✅ On utilise le vrai id (cuid) et non le clerkId
+  const adminId  = createdUsers[0].id;
+  const clientId = createdUsers[1].id;
 
   const orders = [
     {

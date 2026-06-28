@@ -30,7 +30,7 @@ type ClerkUser = {
 };
 
 type DbUser = {
-  id:        number;
+  id:        string;  // ← était number, changé en string
   email:     string;
   firstName: string | null;
   lastName:  string | null;

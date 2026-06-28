@@ -2,9 +2,9 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import ProfileClient from "@/components/ClientProfileEditForm";  // ← import depuis components/
+import ProfileClient from "@/components/ClientProfileEditForm";
 
-export default async function ProfilePage() {   // ← PAS de props ici
+export default async function ProfilePage() {
   const clerkUser = await currentUser();
   if (!clerkUser) redirect("/sign-in");
 
@@ -43,7 +43,7 @@ export default async function ProfilePage() {   // ← PAS de props ici
           totalAmount: o.total,
           createdAt:   o.createdAt.toISOString(),
           items: o.items.map((item) => ({
-            id:       item.id,
+            id:       item.id.toString(), // ← corrigé
             quantity: item.quantity,
             product:  { name: item.product.name },
           })),
