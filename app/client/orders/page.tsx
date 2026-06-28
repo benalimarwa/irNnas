@@ -102,16 +102,7 @@ export default function MyOrdersPage() {
           Retour à l'accueil
         </Link>
 
-        {/* ── Title ──────────────────────────────────────────────────────────── */}
-        <div className="mb-10">
-          <h1 className="text-4xl md:text-5xl font-light tracking-tight">
-            Mes <span className="text-[#3b82f6]">Commandes</span>
-          </h1>
-          <p className="mt-2 text-sm text-[#4a6a8a] tracking-widest uppercase font-light">
-            {orders.length} commande{orders.length !== 1 ? "s" : ""} au total
-          </p>
-        </div>
-
+        
         {/* ── Filtres ────────────────────────────────────────────────────────── */}
         <div className="flex flex-wrap gap-2 sm:gap-3 mb-12">
           <button
