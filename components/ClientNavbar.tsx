@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import {
   ShoppingCart, Heart, ChevronDown, X, ChevronRight,
   Home, Package, Receipt, LogOut, LogIn, Sun, Moon, Menu,
@@ -28,16 +29,51 @@ const MENU_LINKS = [
   { label: "Commandes",  href: "/client/orders",  icon: Receipt, auth: true  },
 ];
 
+const CLERK_APPEARANCE = {
+  baseTheme: dark,
+  variables: {
+    colorPrimary:         "#3b82f6",
+    colorBackground:      "#0f1f33",
+    colorInputBackground: "#0a1628",
+    colorInputText:       "#ffffff",
+    colorText:            "#ffffff",
+    colorTextSecondary:   "#4a6a8a",
+    colorNeutral:         "#1e3a5f",
+    borderRadius:         "16px",
+    fontFamily:           "inherit",
+  },
+  elements: {
+    card:                     "!bg-[#0f1f33] !border !border-[#1a2a44] !rounded-3xl !shadow-2xl",
+    headerTitle:              "!text-white !font-light !tracking-wide",
+    headerSubtitle:           "!text-[#4a6a8a]",
+    formFieldInput:           "!bg-[#0a1628] !border-[#1e3a5f] !text-white !rounded-2xl focus:!border-[#3b82f6]/50",
+    formFieldLabel:           "!text-[#4a6a8a] !text-xs !uppercase !tracking-widest !font-light",
+    formButtonPrimary:        "!bg-[#3b82f6] hover:!bg-[#2563eb] !rounded-full !uppercase !tracking-widest !text-xs !font-light",
+    socialButtonsBlockButton: "!bg-[#0f1f33] !border-[#1e3a5f] !text-[#8aabca] hover:!border-[#3b82f6]/40 !rounded-2xl",
+    dividerLine:              "!bg-[#1e3a5f]",
+    dividerText:              "!text-[#4a6a8a] !bg-[#0f1f33]",
+    footerActionLink:         "!text-[#3b82f6] hover:!text-[#60a5fa]",
+    footer:                   "!bg-[#0f1f33] !border-t !border-[#1a2a44]",
+    footerText:               "!text-[#2a3f6a]",
+    formFieldErrorText:       "!text-red-400",
+    identityPreviewText:      "!text-[#8aabca]",
+    identityPreviewEditButton:"!text-[#3b82f6]",
+    formResendCodeLink:       "!text-[#3b82f6]",
+    otpCodeFieldInput:        "!bg-[#0a1628] !border-[#1e3a5f] !text-white",
+    alternativeMethodsBlockButton: "!text-[#3b82f6] !border-[#1e3a5f]",
+  },
+} as const;
+
 export default function Navbar() {
   const router   = useRouter();
   const pathname = usePathname();
   const { isSignedIn, user } = useUser();
 
-  const [cartCount,   setCartCount]   = useState(0);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isDark,      setIsDark]      = useState(true);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [cartCount,    setCartCount]    = useState(0);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [searchQuery,  setSearchQuery]  = useState("");
+  const [isDark,       setIsDark]       = useState(true);
+  const [profileOpen,  setProfileOpen]  = useState(false);
   const [guestOrderId, setGuestOrderId] = useState<number | null>(null);
 
   const profileRef = useRef<HTMLDivElement>(null);
@@ -94,9 +130,7 @@ export default function Navbar() {
   }, []);
 
   const isActive = (href: string) => pathname === href || pathname?.startsWith(href + "/");
-
   const handleCartClick = () => router.push("/client/panier");
-
   const visibleLinks = MENU_LINKS.filter(l => !l.auth || isSignedIn);
 
   return (
@@ -141,7 +175,7 @@ export default function Navbar() {
                 className={`flex items-center gap-2 px-5 py-2 text-xs uppercase tracking-[0.25em] font-light border-b transition pb-0.5 ${
                   isActive(href)
                     ? "text-[#3b82f6] border-[#3b82f6]/40"
-                    : "border-transparent hover:text-[#3b82f6] hover:border-[#3b82f6]/40"
+                    : "border-transparent text-[#8aabca] hover:text-[#3b82f6] hover:border-[#3b82f6]/40"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -246,7 +280,6 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="hidden md:flex items-center gap-2">
-                {/* Lien commande guest (desktop, compact) */}
                 {guestOrderId && (
                   <Link
                     href={`/client/orders/${guestOrderId}`}
@@ -255,7 +288,7 @@ export default function Navbar() {
                     <Receipt className="w-3.5 h-3.5" /> Commande
                   </Link>
                 )}
-                <SignInButton mode="modal">
+                <SignInButton mode="modal" appearance={CLERK_APPEARANCE}>
                   <button className="flex items-center gap-2 px-5 py-2 text-xs uppercase tracking-[0.15em] font-light rounded-full border border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/40 hover:text-[#3b82f6] transition">
                     <LogIn className="w-4 h-4" /> Connexion
                   </button>
@@ -305,7 +338,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Guest order card (guest avec commande) */}
+            {/* Guest order card */}
             {!isSignedIn && guestOrderId && (
               <Link
                 href={`/client/orders/${guestOrderId}`}
@@ -362,7 +395,7 @@ export default function Navbar() {
                   </button>
                 </SignOutButton>
               ) : (
-                <SignInButton mode="modal">
+                <SignInButton mode="modal" appearance={CLERK_APPEARANCE}>
                   <button
                     onClick={() => setMobileOpen(false)}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-xs uppercase tracking-[0.15em] border border-[#1e3a5f] text-[#8aabca] hover:border-[#3b82f6]/40 hover:text-[#3b82f6] transition"
