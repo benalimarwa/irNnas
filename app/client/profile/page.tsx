@@ -1,9 +1,10 @@
+// app/(client)/profile/page.tsx
 import { currentUser } from "@clerk/nextjs/server";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import ProfileClient from "../../../components/ClientProfileEditForm";
+import ProfileClient from "@/components/ClientProfileEditForm";  // ← import depuis components/
 
-export default async function ProfilePage() {
+export default async function ProfilePage() {   // ← PAS de props ici
   const clerkUser = await currentUser();
   if (!clerkUser) redirect("/sign-in");
 
@@ -14,11 +15,7 @@ export default async function ProfilePage() {
         orderBy: { createdAt: "desc" },
         take: 10,
         include: {
-          items: {
-            include: {
-              product: { select: { name: true } },
-            },
-          },
+          items: { include: { product: { select: { name: true } } } },
         },
       },
     },
@@ -41,7 +38,7 @@ export default async function ProfilePage() {
         role:      dbUser.role,
         createdAt: dbUser.createdAt.toISOString(),
         orders: dbUser.orders.map((o) => ({
-          id:          o.id.toString(), // ✅ Int → string
+          id:          o.id.toString(),
           status:      o.status,
           totalAmount: o.total,
           createdAt:   o.createdAt.toISOString(),
