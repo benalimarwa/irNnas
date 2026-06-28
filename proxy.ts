@@ -1,4 +1,3 @@
-// middleware.ts
 import { clerkMiddleware, createRouteMatcher, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
@@ -6,60 +5,63 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/catalogue(.*)",
   "/api/products(.*)",
   "/api/webhooks(.*)",
-  "/api/orders(.*)",        // ← guests peuvent passer commande
-  "/client/panier(.*)",     // ← panier accessible sans compte
-  "/client/checkout(.*)",   // ← checkout accessible sans compte
-  "/client/orders/(.*)",    // ← confirmation de commande accessible sans compte
+  "/api/orders(.*)",
+  "/client(.*)",        // ← TOUT /client est public
+  "/catalogue(.*)",
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
-const isClientOnlyRoute = createRouteMatcher([
-  "/client/profile(.*)",    // ← seulement ces pages nécessitent une connexion
-  "/client/favorites(.*)",
+
+// Pages qui nécessitent vraiment une connexion Clerk
+const isAuthRequired = createRouteMatcher([
+  "/client/profile(.*)",
+  "/client/orders(.*)",  // ← seulement si vous voulez protéger la liste des commandes
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims, redirectToSignIn } = await auth();
 
-  if (!userId) {
-    if (isPublicRoute(req)) return NextResponse.next();
-    return redirectToSignIn({ returnBackUrl: req.url });
+  // Routes publiques → toujours laisser passer
+  if (isPublicRoute(req)) {
+    // Redirect root selon le rôle si connecté
+    if (req.nextUrl.pathname === "/" && userId) {
+      const rawRole = (sessionClaims?.public_metadata as { role?: string })?.role?.toUpperCase();
+      let userRole = rawRole;
+      if (!userRole) {
+        try {
+          const client = await clerkClient();
+          const clerkUser = await client.users.getUser(userId);
+          userRole = (clerkUser.publicMetadata as { role?: string })?.role?.toUpperCase();
+        } catch { /* ignore */ }
+      }
+      userRole = userRole ?? "CLIENT";
+      const redirectPath = userRole === "ADMIN" ? "/admin" : "/client";
+      return NextResponse.redirect(new URL(redirectPath, req.url));
+    }
+    return NextResponse.next();
   }
 
-  const rawRoleFromClaims = (sessionClaims?.public_metadata as { role?: string })?.role;
-  let userRole = rawRoleFromClaims?.toUpperCase();
+  // Routes admin
+  if (isAdminRoute(req)) {
+    if (!userId) return redirectToSignIn({ returnBackUrl: req.url });
 
-  if (!userRole) {
+    let userRole: string | undefined;
     try {
       const client = await clerkClient();
       const clerkUser = await client.users.getUser(userId);
       userRole = (clerkUser.publicMetadata as { role?: string })?.role?.toUpperCase();
-    } catch (err) {
-      console.error("❌ clerkClient error in middleware:", err);
+    } catch { /* ignore */ }
+
+    if (userRole !== "ADMIN") {
+      return NextResponse.redirect(new URL("/client", req.url));
     }
+    return NextResponse.next();
   }
 
-  userRole = userRole ?? "CLIENT";
-
-  console.log(`🔐 User: ${userId} | Role: ${userRole} | Path: ${req.nextUrl.pathname}`);
-
-  if (req.nextUrl.pathname === "/") {
-    const redirectPath = userRole === "ADMIN" ? "/admin" : "/client";
-    return NextResponse.redirect(new URL(redirectPath, req.url));
-  }
-
-  if (isPublicRoute(req)) return NextResponse.next();
-
-  if (isAdminRoute(req) && userRole !== "ADMIN") {
-    return NextResponse.redirect(new URL("/client", req.url));
-  }
-
-  if (isClientOnlyRoute(req) && userRole === "ADMIN") {
-    return NextResponse.redirect(new URL("/admin", req.url));
-  }
+  // Autres routes protégées
+  if (!userId) return redirectToSignIn({ returnBackUrl: req.url });
 
   return NextResponse.next();
 });
