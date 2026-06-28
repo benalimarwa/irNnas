@@ -296,7 +296,7 @@ export default function SignInPage() {
               <span className="text-[9px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
             </div>
             <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">
-              © 2026 IRNAS — Tous droits réservés
+              © 2020 IRNAS — Tous droits réservés
             </p>
             <div className="flex items-center gap-5 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
               <Link href="#" className="hover:text-[#3b82f6] transition">Mentions</Link>
