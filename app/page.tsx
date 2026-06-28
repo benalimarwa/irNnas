@@ -200,11 +200,8 @@ export default function HomePage() {
     };
 
     const handleBuyNow = async (productId: number) => {
-        if (!isSignedIn) {
-            guestCart.add(productId, 1);
-            router.push("/sign-in?redirect_url=/client/panier");
-            return;
-        }
+        guestCart.add(productId, 1);
+  router.push("/client/checkout");
         try {
             const res = await fetch("/api/orders", {
                 method: "POST",
@@ -226,13 +223,10 @@ export default function HomePage() {
         }
     };
 
-    const handleCartClick = () => {
-        if (!isSignedIn) {
-            router.push("/sign-in?redirect_url=/client/panier");
-        } else {
-            router.push("/client/panier");
-        }
-    };
+    // ✅ Toujours vers /client/panier sans passer par sign-in
+const handleCartClick = () => {
+  router.push("/client/panier");
+};
 
     const toggleFavorite = (productId: number) => {
         setFavorites(prev =>
