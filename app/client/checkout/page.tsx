@@ -219,14 +219,15 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
 
-      if (res.ok) {
+      
+  if (res.ok) {
   if (isGuest) {
     guestCart.clear();
-    // Sauvegarder l'orderId pour le guest
     const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
     guestOrders.push(data.orderId);
     localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
   }
+  showAlert("success", "Commande confirmée avec succès !");  // ← manquait
   setTimeout(() => router.push(`/client/orders/${data.orderId}`), 1500);
 }else {
         showAlert("error", data.error || "Erreur lors de la commande");
