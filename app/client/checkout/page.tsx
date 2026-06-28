@@ -3,20 +3,34 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import {
   ArrowLeft, ShoppingBag, Truck, Store, CheckCircle,
-  XCircle, AlertCircle, X, User, CreditCard, ChevronDown,
+  XCircle, AlertCircle, X, User, CreditCard, ChevronDown, Mail,
 } from "lucide-react";
 import Navbar from "@/components/ClientNavbar";
 
+/* ─── Types ─────────────────────────────────────────────────── */
 type CartItem = {
   id: number;
   quantity: number;
   size: string | null;
   product: { id: number; name: string; price: number; images: string[]; category: string };
 };
+type GuestItem = { productId: number; quantity: number; size?: string | null };
 type DeliveryMethod = "PICKUP" | "DELIVERY";
 
+/* ─── Guest cart (localStorage) ─────────────────────────────── */
+const GUEST_KEY = "irnas_guest_cart";
+const guestCart = {
+  get(): GuestItem[] {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem(GUEST_KEY) || "[]"); } catch { return []; }
+  },
+  clear() { localStorage.removeItem(GUEST_KEY); },
+};
+
+/* ─── Constants ─────────────────────────────────────────────── */
 const DELIVERY_FEE = 7;
 
 const COUNTRIES = [
@@ -27,76 +41,69 @@ const COUNTRIES = [
   { code: "EG", name: "Égypte",              dial: "+20",  flag: "🇪🇬" },
   { code: "SA", name: "Arabie Saoudite",     dial: "+966", flag: "🇸🇦" },
   { code: "AE", name: "Émirats arabes unis", dial: "+971", flag: "🇦🇪" },
-  { code: "QA", name: "Qatar",               dial: "+974", flag: "🇶🇦" },
   { code: "FR", name: "France",              dial: "+33",  flag: "🇫🇷" },
   { code: "BE", name: "Belgique",            dial: "+32",  flag: "🇧🇪" },
-  { code: "CH", name: "Suisse",              dial: "+41",  flag: "🇨🇭" },
   { code: "DE", name: "Allemagne",           dial: "+49",  flag: "🇩🇪" },
   { code: "GB", name: "Royaume-Uni",         dial: "+44",  flag: "🇬🇧" },
   { code: "IT", name: "Italie",              dial: "+39",  flag: "🇮🇹" },
-  { code: "ES", name: "Espagne",             dial: "+34",  flag: "🇪🇸" },
   { code: "US", name: "États-Unis",          dial: "+1",   flag: "🇺🇸" },
-  { code: "CA", name: "Canada",              dial: "+1",   flag: "🇨🇦" },
 ];
 
 const TUNISIA_DATA: Record<string, string[]> = {
-  "Ariana":   ["Ariana Ville","Ettadhamen","Ghazela","Kalâat el-Andalous","Mnihla","Raoued","Sidi Thabet"],
-  "Ben Arous":["Ben Arous","Bou Mhel el-Bassatine","El Mourouj","Ezzahra","Fouchana","Hammam Chott","Hammam Lif","Mégrine","Mornag","Radès"],
-  "Bizerte":  ["Bizerte Nord","Bizerte Sud","El Alia","Ghar El Melh","Mateur","Menzel Bourguiba","Menzel Jemil","Ras Jebel","Sejnane"],
-  "Gabès":    ["El Hamma","Gabès Médina","Gabès Ouest","Gabès Sud","Ghannouch","Mareth","Matmata","Métouia"],
-  "Gafsa":    ["El Guettar","El Ksar","Gafsa Nord","Gafsa Sud","Mdhilla","Métlaoui","Redeyef","Sidi Aïch"],
-  "Jendouba": ["Aïn Draham","Bou Salem","Fernana","Ghardimaou","Jendouba","Jendouba Nord","Tabarka"],
-  "Kairouan": ["Bouhajla","El Alaa","Haffouz","Kairouan Nord","Kairouan Sud","Nasrallah","Sbikha"],
-  "Kasserine":["Fériana","Foussana","Kasserine Nord","Kasserine Sud","Sbeitla","Sbiba","Thala"],
-  "Kébili":   ["Douz Nord","Douz Sud","El Faouar","Kébili Nord","Kébili Sud"],
-  "Le Kef":   ["Dahmani","El Ksour","Jerissa","Le Kef Est","Le Kef Ouest","Nebeur","Sers","Tajerouine"],
-  "Mahdia":   ["Chebba","El Jem","Ksour Essef","Mahdia","Melloulèche","Sidi Alouane"],
-  "Manouba":  ["Borj El Amri","Djedeida","Douar Hicher","Manouba","Mornaguia","Oued Ellil","Tébourba"],
-  "Médenine": ["Ben Gardane","Beni Khedache","Djerba — Ajim","Djerba — Houmt Souk","Djerba — Midoun","Médenine Nord","Médenine Sud","Zarzis"],
-  "Monastir": ["Bekalta","Jammel","Ksar Hellal","Moknine","Monastir","Sahline","Téboulba","Zeramdine"],
-  "Nabeul":   ["El Haouaria","Grombalia","Hammamet","Kelibia","Korba","Menzel Temime","Nabeul","Soliman"],
-  "Sfax":     ["Agareb","El Amra","El Hencha","Kerkennah","Mahres","Sakiet Eddaier","Sakiet Ezzit","Sfax Est","Sfax Médina","Sfax Ouest","Sfax Sud"],
-  "Sidi Bouzid":["Bir El Hafey","Jilma","Maknassy","Mezzouna","Regueb","Sidi Bouzid Est","Sidi Bouzid Ouest"],
-  "Siliana":  ["Bargou","Bouarada","El Krib","Gaâfour","Makthar","Rouhia","Siliana Nord","Siliana Sud"],
-  "Sousse":   ["Akouda","Bouficha","Enfidha","Hammam Sousse","Kalâa Kebira","Msaken","Sidi Bou Ali","Sousse Jawhara","Sousse Khzama","Sousse Médina","Sousse Riadh"],
-  "Tataouine":["Bir Lahmar","Dehiba","Ghomrassen","Remada","Tataouine Nord","Tataouine Sud"],
-  "Tozeur":   ["Degache","Nefta","Tozeur"],
-  "Tunis":    ["Bab Bhar","Bab Souika","Carthage","El Kram","El Menzah","El Omrane","El Ouardia","La Goulette","La Marsa","Le Bardo","Séjoumi","Sidi Bou Saïd","Tunis Médina"],
-  "Zaghouan": ["El Fahs","En-Nadhour","Zaghouan","Zriba"],
-  "Béja":     ["Amdoun","Béja Nord","Béja Sud","Goubellat","Medjez el-Bab","Nefza","Téboursouk","Testour"],
+  "Ariana":    ["Ariana Ville","Ettadhamen","Ghazela","Kalâat el-Andalous","Mnihla","Raoued","Sidi Thabet"],
+  "Ben Arous": ["Ben Arous","Bou Mhel el-Bassatine","El Mourouj","Ezzahra","Fouchana","Hammam Chott","Hammam Lif","Mégrine","Radès"],
+  "Bizerte":   ["Bizerte Nord","Bizerte Sud","El Alia","Mateur","Menzel Bourguiba","Ras Jebel"],
+  "Gabès":     ["El Hamma","Gabès Médina","Gabès Ouest","Gabès Sud","Ghannouch","Mareth"],
+  "Gafsa":     ["El Guettar","Gafsa Nord","Gafsa Sud","Mdhilla","Métlaoui","Redeyef"],
+  "Kairouan":  ["Bouhajla","El Alaa","Haffouz","Kairouan Nord","Kairouan Sud"],
+  "Kasserine": ["Fériana","Kasserine Nord","Kasserine Sud","Sbeitla","Thala"],
+  "Manouba":   ["Borj El Amri","Djedeida","Douar Hicher","Manouba","Oued Ellil","Tébourba"],
+  "Médenine":  ["Ben Gardane","Djerba — Ajim","Djerba — Houmt Souk","Djerba — Midoun","Médenine Nord","Zarzis"],
+  "Monastir":  ["Bekalta","Jammel","Ksar Hellal","Moknine","Monastir","Zeramdine"],
+  "Nabeul":    ["El Haouaria","Grombalia","Hammamet","Kelibia","Korba","Nabeul","Soliman","El Mida","Menzel Temime","Menzel Bouzelfa"],
+  "Sfax":      ["Agareb","Kerkennah","Mahres","Sakiet Eddaier","Sfax Est","Sfax Médina","Sfax Ouest"],
+  "Sousse":    ["Akouda","Bouficha","Enfidha","Hammam Sousse","Kalâa Kebira","Msaken","Sousse Médina"],
+  "Tunis":     ["Bab Bhar","Bab Souika","Carthage","El Kram","El Menzah","La Goulette","La Marsa","Le Bardo","Sidi Bou Saïd"],
+  "Zaghouan":  ["El Fahs","Zaghouan","Zriba"],
+  "Béja":      ["Amdoun","Béja Nord","Béja Sud","Medjez el-Bab","Nefza","Téboursouk"],
 };
-
 const GOVERNORATES = Object.keys(TUNISIA_DATA).sort();
 
+/* ─── Component ─────────────────────────────────────────────── */
 export default function CheckoutPage() {
   const router = useRouter();
+  const { isSignedIn, user } = useUser();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [cart, setCart]           = useState<{ items: CartItem[] }>({ items: [] });
-  const [loading, setLoading]     = useState(true);
+  // Cart — DB for auth users, localStorage for guests
+  const [cart,       setCart]       = useState<{ items: CartItem[] }>({ items: [] });
+  const [guestItems, setGuestItems] = useState<GuestItem[]>([]);
+  const [loading,    setLoading]    = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [alert, setAlert]         = useState<{ show: boolean; type: string; message: string }>({
+  const [alert, setAlert] = useState<{ show: boolean; type: string; message: string }>({
     show: false, type: "success", message: "",
   });
 
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("PICKUP");
-  const [phoneCountry, setPhoneCountry]     = useState(COUNTRIES[0]);
+  const [deliveryMethod,      setDeliveryMethod]      = useState<DeliveryMethod>("PICKUP");
+  const [phoneCountry,        setPhoneCountry]        = useState(COUNTRIES[0]);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [countrySearch, setCountrySearch]   = useState("");
-  const [addressCountry, setAddressCountry] = useState("TN");
-  const [selectedGov, setSelectedGov]       = useState("");
-  const [selectedCity, setSelectedCity]     = useState("");
+  const [countrySearch,       setCountrySearch]       = useState("");
+  const [addressCountry,      setAddressCountry]      = useState("TN");
+  const [selectedGov,         setSelectedGov]         = useState("");
+  const [selectedCity,        setSelectedCity]        = useState("");
 
   const [form, setForm] = useState({
-    firstName: "", lastName: "", phone: "",
+    email: "", firstName: "", lastName: "", phone: "",
     streetAddress: "", postalCode: "", notes: "", freeCity: "",
   });
 
+  /* ── Alert helper ───────────────────────────────────────── */
   const showAlert = (type: "success" | "error" | "warning", message: string) => {
     setAlert({ show: true, type, message });
-    setTimeout(() => setAlert({ show: false, type: "success", message: "" }), 3500);
+    setTimeout(() => setAlert({ show: false, type: "success", message: "" }), 4000);
   };
 
+  /* ── Outside click for phone dropdown ──────────────────── */
   useEffect(() => {
     const handle = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -111,76 +118,132 @@ export default function CheckoutPage() {
   useEffect(() => { setSelectedCity(""); }, [selectedGov]);
   useEffect(() => { setSelectedGov(""); setSelectedCity(""); }, [addressCountry]);
 
+  /* ── Load cart ──────────────────────────────────────────── */
   useEffect(() => {
-    fetch("/api/cart")
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data) { setCart(data); if (!data.items?.length) router.push("/client/panier"); }
-        else showAlert("error", "Erreur lors du chargement du panier");
-      })
-      .catch(() => showAlert("error", "Impossible de charger le panier"))
-      .finally(() => setLoading(false));
-  }, []);
+    if (isSignedIn === undefined) return; // Clerk still loading
 
-  const handleSubmit = async () => {
-    if (!form.firstName.trim() || !form.lastName.trim()) { showAlert("warning", "Prénom et nom sont obligatoires"); return; }
-    if (!form.phone.trim()) { showAlert("warning", "Le numéro de téléphone est obligatoire"); return; }
-    if (deliveryMethod === "DELIVERY") {
-      if (addressCountry === "TN" && (!selectedGov || !selectedCity)) { showAlert("warning", "Veuillez sélectionner le gouvernorat et la ville"); return; }
-      if (addressCountry !== "TN" && !form.freeCity.trim()) { showAlert("warning", "Veuillez remplir la ville"); return; }
+    if (isSignedIn) {
+      // Pre-fill form with Clerk user data
+      setForm(f => ({
+        ...f,
+        email:     user?.primaryEmailAddress?.emailAddress ?? "",
+        firstName: user?.firstName ?? "",
+        lastName:  user?.lastName  ?? "",
+      }));
+
+      fetch("/api/cart")
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.items?.length) setCart(data);
+          else router.push("/client/panier");
+        })
+        .catch(() => showAlert("error", "Impossible de charger le panier"))
+        .finally(() => setLoading(false));
+    } else {
+      // Guest — read localStorage
+      const items = guestCart.get();
+      if (!items.length) {
+        router.push("/client/panier");
+      } else {
+        setGuestItems(items);
+        setLoading(false);
+      }
     }
+  }, [isSignedIn]);
+
+  /* ── Derived values ─────────────────────────────────────── */
+  // For authenticated users, compute from DB cart; for guests, we don't have prices
+  // so we fetch them lazily (or show them from product data if available).
+  // Here we keep it simple: guest subtotal shown as TBD until confirmed by API.
+  const authItems  = cart.items;
+  const isGuest    = !isSignedIn;
+
+  const subtotal   = isGuest
+    ? 0 // will be computed server-side; shown as "calculé à la validation"
+    : authItems.reduce((s, i) => s + i.product.price * i.quantity, 0);
+
+  const deliveryFee = deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0;
+  const total       = subtotal + deliveryFee;
+
+  /* ── Validation ─────────────────────────────────────────── */
+  function validate(): string | null {
+    if (isGuest && !form.email.trim()) return "L'adresse email est obligatoire";
+    if (isGuest && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      return "Adresse email invalide";
+    if (!form.firstName.trim() || !form.lastName.trim()) return "Prénom et nom sont obligatoires";
+    if (!form.phone.trim()) return "Le numéro de téléphone est obligatoire";
+    if (deliveryMethod === "DELIVERY") {
+      if (addressCountry === "TN" && (!selectedGov || !selectedCity))
+        return "Veuillez sélectionner le gouvernorat et la ville";
+      if (addressCountry !== "TN" && !form.freeCity.trim())
+        return "Veuillez remplir la ville";
+    }
+    return null;
+  }
+
+  /* ── Submit ─────────────────────────────────────────────── */
+  const handleSubmit = async () => {
+    const error = validate();
+    if (error) { showAlert("warning", error); return; }
 
     setProcessing(true);
     try {
       const city = addressCountry === "TN" ? selectedCity : form.freeCity;
-      const res = await fetch("/api/orders", {
-        method: "POST",
+
+      const payload: Record<string, unknown> = {
+        deliveryMethod,
+        deliveryFee:  deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
+        customerInfo: {
+          email:       form.email.trim().toLowerCase(),
+          firstName:   form.firstName.trim(),
+          lastName:    form.lastName.trim(),
+          phone:       `${phoneCountry.dial} ${form.phone.trim()}`,
+          address:     deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
+          city:        deliveryMethod === "DELIVERY" ? (city || null) : null,
+          governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
+          postalCode:  deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
+          country:     deliveryMethod === "DELIVERY" ? addressCountry : null,
+          notes:       form.notes.trim() || null,
+        },
+      };
+
+      // For guests, include cart items from localStorage
+      if (isGuest) {
+        payload.items = guestItems;
+      }
+
+      const res  = await fetch("/api/orders", {
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          deliveryMethod,
-          deliveryFee: deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
-          customerInfo: {
-            firstName:   form.firstName.trim(),
-            lastName:    form.lastName.trim(),
-            phone:       `${phoneCountry.dial} ${form.phone.trim()}`,
-            address:     deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
-            city:        deliveryMethod === "DELIVERY" ? (city || null) : null,
-            governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
-            postalCode:  deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
-            country:     deliveryMethod === "DELIVERY" ? addressCountry : null,
-            notes:       form.notes.trim() || null,
-          },
-        }),
+        body:    JSON.stringify(payload),
       });
       const data = await res.json();
+
       if (res.ok) {
+        // Clear guest cart
+        if (isGuest) guestCart.clear();
         showAlert("success", "Commande confirmée avec succès !");
         setTimeout(() => router.push(`/client/orders/${data.orderId}`), 1500);
       } else {
         showAlert("error", data.error || "Erreur lors de la commande");
       }
-    } catch { showAlert("error", "Erreur réseau"); }
-    finally { setProcessing(false); }
+    } catch {
+      showAlert("error", "Erreur réseau");
+    } finally {
+      setProcessing(false);
+    }
   };
 
-  const subtotal    = cart.items.reduce((s, i) => s + i.product.price * i.quantity, 0);
-  const deliveryFee = deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0;
-  const total       = subtotal + deliveryFee;
+  /* ── Shared styles ──────────────────────────────────────── */
+  const inputCls = `w-full bg-[#0a1628] border border-[#1e3a5f] rounded-2xl px-4 py-3 text-sm text-white placeholder:text-[#4a6a8a] focus:outline-none focus:border-[#3b82f6]/50 focus:ring-1 focus:ring-[#3b82f6]/20 transition disabled:opacity-40 disabled:cursor-not-allowed`;
+  const labelCls = "block text-[10px] uppercase tracking-[0.15em] text-[#4a6a8a] font-light mb-2";
+  const cardCls  = "bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-6 md:p-8 hover:border-[#3b82f6]/20 transition";
 
   const filteredCountries = COUNTRIES.filter(c =>
     c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.dial.includes(countrySearch)
   );
 
-  // ── Styles partagés ────────────────────────────────────────────────────────
-  const inputCls = `
-    w-full bg-[#0a1628] border border-[#1e3a5f] rounded-2xl
-    px-4 py-3 text-sm text-white placeholder:text-[#4a6a8a]
-    focus:outline-none focus:border-[#3b82f6]/50 focus:ring-1 focus:ring-[#3b82f6]/20
-    transition disabled:opacity-40 disabled:cursor-not-allowed
-  `;
-  const labelCls = "block text-[10px] uppercase tracking-[0.15em] text-[#4a6a8a] font-light mb-2";
-  const cardCls  = "bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-6 md:p-8";
-
+  /* ── Loading ────────────────────────────────────────────── */
   if (loading) return (
     <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
       <div className="relative">
@@ -190,17 +253,18 @@ export default function CheckoutPage() {
     </div>
   );
 
+  /* ── Render ─────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-[#0a1628] text-white">
       <Navbar />
 
       {/* Dot grid */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.07]"
-        style={{ backgroundImage:"radial-gradient(#3b82f6 0.8px,transparent 1px)", backgroundSize:"60px 60px" }} />
+        style={{ backgroundImage: "radial-gradient(#3b82f6 0.8px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      {/* ── Alerts ── */}
+      {/* Alert */}
       {alert.show && (
-        <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-light border shadow-2xl animate-[slideIn_.3s_ease] ${
+        <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-light border shadow-2xl ${
           alert.type === "success" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" :
           alert.type === "error"   ? "bg-red-500/10 border-red-500/30 text-red-400" :
                                      "bg-amber-500/10 border-amber-500/30 text-amber-400"
@@ -209,8 +273,7 @@ export default function CheckoutPage() {
           {alert.type === "error"   && <XCircle     size={16} />}
           {alert.type === "warning" && <AlertCircle size={16} />}
           <span>{alert.message}</span>
-          <button onClick={() => setAlert(a => ({ ...a, show: false }))}
-            className="ml-2 opacity-60 hover:opacity-100 transition">
+          <button onClick={() => setAlert(a => ({ ...a, show: false }))} className="ml-2 opacity-60 hover:opacity-100">
             <X size={14} />
           </button>
         </div>
@@ -231,13 +294,16 @@ export default function CheckoutPage() {
             Finaliser la <span className="text-[#3b82f6]">commande</span>
           </h1>
           <p className="mt-2 text-sm text-[#4a6a8a] tracking-widest uppercase font-light">
-            {cart.items.length} article{cart.items.length > 1 ? "s" : ""} dans votre panier
+            {isGuest
+              ? `${guestItems.length} article${guestItems.length > 1 ? "s" : ""} · Commande sans compte`
+              : `${cart.items.length} article${cart.items.length > 1 ? "s" : ""} dans votre panier`
+            }
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
 
-          {/* ── LEFT ─────────────────────────────────────────────────────── */}
+          {/* ── LEFT ─────────────────────────────────────── */}
           <div className="lg:col-span-7 space-y-6">
 
             {/* Delivery method */}
@@ -247,21 +313,18 @@ export default function CheckoutPage() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(["DELIVERY", "PICKUP"] as DeliveryMethod[]).map(method => (
-                  <button key={method} type="button"
-                    onClick={() => setDeliveryMethod(method)}
+                  <button key={method} type="button" onClick={() => setDeliveryMethod(method)}
                     className={`p-6 rounded-2xl border text-left transition-all duration-200 ${
                       deliveryMethod === method
                         ? "border-[#3b82f6] bg-[#3b82f6]/10"
-                        : "border-[#1e3a5f] hover:border-[#3b82f6]/40 bg-transparent"
+                        : "border-[#1e3a5f] hover:border-[#3b82f6]/40"
                     }`}>
                     <div className="flex justify-between items-start mb-4">
                       {method === "DELIVERY"
-                        ? <Truck  size={24} className={deliveryMethod === method ? "text-[#3b82f6]" : "text-[#4a6a8a]"} />
-                        : <Store  size={24} className={deliveryMethod === method ? "text-[#3b82f6]" : "text-[#4a6a8a]"} />
+                        ? <Truck  size={22} className={deliveryMethod === method ? "text-[#3b82f6]" : "text-[#4a6a8a]"} />
+                        : <Store  size={22} className={deliveryMethod === method ? "text-[#3b82f6]" : "text-[#4a6a8a]"} />
                       }
-                      <span className={`text-xs font-light uppercase tracking-[0.15em] ${
-                        method === "DELIVERY" ? "text-[#3b82f6]" : "text-emerald-400"
-                      }`}>
+                      <span className={`text-xs font-light uppercase tracking-[0.15em] ${method === "DELIVERY" ? "text-[#3b82f6]" : "text-emerald-400"}`}>
                         {method === "DELIVERY" ? `${DELIVERY_FEE} TND` : "Gratuit"}
                       </span>
                     </div>
@@ -285,6 +348,29 @@ export default function CheckoutPage() {
               </h2>
               <div className="space-y-5">
 
+                {/* Email — shown for guests, pre-filled + locked for auth users */}
+                <div>
+                  <label className={labelCls}>
+                    Email * {isGuest && <span className="text-[#3b82f6]/60 normal-case">(utilisé pour suivre votre commande)</span>}
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4a6a8a] pointer-events-none" />
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                      disabled={!isGuest}
+                      className={inputCls + " pl-10"}
+                      placeholder="votre@email.com"
+                    />
+                  </div>
+                  {isGuest && (
+                    <p className="text-[10px] text-[#3a5a7a] font-light mt-1.5 pl-1">
+                      Si vous avez déjà commandé, votre historique sera retrouvé automatiquement.
+                    </p>
+                  )}
+                </div>
+
                 {/* Prénom + Nom */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
@@ -305,8 +391,7 @@ export default function CheckoutPage() {
                 <div>
                   <label className={labelCls}>Téléphone *</label>
                   <div ref={dropdownRef} className="relative flex border border-[#1e3a5f] rounded-2xl bg-[#0a1628] focus-within:border-[#3b82f6]/50 focus-within:ring-1 focus-within:ring-[#3b82f6]/20 transition">
-                    <button type="button"
-                      onClick={() => setShowCountryDropdown(v => !v)}
+                    <button type="button" onClick={() => setShowCountryDropdown(v => !v)}
                       className="flex items-center gap-2 px-4 py-3 border-r border-[#1e3a5f] bg-[#0f1f33] rounded-l-2xl text-sm text-white whitespace-nowrap hover:bg-[#1a2a44] transition min-w-[110px]">
                       <span className="text-lg leading-none">{phoneCountry.flag}</span>
                       <span className="text-[#8aabca] font-light">{phoneCountry.dial}</span>
@@ -319,12 +404,11 @@ export default function CheckoutPage() {
 
                     {showCountryDropdown && (
                       <div className="absolute top-full left-0 mt-2 w-72 max-w-[92vw] bg-[#0f1f33] border border-[#1e3a5f] rounded-2xl shadow-2xl z-[200] overflow-hidden">
-                        <input type="text" className="w-full bg-transparent border-b border-[#1e3a5f] px-4 py-3 text-sm text-white placeholder:text-[#4a6a8a] outline-none font-light"
+                        <input type="text" autoFocus
+                          className="w-full bg-transparent border-b border-[#1e3a5f] px-4 py-3 text-sm text-white placeholder:text-[#4a6a8a] outline-none font-light"
                           placeholder="Rechercher pays ou indicatif..."
-                          value={countrySearch}
-                          onChange={e => setCountrySearch(e.target.value)}
-                          autoFocus />
-                        <div className="max-h-52 overflow-y-auto" style={{ scrollbarWidth:"thin", scrollbarColor:"#1e3a5f transparent" }}>
+                          value={countrySearch} onChange={e => setCountrySearch(e.target.value)} />
+                        <div className="max-h-52 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "#1e3a5f transparent" }}>
                           {filteredCountries.length === 0
                             ? <div className="px-4 py-3 text-[#4a6a8a] text-sm text-center font-light">Aucun résultat</div>
                             : filteredCountries.map(c => (
@@ -353,11 +437,10 @@ export default function CheckoutPage() {
                     <div>
                       <label className={labelCls}>Pays de livraison *</label>
                       <div className="relative">
-                        <select value={addressCountry}
-                          onChange={e => setAddressCountry(e.target.value)}
+                        <select value={addressCountry} onChange={e => setAddressCountry(e.target.value)}
                           className={inputCls + " appearance-none pr-10 cursor-pointer"}>
                           {COUNTRIES.map(c => (
-                            <option key={c.code} value={c.code} style={{ background:"#0f1f33" }}>
+                            <option key={c.code} value={c.code} style={{ background: "#0f1f33" }}>
                               {c.flag} {c.name}
                             </option>
                           ))}
@@ -371,12 +454,11 @@ export default function CheckoutPage() {
                         <div>
                           <label className={labelCls}>Gouvernorat *</label>
                           <div className="relative">
-                            <select value={selectedGov}
-                              onChange={e => setSelectedGov(e.target.value)}
+                            <select value={selectedGov} onChange={e => setSelectedGov(e.target.value)}
                               className={inputCls + " appearance-none pr-10 cursor-pointer"}>
-                              <option value="" style={{ background:"#0f1f33" }}>— Choisir —</option>
+                              <option value="" style={{ background: "#0f1f33" }}>— Choisir —</option>
                               {GOVERNORATES.map(g => (
-                                <option key={g} value={g} style={{ background:"#0f1f33" }}>{g}</option>
+                                <option key={g} value={g} style={{ background: "#0f1f33" }}>{g}</option>
                               ))}
                             </select>
                             <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4a6a8a] pointer-events-none" />
@@ -385,15 +467,14 @@ export default function CheckoutPage() {
                         <div>
                           <label className={labelCls}>Ville *</label>
                           <div className="relative">
-                            <select value={selectedCity}
-                              onChange={e => setSelectedCity(e.target.value)}
+                            <select value={selectedCity} onChange={e => setSelectedCity(e.target.value)}
                               disabled={!selectedGov}
                               className={inputCls + " appearance-none pr-10 cursor-pointer"}>
-                              <option value="" style={{ background:"#0f1f33" }}>
+                              <option value="" style={{ background: "#0f1f33" }}>
                                 {selectedGov ? "— Choisir —" : "Gouvernorat d'abord"}
                               </option>
                               {selectedGov && TUNISIA_DATA[selectedGov]?.map(city => (
-                                <option key={city} value={city} style={{ background:"#0f1f33" }}>{city}</option>
+                                <option key={city} value={city} style={{ background: "#0f1f33" }}>{city}</option>
                               ))}
                             </select>
                             <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4a6a8a] pointer-events-none" />
@@ -439,7 +520,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* ── RIGHT ────────────────────────────────────────────────────── */}
+          {/* ── RIGHT ─────────────────────────────────────── */}
           <div className="lg:col-span-5">
             <div className={cardCls + " sticky top-24"}>
               <h2 className="text-lg font-light uppercase tracking-[0.15em] mb-6 flex items-center gap-3">
@@ -447,52 +528,74 @@ export default function CheckoutPage() {
               </h2>
 
               {/* Items */}
-              <div className="space-y-4 mb-6 max-h-[320px] overflow-y-auto pr-1"
-                style={{ scrollbarWidth:"thin", scrollbarColor:"#1e3a5f transparent" }}>
-                {cart.items.map(item => (
-                  <div key={item.id} className="flex gap-4 items-center">
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden border border-[#1e3a5f] flex-shrink-0 bg-[#0a1628]">
-                      <img src={item.product.images[0] || "/placeholder.jpg"} alt={item.product.name}
-                        className="w-full h-full object-contain p-1.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-light text-white truncate">{item.product.name}</h4>
-                      {item.size && (
-                        <p className="text-[10px] text-[#4a6a8a] uppercase tracking-widest mt-0.5">
-                          Taille : {item.size}
-                        </p>
-                      )}
-                      <p className="text-[#60a5fa] text-sm font-light mt-1">
-                        {item.quantity} × {item.product.price} TND
-                      </p>
-                    </div>
+              <div className="space-y-4 mb-6 max-h-[280px] overflow-y-auto pr-1"
+                style={{ scrollbarWidth: "thin", scrollbarColor: "#1e3a5f transparent" }}>
+                {isGuest ? (
+                  // Guest: show item count only (no prices until server confirms)
+                  <div className="text-center py-6 border border-[#1e3a5f] rounded-2xl">
+                    <ShoppingBag className="w-8 h-8 text-[#3b82f6] mx-auto mb-2" />
+                    <p className="text-sm font-light text-white">
+                      {guestItems.reduce((s, i) => s + i.quantity, 0)} article{guestItems.reduce((s, i) => s + i.quantity, 0) > 1 ? "s" : ""}
+                    </p>
+                    <p className="text-[10px] text-[#4a6a8a] mt-1 font-light">Le total sera confirmé à la validation</p>
                   </div>
-                ))}
+                ) : (
+                  authItems.map(item => (
+                    <div key={item.id} className="flex gap-4 items-center">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden border border-[#1e3a5f] flex-shrink-0 bg-[#0a1628]">
+                        <img src={item.product.images[0] || "/placeholder.jpg"} alt={item.product.name}
+                          className="w-full h-full object-contain p-1.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-light text-white truncate">{item.product.name}</h4>
+                        {item.size && (
+                          <p className="text-[10px] text-[#4a6a8a] uppercase tracking-widest mt-0.5">Taille : {item.size}</p>
+                        )}
+                        <p className="text-[#60a5fa] text-sm font-light mt-1">
+                          {item.quantity} × {item.product.price} TND
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Totaux */}
-              <div className="border-t border-[#1e3a5f] pt-5 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#4a6a8a] font-light">Sous-total</span>
-                  <span className="text-white font-light">{subtotal.toFixed(2)} TND</span>
+              {!isGuest && (
+                <div className="border-t border-[#1e3a5f] pt-5 space-y-3 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#4a6a8a] font-light">Sous-total</span>
+                    <span className="text-white font-light">{subtotal.toFixed(2)} TND</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#4a6a8a] font-light">Livraison</span>
+                    <span className={deliveryFee === 0 ? "text-emerald-400 font-light" : "text-white font-light"}>
+                      {deliveryFee === 0 ? "Gratuit" : `${deliveryFee} TND`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between pt-4 border-t border-[#1e3a5f]">
+                    <span className="text-sm uppercase tracking-[0.15em] font-light text-white">Total</span>
+                    <span className="text-2xl font-light text-white">
+                      {total.toFixed(2)} <span className="text-sm text-[#4a6a8a]">TND</span>
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#4a6a8a] font-light">Livraison</span>
-                  <span className={deliveryFee === 0 ? "text-emerald-400 font-light" : "text-white font-light"}>
-                    {deliveryFee === 0 ? "Gratuit" : `${deliveryFee} TND`}
-                  </span>
+              )}
+
+              {isGuest && (
+                <div className="border-t border-[#1e3a5f] pt-5 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#4a6a8a] font-light">Livraison</span>
+                    <span className={deliveryFee === 0 ? "text-emerald-400 font-light" : "text-white font-light"}>
+                      {deliveryFee === 0 ? "Gratuit" : `+${deliveryFee} TND`}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between pt-4 border-t border-[#1e3a5f]">
-                  <span className="text-sm uppercase tracking-[0.15em] font-light text-white">Total</span>
-                  <span className="text-2xl font-light text-white">
-                    {total.toFixed(2)} <span className="text-sm text-[#4a6a8a]">TND</span>
-                  </span>
-                </div>
-              </div>
+              )}
 
               {/* CTA */}
               <button type="button" onClick={handleSubmit} disabled={processing}
-                className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border border-[#3b82f6] text-[#3b82f6] text-xs uppercase tracking-[0.15em] font-light hover:bg-[#3b82f6]/10 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border border-[#3b82f6] text-[#3b82f6] text-xs uppercase tracking-[0.15em] font-light hover:bg-[#3b82f6]/10 disabled:opacity-50 disabled:cursor-not-allowed transition">
                 {processing
                   ? <><div className="w-4 h-4 border border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" /> Traitement...</>
                   : <><CreditCard size={16} /> Confirmer la commande</>
@@ -500,7 +603,7 @@ export default function CheckoutPage() {
               </button>
 
               <p className="text-center text-[#4a6a8a] text-[10px] uppercase tracking-[0.15em] font-light mt-4">
-                Paiement à la livraison · Sécurisé
+                Paiement à la {deliveryMethod === "DELIVERY" ? "livraison" : "récupération"} · Sécurisé
               </p>
             </div>
           </div>

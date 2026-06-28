@@ -5,22 +5,10 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-model Order {
-  id             Int         @id @default(autoincrement())
-  userId         String
-  status         OrderStatus @default(pending)
-  total          Float
-  confirmedById  String?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  deliveryMethod String      @default("PICKUP")
-  user           User        @relation("OrderPlacedBy", fields: [userId], references: [clerkId])
-  confirmedBy    User?       @relation("OrderConfirmedBy", fields: [confirmedById], references: [clerkId])
-  items          OrderItem[]
-}
+
 model User {
   id        String     @id @default(cuid())
-  clerkId   String     @unique
+  clerkId   String?    @unique          // nullable — guest users have no Clerk ID
   email     String     @unique
   firstName String?
   lastName  String?
@@ -30,6 +18,30 @@ model User {
   favorites Favorite[]
   orders          Order[]  @relation("OrderPlacedBy")
   ordersConfirmed Order[]  @relation("OrderConfirmedBy")
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  userId         String
+  status         OrderStatus @default(pending)
+  total          Float
+  confirmedById  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deliveryMethod String      @default("PICKUP")
+
+  // Guest delivery fields (stored directly on order)
+  customerPhone     String?
+  customerAddress   String?
+  customerCity      String?
+  customerGov       String?
+  customerPostal    String?
+  customerCountry   String?
+  customerNotes     String?
+
+  user        User        @relation("OrderPlacedBy",    fields: [userId],        references: [id])
+  confirmedBy User?       @relation("OrderConfirmedBy", fields: [confirmedById], references: [id])
+  items       OrderItem[]
 }
 
 model Product {
@@ -61,7 +73,7 @@ model Favorite {
   productId Int
   createdAt DateTime @default(now())
   product   Product  @relation(fields: [productId], references: [id])
-  user      User     @relation(fields: [userId], references: [clerkId])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, productId])
 }
@@ -71,7 +83,7 @@ model Cart {
   userId    String     @unique
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  user      User       @relation(fields: [userId], references: [clerkId])
+  user      User       @relation(fields: [userId], references: [id])
   items     CartItem[]
 }
 
@@ -86,8 +98,6 @@ model CartItem {
 
   @@unique([cartId, productId, size])
 }
-
-
 
 model OrderItem {
   id        Int     @id @default(autoincrement())
@@ -112,15 +122,6 @@ enum StockStatus {
   LOW
   CRITICAL
   OUT_OF_STOCK
-}
-
-enum Category {
-  pantalon
-  pull
-  veste
-  chemise
-  accessoire
-  parfum
 }
 
 enum Gender {

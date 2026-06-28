@@ -11,11 +11,10 @@ import Navbar from "@/components/ClientNavbar";
 
 /* ─── Types ─────────────────────────────────────────────── */
 type OrderItem = {
-  id: number;
+  id: string;  // ← était number, changé en string
   quantity: number;
   product: { name: string };
 };
-
 type Order = {
   id: string;
   status: string;
