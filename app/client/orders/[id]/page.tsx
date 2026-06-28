@@ -110,12 +110,7 @@ export default function OrderConfirmationPage() {
           <div className="inline-flex items-center justify-center w-24 h-24 bg-emerald-500/10 border border-emerald-500/30 rounded-full mb-6">
             <CheckCircle className="w-12 h-12 text-emerald-400" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-light tracking-tight mb-2">
-            Commande <span className="text-[#3b82f6]">confirmée</span>
-          </h1>
-          <p className="text-[#4a6a8a] text-sm uppercase tracking-widest font-light">
-            Merci pour votre achat
-          </p>
+          
         </div>
 
         {/* ── Order ID & Status ───────────────────────────────────────────── */}
