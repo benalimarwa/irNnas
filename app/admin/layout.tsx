@@ -91,7 +91,7 @@ export default async function AdminLayout({
       <AdminNavbar />
 
       {/* Contenu principal avec padding pour la navbar sticky */}
-     <main className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+     <main className=" max-w-7xl mx-auto">
         {children}
       </main>
 
