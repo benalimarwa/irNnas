@@ -144,7 +144,7 @@ export default function ClientLayout({
           preload="auto"
         >
           {/* 👇 Remplace par le chemin réel dans /public */}
-          <source src="/videos/background.mp4" type="video/mp4" />
+          <source src="/public/video/pp.mp4" type="video/mp4" />
           <source src="/videos/background.webm" type="video/webm" />
         </video>
       </div>
