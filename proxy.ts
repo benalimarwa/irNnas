@@ -54,7 +54,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (isPublicRoute(req)) return NextResponse.next();
 
   if (isAdminRoute(req) && userRole !== "ADMIN") {
-    return NextResponse.redirect(new URL("/client", req.url));
+    return NextResponse.redirect(new URL("/client/catalog", req.url));
   }
 
   if (isClientOnlyRoute(req) && userRole === "ADMIN") {
