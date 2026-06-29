@@ -14,7 +14,7 @@ const NAV_LINKS = [
   { label: "Dashboard",   href: "/admin",         icon: LayoutDashboard },
   { label: "Produits",    href: "/admin/catalog",  icon: Package         },
   { label: "Commandes",   href: "/admin/orders",   icon: ShoppingCart, badge: 3 },
-  { label: "Clients",     href: "/admin/users",    icon: Users           },
+  { label: "Users",     href: "/admin/users",    icon: Users           },
 ];
 
 export default function AdminNavbar() {
