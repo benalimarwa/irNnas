@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
+
 import {
   ShoppingCart, Heart, ChevronDown, X, ChevronRight,
   Home, Package, Receipt, LogOut, LogIn, Sun, Moon, Menu,
@@ -30,7 +30,7 @@ const MENU_LINKS = [
 ];
 
 const CLERK_APPEARANCE = {
-  baseTheme: dark,
+  
   variables: {
     colorPrimary:         "#3b82f6",
     colorBackground:      "#0f1f33",
