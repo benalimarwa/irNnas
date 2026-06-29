@@ -44,35 +44,102 @@ function validateCommon(data: ReturnType<typeof parseCommon>): string | null {
 }
 
 /**
- * Saves a base64 data URL to /public/uploads/ and returns the
- * public path. Falls back to the raw string if it is already
- * an https:// URL.
- *
- * Replace this function with a CDN call in production
- * (Cloudinary, UploadThing, S3…).
+ * Détermine l'extension à partir du MIME type ou du nom de fichier.
+ * Gère HEIC/HEIF (iPhone), AVIF, WEBP, etc.
  */
-async function resolveImage(imageUrl: string | null): Promise<string | undefined> {
+function getExtension(mimeType: string, fallbackName?: string): string {
+  const mimeMap: Record<string, string> = {
+    "image/jpeg":       "jpg",
+    "image/jpg":        "jpg",
+    "image/png":        "png",
+    "image/gif":        "gif",
+    "image/webp":       "webp",
+    "image/avif":       "avif",
+    "image/heic":       "heic",
+    "image/heif":       "heif",
+    "image/bmp":        "bmp",
+    "image/tiff":       "tiff",
+    "image/svg+xml":    "svg",
+    // iPhone/Android parfois envoient ces types
+    "application/octet-stream": "jpg",
+  };
+
+  const fromMime = mimeMap[mimeType.toLowerCase()];
+  if (fromMime) return fromMime;
+
+  // Fallback sur l'extension du nom de fichier
+  if (fallbackName) {
+    const ext = fallbackName.split(".").pop()?.toLowerCase();
+    if (ext && ["jpg","jpeg","png","gif","webp","heic","heif","avif","bmp","tiff"].includes(ext)) {
+      return ext === "jpeg" ? "jpg" : ext;
+    }
+  }
+
+  return "jpg"; // défaut sûr
+}
+
+/**
+ * Sauvegarde un fichier File/Blob OU une data URL base64 dans /public/uploads/
+ * et retourne le chemin public.
+ *
+ * Accepte :
+ *  - File (depuis <input type="file"> — smartphone, desktop, HEIC, etc.)
+ *  - string base64 data URL (data:image/... ou data:application/octet-stream;...)
+ *  - string URL https:// (conservée telle quelle)
+ *  - string chemin /uploads/... (conservé tel quel)
+ */
+async function resolveImage(
+  imageFile: File | null,
+  imageUrl: string | null,
+): Promise<string | undefined> {
+
+  const uploadsDir = join(process.cwd(), "public", "uploads");
+
+  // ── 1. Fichier uploadé directement (priorité) ──────────────
+  if (imageFile && imageFile.size > 0) {
+    try {
+      await mkdir(uploadsDir, { recursive: true });
+
+      const ext      = getExtension(imageFile.type, imageFile.name);
+      const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const buffer   = Buffer.from(await imageFile.arrayBuffer());
+
+      await writeFile(join(uploadsDir, filename), buffer);
+      return `/uploads/${filename}`;
+    } catch (err) {
+      console.error("resolveImage — échec sauvegarde fichier:", err);
+      return undefined;
+    }
+  }
+
+  // ── 2. Pas d'URL fournie ───────────────────────────────────
   if (!imageUrl || imageUrl.trim() === "") return undefined;
 
-  // Regular URL — keep as-is
+  // ── 3. URL https:// — conserver telle quelle ──────────────
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
 
-  // Relative path already saved — keep as-is
+  // ── 4. Chemin déjà enregistré — conserver ─────────────────
   if (imageUrl.startsWith("/uploads/")) {
     return imageUrl;
   }
 
-  // Base64 data URL — save to disk
-  if (imageUrl.startsWith("data:image/")) {
+  // ── 5. Data URL base64 ────────────────────────────────────
+  if (imageUrl.startsWith("data:")) {
     try {
-      const [header, base64Data] = imageUrl.split(",");
-      if (!base64Data) throw new Error("Base64 data manquante");
+      const commaIdx = imageUrl.indexOf(",");
+      if (commaIdx === -1) throw new Error("Data URL malformée");
 
-      const ext = header.split("/")[1]?.split(";")[0] ?? "jpg";
-      const filename = `product_${Date.now()}.${ext}`;
-      const uploadsDir = join(process.cwd(), "public", "uploads");
+      const header     = imageUrl.slice(0, commaIdx);   // "data:image/jpeg;base64"
+      const base64Data = imageUrl.slice(commaIdx + 1);
+
+      // Extraire le MIME type (ex: "image/heic", "application/octet-stream")
+      const mimeMatch = header.match(/data:([^;]+)/);
+      const mimeType  = mimeMatch?.[1] ?? "image/jpeg";
+
+      const ext      = getExtension(mimeType);
+      const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
       await mkdir(uploadsDir, { recursive: true });
       await writeFile(join(uploadsDir, filename), Buffer.from(base64Data, "base64"));
@@ -103,7 +170,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const imageUrl = await resolveImage(formData.get("imageUrl") as string | null);
+    // Récupérer le fichier OU l'URL
+    const imageFile = formData.get("image") as File | null;
+    const imageUrl  = formData.get("imageUrl") as string | null;
+
+    const resolvedImage = await resolveImage(imageFile, imageUrl);
 
     const product = await prisma.product.create({
       data: {
@@ -119,7 +190,7 @@ export async function POST(req: NextRequest) {
         material:    common.material,
         fit:         common.fit,
         isNew:       common.isNew,
-        images:      imageUrl ? [imageUrl] : [],
+        images:      resolvedImage ? [resolvedImage] : [],
       },
     });
 
@@ -149,7 +220,6 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "ID produit invalide ou manquant" }, { status: 400 });
     }
 
-    // Check product exists
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
@@ -162,7 +232,9 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const imageUrl = await resolveImage(formData.get("imageUrl") as string | null);
+    const imageFile     = formData.get("image") as File | null;
+    const imageUrl      = formData.get("imageUrl") as string | null;
+    const resolvedImage = await resolveImage(imageFile, imageUrl);
 
     const product = await prisma.product.update({
       where: { id },
@@ -179,8 +251,8 @@ export async function PUT(req: NextRequest) {
         material:    common.material,
         fit:         common.fit,
         isNew:       common.isNew,
-        // Only update images if a new one was provided
-        ...(imageUrl !== undefined ? { images: [imageUrl] } : {}),
+        // Mettre à jour les images seulement si une nouvelle est fournie
+        ...(resolvedImage !== undefined ? { images: [resolvedImage] } : {}),
       },
     });
 
@@ -209,13 +281,11 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "ID produit invalide ou manquant" }, { status: 400 });
     }
 
-    // Check product exists
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
     }
 
-    // Safety check: refuse if product is in any order
     const orderCount = await prisma.orderItem.count({ where: { productId: id } });
     if (orderCount > 0) {
       return NextResponse.json(
