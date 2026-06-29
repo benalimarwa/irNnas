@@ -105,7 +105,7 @@ export default function ProfileClient({ clerkUser, dbUser }: Props) {
 
   return (
     <div className="min-h-screen bg-[#0a1628] text-white">
-      <Navbar />
+      
 
       {/* Dot grid */}
       <div
