@@ -109,18 +109,26 @@ export default function AdminProductsPage() {
     if (videoRef.current) videoRef.current.play().catch(() => {});
   }, []);
 
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setImagePreview(result);
-      setForm(f => ({ ...f, imageUrl: result }));
-    };
-    reader.readAsDataURL(file);
+ // Remplacez la fonction onFile
+const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  // Accepter tout type image (jpeg, png, webp, heic, heif depuis iPhone, etc.)
+  if (!file.type.startsWith("image/") && !file.name.match(/\.(jpg|jpeg|png|gif|webp|heic|heif|avif|bmp|tiff)$/i)) {
+    showAlert("error", "Veuillez sélectionner un fichier image valide");
+    return;
+  }
+
+  setImageFile(file);
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const result = reader.result as string;
+    setImagePreview(result);
+    setForm(f => ({ ...f, imageUrl: result }));
   };
+  reader.readAsDataURL(file);
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -254,7 +262,7 @@ export default function AdminProductsPage() {
         {/* Video Background */}
         <div className="video-background fixed inset-0 z-0">
           <video ref={videoRef} autoPlay muted loop playsInline className="w-full h-full object-cover opacity-20">
-            <source src="/video/mm.mp4" type="video/mp4" />
+            <source src="/video/pp.mp4" type="video/mp4" />
           </video>
         </div>
         <div className="fixed inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(212,175,55,0.12),rgba(0,0,0,0.88))] z-10" />
@@ -471,11 +479,19 @@ export default function AdminProductsPage() {
                   {imgMode === "url" ? (
                     <input type="url" placeholder="https://" value={form.imageUrl} onChange={e => { setForm(f => ({ ...f, imageUrl: e.target.value })); setImagePreview(""); }} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" />
                   ) : (
-                    <label className="block border-2 border-dashed border-white/20 rounded-3xl p-12 text-center cursor-pointer hover:border-[#D4AF37]">
-                      <Upload className="mx-auto mb-4 text-white/50" size={48} />
-                      <span>{imageFile ? imageFile.name : "Cliquez pour sélectionner une image"}</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={onFile} />
-                    </label>
+                    // Remplacez le label du file input
+<label className="block border-2 border-dashed border-white/20 rounded-3xl p-12 text-center cursor-pointer hover:border-[#D4AF37]">
+  <Upload className="mx-auto mb-4 text-white/50" size={48} />
+  <span className="text-white/70">{imageFile ? imageFile.name : "Cliquez ou glissez une image"}</span>
+  <p className="text-xs text-white/40 mt-2">JPG, PNG, WEBP, HEIC... tous formats acceptés</p>
+  <input
+    type="file"
+    accept="image/*,image/heic,image/heif,.heic,.heif,.avif"
+    capture="environment"
+    className="hidden"
+    onChange={onFile}
+  />
+</label>
                   )}
 
                   {(imagePreview || form.imageUrl) && (
