@@ -4,6 +4,7 @@ import ClientNavbar from "@/components/ClientNavbar";
 import { ClerkProvider } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
 import { useSyncGuestCart } from "@/hooks/useSyncGuestCart";
+import AdminNavbar from "@/components/AdminNavbar";
 export default function AdminLayout({
   children,
 }: {
@@ -155,7 +156,7 @@ export default function AdminLayout({
 
       {/* App shell */}
       <div>
-        <ClientNavbar />
+        <AdminNavbar />
 
         <main>
           {children}
