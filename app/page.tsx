@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { ShoppingCart, Heart, ChevronDown, X, ChevronRight } from "lucide-react";
 import Navbar from "@/components/ClientNavbar";
+import toast, { Toaster } from "react-hot-toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Product = {
@@ -176,12 +177,22 @@ export default function HomePage() {
         setFilteredProducts(filtered);
     }, [selectedCategory, selectedGender, searchQuery, products]);
 
-    // ── Actions ───────────────────────────────────────────────────────────────
+    // ── Actions avec toasts ───────────────────────────────────────────────────
     const addToCart = async (productId: number) => {
         if (!isSignedIn) {
             guestCart.add(productId, 1);
             setCartCount(guestCart.count());
-            alert("✅ Produit ajouté ! Connectez-vous pour finaliser votre commande.");
+            toast.success("🛒 Ajouté au panier (invité)", {
+                duration: 3000,
+                icon: '🛍️',
+                style: {
+                    background: '#0f1f33',
+                    color: '#ffffff',
+                    border: '1px solid #1a2a44',
+                    borderRadius: '16px',
+                    padding: '12px 20px',
+                },
+            });
             return;
         }
         try {
@@ -192,16 +203,43 @@ export default function HomePage() {
             });
             if (res.ok) {
                 setCartCount(prev => prev + 1);
-                alert("✅ Produit ajouté au panier !");
+                toast.success("✅ Ajouté au panier !", {
+                    duration: 3000,
+                    icon: '🛍️',
+                    style: {
+                        background: '#0f1f33',
+                        color: '#ffffff',
+                        border: '1px solid #1a2a44',
+                        borderRadius: '16px',
+                        padding: '12px 20px',
+                    },
+                });
+            } else {
+                toast.error("Erreur lors de l'ajout", {
+                    style: {
+                        background: '#1a0a0a',
+                        color: '#ff6b6b',
+                        border: '1px solid #4a1a1a',
+                        borderRadius: '16px',
+                        padding: '12px 20px',
+                    }
+                });
             }
         } catch {
-            alert("Erreur lors de l'ajout");
+            toast.error("Erreur réseau", {
+                style: {
+                    background: '#1a0a0a',
+                    color: '#ff6b6b',
+                    border: '1px solid #4a1a1a',
+                    borderRadius: '16px',
+                    padding: '12px 20px',
+                }
+            });
         }
     };
 
     const handleBuyNow = async (productId: number) => {
         guestCart.add(productId, 1);
-  router.push("/client/checkout");
         try {
             const res = await fetch("/api/orders", {
                 method: "POST",
@@ -214,19 +252,46 @@ export default function HomePage() {
             if (res.ok) {
                 const data = await res.json();
                 const orderId = data.order?.id ?? data.id;
+                toast.success("Commande créée ! Redirection…", {
+                    duration: 2000,
+                    icon: '📦',
+                    style: {
+                        background: '#0f1f33',
+                        color: '#ffffff',
+                        border: '1px solid #1a2a44',
+                        borderRadius: '16px',
+                        padding: '12px 20px',
+                    }
+                });
                 router.push(`/client/orders/${orderId}`);
             } else {
-                alert("Erreur lors de la commande");
+                toast.error("Erreur lors de la commande", {
+                    style: {
+                        background: '#1a0a0a',
+                        color: '#ff6b6b',
+                        border: '1px solid #4a1a1a',
+                        borderRadius: '16px',
+                        padding: '12px 20px',
+                    }
+                });
             }
         } catch {
-            alert("Erreur réseau");
+            toast.error("Erreur réseau", {
+                style: {
+                    background: '#1a0a0a',
+                    color: '#ff6b6b',
+                    border: '1px solid #4a1a1a',
+                    borderRadius: '16px',
+                    padding: '12px 20px',
+                }
+            });
         }
     };
 
     // ✅ Toujours vers /client/panier sans passer par sign-in
-const handleCartClick = () => {
-  router.push("/client/panier");
-};
+    const handleCartClick = () => {
+        router.push("/client/panier");
+    };
 
     const toggleFavorite = (productId: number) => {
         setFavorites(prev =>
@@ -265,6 +330,23 @@ const handleCartClick = () => {
 
     return (
         <div className="min-h-screen bg-[#0a1628] text-white">
+
+            {/* ─── Toaster (notifications) ──────────────────────────────────── */}
+            <Toaster
+                position="bottom-right"
+                reverseOrder={false}
+                toastOptions={{
+                    duration: 4000,
+                    style: {
+                        background: '#0f1f33',
+                        color: '#fff',
+                        border: '1px solid #1a2a44',
+                        borderRadius: '16px',
+                        padding: '14px 24px',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                    },
+                }}
+            />
 
             {/* ================================================================ */}
             {/* DRAWER MOBILE — MENU / CATÉGORIES                               */}
@@ -381,12 +463,8 @@ const handleCartClick = () => {
 
             {/* ================================================================ */}
             {/* HEADER                                                           */}
-           <Navbar/>
+            <Navbar />
 
-            {/* ================================================================ */}
-            {/* HERO                                                             */}
-            {/* ================================================================ */}
-           
             {/* ================================================================ */}
             {/* SHOP                                                             */}
             {/* ================================================================ */}
