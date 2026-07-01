@@ -233,8 +233,25 @@ export default function CataloguePage() {
             router.push("/client/panier");
         }
     };
+const fetchFavorites = async () => {
+    if (!isSignedIn) return;
+    try {
+        const res = await fetch("/api/favorites");
+        if (res.ok) {
+            const data = await res.json();
+            setFavorites(data.map((p: Product) => p.id));
+        }
+    } catch (err) {
+        console.error("Erreur fetch favorites:", err);
+    }
+};
 
-   const toggleFavorite = async (productId: number) => {
+useEffect(() => {
+    if (isSignedIn) {
+        fetchFavorites();
+    }
+}, [isSignedIn]);
+const toggleFavorite = async (productId: number) => {
     if (!isSignedIn) {
         alert("Connectez-vous pour sauvegarder vos favoris ❤️");
         router.push("/sign-in?redirect_url=/client/catalog");
@@ -250,22 +267,19 @@ export default function CataloguePage() {
 
         if (res.ok) {
             const result = await res.json();
-
             setFavorites(prev =>
                 result.status === "added"
                     ? [...prev, productId]
                     : prev.filter(id => id !== productId)
             );
-
-            // Feedback visuel
-            alert(result.status === "added" 
-                ? "✅ Ajouté aux favoris" 
-                : "🗑️ Retiré des favoris"
-            );
+        } else {
+            const errText = await res.text();
+            console.error("Erreur API favorites:", res.status, errText);
+            alert(`Erreur (${res.status}) : impossible de mettre à jour les favoris`);
         }
     } catch (err) {
         console.error(err);
-        alert("Erreur lors de la mise à jour des favoris");
+        alert("Erreur réseau lors de la mise à jour des favoris");
     }
 };
 
