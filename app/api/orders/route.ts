@@ -1,6 +1,6 @@
 // app/api/orders/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 /* ─────────────────────────────────────────────────────────────
@@ -8,7 +8,8 @@ import { prisma } from "@/lib/prisma";
    Supports:
    - Authenticated Clerk user  → resolves user by clerkId
    - Guest with email          → finds existing user by email
-                                 OR creates a new guest user
+                                 OR creates a new guest user in DB + Clerk
+                                 → returns a signInToken for auto-login
 ───────────────────────────────────────────────────────────── */
 export async function POST(req: NextRequest) {
   try {
@@ -17,17 +18,20 @@ export async function POST(req: NextRequest) {
 
     /* ── 1. Resolve user ─────────────────────────────────── */
     let dbUser = null;
+    let signInToken: string | null = null;
 
     const { userId: clerkId } = await auth();
 
+    const client = await clerkClient(); // ← Important: now async in recent Clerk versions
+
     if (clerkId) {
-      // Authenticated — find by clerkId
+      // ── Authenticated user ──────────────────────────────
       dbUser = await prisma.user.findUnique({ where: { clerkId } });
       if (!dbUser) {
         return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
       }
     } else {
-      // Guest — email is required
+      // ── Guest user ──────────────────────────────────────
       const email = customerInfo?.email?.trim().toLowerCase();
       if (!email) {
         return NextResponse.json(
@@ -36,19 +40,67 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Try to find existing user by email
+      // Try to find existing user in DB
       dbUser = await prisma.user.findUnique({ where: { email } });
 
       if (!dbUser) {
-        // Create a new guest user (no clerkId)
+        // ── New guest: create in Clerk first, then in DB ──
+        let clerkUserId: string | null = null;
+
+        try {
+          const clerkUser = await client.users.createUser({
+            emailAddress: [email],
+            firstName: customerInfo?.firstName?.trim() || undefined,
+            lastName: customerInfo?.lastName?.trim() || undefined,
+            password: `${crypto.randomUUID()}!Aa1`,
+            skipPasswordChecks: true,
+          });
+          clerkUserId = clerkUser.id;
+        } catch (clerkErr: any) {
+          // User might already exist in Clerk
+          try {
+            const existing = await client.users.getUserList({
+              emailAddress: [email],
+            });
+            clerkUserId = existing.data[0]?.id ?? null;
+          } catch {
+            clerkUserId = null; // degraded mode
+          }
+        }
+
         dbUser = await prisma.user.create({
           data: {
             email,
+            clerkId: clerkUserId,
             firstName: customerInfo?.firstName?.trim() || null,
-            lastName:  customerInfo?.lastName?.trim()  || null,
+            lastName: customerInfo?.lastName?.trim() || null,
             role: "CLIENT",
           },
         });
+
+        // Generate sign-in token
+        if (clerkUserId) {
+          try {
+            const tokenRes = await client.signInTokens.createSignInToken({
+              userId: clerkUserId,
+              expiresInSeconds: 120,
+            });
+            signInToken = tokenRes.token;
+          } catch {
+            signInToken = null;
+          }
+        }
+      } else if (dbUser.clerkId) {
+        // Existing user with Clerk account → auto-login token
+        try {
+          const tokenRes = await client.signInTokens.createSignInToken({
+            userId: dbUser.clerkId,
+            expiresInSeconds: 120,
+          });
+          signInToken = tokenRes.token;
+        } catch {
+          signInToken = null;
+        }
       }
     }
 
@@ -56,35 +108,33 @@ export async function POST(req: NextRequest) {
     let cartItems: Array<{ productId: number; quantity: number; size?: string | null }> = [];
 
     if (clerkId) {
-      // Authenticated: read from DB cart
       const cart = await prisma.cart.findUnique({
-        where: { userId: dbUser.id },
+        where: { userId: dbUser!.id },
         include: { items: true },
       });
       if (!cart?.items?.length) {
         return NextResponse.json({ error: "Panier vide" }, { status: 400 });
       }
-      cartItems = cart.items.map(i => ({
+      cartItems = cart.items.map((i) => ({
         productId: i.productId,
-        quantity:  i.quantity,
-        size:      i.size,
+        quantity: i.quantity,
+        size: i.size,
       }));
     } else {
-      // Guest: items come from the request body
       if (!bodyItems?.length) {
         return NextResponse.json({ error: "Panier vide" }, { status: 400 });
       }
       cartItems = bodyItems;
     }
 
-    /* ── 3. Fetch product prices ─────────────────────────── */
-    const productIds = cartItems.map(i => i.productId);
-    const products   = await prisma.product.findMany({
+    /* ── 3. Fetch product prices & validate stock ─────────── */
+    const productIds = cartItems.map((i) => i.productId);
+    const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
       select: { id: true, price: true, stock: true },
     });
 
-    const productMap = new Map(products.map(p => [p.id, p]));
+    const productMap = new Map(products.map((p) => [p.id, p]));
 
     for (const item of cartItems) {
       const product = productMap.get(item.productId);
@@ -111,29 +161,28 @@ export async function POST(req: NextRequest) {
     const total = subtotal + (deliveryFee ?? 0);
 
     /* ── 5. Create order in transaction ─────────────────── */
-    const order = await prisma.$transaction(async tx => {
+    const order = await prisma.$transaction(async (tx) => {
       const created = await tx.order.create({
         data: {
-          userId:         dbUser!.id,
-          status:         "pending",
+          userId: dbUser!.id,
+          status: "pending",
           total,
           deliveryMethod: deliveryMethod ?? "PICKUP",
 
-          // Customer/delivery info (stored on order for both guests and auth users)
-          customerPhone:   customerInfo?.phone     ?? null,
-          customerAddress: customerInfo?.address   ?? null,
-          customerCity:    customerInfo?.city       ?? null,
-          customerGov:     customerInfo?.governorate ?? null,
-          customerPostal:  customerInfo?.postalCode  ?? null,
-          customerCountry: customerInfo?.country    ?? null,
-          customerNotes:   customerInfo?.notes      ?? null,
+          customerPhone: customerInfo?.phone ?? null,
+          customerAddress: customerInfo?.address ?? null,
+          customerCity: customerInfo?.city ?? null,
+          customerGov: customerInfo?.governorate ?? null,
+          customerPostal: customerInfo?.postalCode ?? null,
+          customerCountry: customerInfo?.country ?? null,
+          customerNotes: customerInfo?.notes ?? null,
 
           items: {
-            create: cartItems.map(item => ({
+            create: cartItems.map((item) => ({
               productId: item.productId,
-              quantity:  item.quantity,
-              size:      item.size ?? null,
-              price:     productMap.get(item.productId)!.price,
+              quantity: item.quantity,
+              size: item.size ?? null,
+              price: productMap.get(item.productId)!.price,
             })),
           },
         },
@@ -141,15 +190,15 @@ export async function POST(req: NextRequest) {
 
       // Decrement stock
       await Promise.all(
-        cartItems.map(item =>
+        cartItems.map((item) =>
           tx.product.update({
             where: { id: item.productId },
-            data:  { stock: { decrement: item.quantity } },
+            data: { stock: { decrement: item.quantity } },
           })
         )
       );
 
-      // Clear DB cart for authenticated users
+      // Clear cart for authenticated users
       if (clerkId) {
         const cart = await tx.cart.findUnique({ where: { userId: dbUser!.id } });
         if (cart) {
@@ -160,37 +209,10 @@ export async function POST(req: NextRequest) {
       return created;
     });
 
-    return NextResponse.json({ orderId: order.id, order }, { status: 201 });
+    return NextResponse.json({ orderId: order.id, order, signInToken }, { status: 201 });
   } catch (err) {
     console.error("[POST /api/orders]", err);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
 
-/* ─────────────────────────────────────────────────────────────
-   GET /api/orders  (authenticated only)
-───────────────────────────────────────────────────────────── */
-export async function GET() {
-  try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-
-    const dbUser = await prisma.user.findUnique({ where: { clerkId } });
-    if (!dbUser) return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
-
-    const orders = await prisma.order.findMany({
-      where:   { userId: dbUser.id },
-      orderBy: { createdAt: "desc" },
-      include: {
-        items: {
-          include: { product: { select: { name: true, images: true } } },
-        },
-      },
-    });
-
-    return NextResponse.json({ orders });
-  } catch (err) {
-    console.error("[GET /api/orders]", err);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
-  }
-}

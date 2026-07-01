@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import {
   ArrowLeft, ShoppingBag, Truck, Store, CheckCircle,
   XCircle, AlertCircle, X, User, CreditCard, ChevronDown, Mail,
@@ -73,6 +73,7 @@ const GOVERNORATES = Object.keys(TUNISIA_DATA).sort();
 export default function CheckoutPage() {
   const router = useRouter();
   const { isSignedIn, user } = useUser();
+  const { signOut } = useClerk(); // if needed elsewhere
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Cart — DB for auth users, localStorage for guests
@@ -149,17 +150,14 @@ export default function CheckoutPage() {
         setLoading(false);
       }
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, user, router]);
 
   /* ── Derived values ─────────────────────────────────────── */
-  // For authenticated users, compute from DB cart; for guests, we don't have prices
-  // so we fetch them lazily (or show them from product data if available).
-  // Here we keep it simple: guest subtotal shown as TBD until confirmed by API.
   const authItems  = cart.items;
   const isGuest    = !isSignedIn;
 
   const subtotal   = isGuest
-    ? 0 // will be computed server-side; shown as "calculé à la validation"
+    ? 0 // will be computed server-side
     : authItems.reduce((s, i) => s + i.product.price * i.quantity, 0);
 
   const deliveryFee = deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0;
@@ -207,7 +205,6 @@ export default function CheckoutPage() {
         },
       };
 
-      // For guests, include cart items from localStorage
       if (isGuest) {
         payload.items = guestItems;
       }
@@ -219,17 +216,16 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
 
-      
-  if (res.ok) {
-  if (isGuest) {
-    guestCart.clear();
-    const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
-    guestOrders.push(data.orderId);
-    localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
-  }
-  showAlert("success", "Commande confirmée avec succès !");  // ← manquait
-  setTimeout(() => router.push(`/client/orders/${data.orderId}`), 1500);
-}else {
+      if (res.ok) {
+        if (isGuest) {
+          guestCart.clear();
+          const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
+          guestOrders.push(data.orderId);
+          localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
+        }
+        showAlert("success", "Commande confirmée avec succès !");
+        setTimeout(() => router.push(`/client/orders/${data.orderId}`), 1500);
+      } else {
         showAlert("error", data.error || "Erreur lors de la commande");
       }
     } catch {
@@ -308,9 +304,8 @@ export default function CheckoutPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
 
-          {/* ── LEFT ─────────────────────────────────────── */}
+          {/* LEFT COLUMN */}
           <div className="lg:col-span-7 space-y-6">
-
             {/* Delivery method */}
             <div className={cardCls}>
               <h2 className="text-lg font-light uppercase tracking-[0.15em] mb-6 flex items-center gap-3">
@@ -353,7 +348,7 @@ export default function CheckoutPage() {
               </h2>
               <div className="space-y-5">
 
-                {/* Email — shown for guests, pre-filled + locked for auth users */}
+                {/* Email */}
                 <div>
                   <label className={labelCls}>
                     Email * {isGuest && <span className="text-[#3b82f6]/60 normal-case">(utilisé pour suivre votre commande)</span>}
@@ -376,7 +371,7 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* Prénom + Nom */}
+                {/* Name */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className={labelCls}>Prénom *</label>
@@ -392,7 +387,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Phone */}
+                {/* Phone with country selector */}
                 <div>
                   <label className={labelCls}>Téléphone *</label>
                   <div ref={dropdownRef} className="relative flex border border-[#1e3a5f] rounded-2xl bg-[#0a1628] focus-within:border-[#3b82f6]/50 focus-within:ring-1 focus-within:ring-[#3b82f6]/20 transition">
@@ -525,18 +520,16 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* ── RIGHT ─────────────────────────────────────── */}
+          {/* RIGHT COLUMN - Summary */}
           <div className="lg:col-span-5">
             <div className={cardCls + " sticky top-24"}>
               <h2 className="text-lg font-light uppercase tracking-[0.15em] mb-6 flex items-center gap-3">
                 <ShoppingBag className="w-5 h-5 text-[#3b82f6]" /> Résumé
               </h2>
 
-              {/* Items */}
               <div className="space-y-4 mb-6 max-h-[280px] overflow-y-auto pr-1"
                 style={{ scrollbarWidth: "thin", scrollbarColor: "#1e3a5f transparent" }}>
                 {isGuest ? (
-                  // Guest: show item count only (no prices until server confirms)
                   <div className="text-center py-6 border border-[#1e3a5f] rounded-2xl">
                     <ShoppingBag className="w-8 h-8 text-[#3b82f6] mx-auto mb-2" />
                     <p className="text-sm font-light text-white">
@@ -565,7 +558,6 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              {/* Totaux */}
               {!isGuest && (
                 <div className="border-t border-[#1e3a5f] pt-5 space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
@@ -598,7 +590,6 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {/* CTA */}
               <button type="button" onClick={handleSubmit} disabled={processing}
                 className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border border-[#3b82f6] text-[#3b82f6] text-xs uppercase tracking-[0.15em] font-light hover:bg-[#3b82f6]/10 disabled:opacity-50 disabled:cursor-not-allowed transition">
                 {processing
