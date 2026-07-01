@@ -234,13 +234,40 @@ export default function CataloguePage() {
         }
     };
 
-    const toggleFavorite = (productId: number) => {
-        setFavorites(prev =>
-            prev.includes(productId)
-                ? prev.filter(id => id !== productId)
-                : [...prev, productId]
-        );
-    };
+   const toggleFavorite = async (productId: number) => {
+    if (!isSignedIn) {
+        alert("Connectez-vous pour sauvegarder vos favoris ❤️");
+        router.push("/sign-in?redirect_url=/client/catalog");
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/favorites", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productId }),
+        });
+
+        if (res.ok) {
+            const result = await res.json();
+
+            setFavorites(prev =>
+                result.status === "added"
+                    ? [...prev, productId]
+                    : prev.filter(id => id !== productId)
+            );
+
+            // Feedback visuel
+            alert(result.status === "added" 
+                ? "✅ Ajouté aux favoris" 
+                : "🗑️ Retiré des favoris"
+            );
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Erreur lors de la mise à jour des favoris");
+    }
+};
 
     const resetFilters = () => {
         setSelectedCategory("");
