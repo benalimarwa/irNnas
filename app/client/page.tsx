@@ -1,15 +1,22 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
-import { Sparkles, ShoppingBag, Heart, Package, Award, ChevronRight } from 'lucide-react';
+import { Sparkles, ShoppingBag, Heart, Package, Award, ChevronRight, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+
+type RecentOrderItem = {
+  productName: string;
+  productImage: string | null;
+};
 
 type RecentOrder = {
   id: number;
   status: string;
   total: number;
   createdAt: string;
+  itemsCount: number;
+  items: RecentOrderItem[];
 };
 
 type DashboardData = {
@@ -20,6 +27,21 @@ type DashboardData = {
   recentOrders: RecentOrder[];
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'En attente',
+  confirmed: 'Confirmée',
+  shipped: 'Expédiée',
+  delivered: 'Livrée',
+  cancelled: 'Annulée',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: '#fbbf24',
+  confirmed: '#3b82f6',
+  shipped: '#818cf8',
+  delivered: '#34d399',
+  cancelled: '#f87171',
+};
 export default function ClientDashboard() {
   const { user } = useUser();
 
@@ -176,26 +198,95 @@ export default function ClientDashboard() {
         </div>
 
         {/* ── Total spent teaser ────────────────────────────────────────────── */}
-        {data.totalSpent > 0 && (
-          <div className="mt-6 bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-[#4a6a8a] font-light mb-1">
-                Total de vos achats
-              </p>
-              <p className="text-3xl font-light tracking-tight text-white">
-                {data.totalSpent.toFixed(2)}{' '}
-                <span className="text-base text-[#4a6a8a]">TND</span>
-              </p>
+       {/* ── Commandes récentes ───────────────────────────────────────────── */}
+        {data.recentOrders.length > 0 && (
+          <div className="mt-14">
+            <div className="flex items-center gap-4 mb-10">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#4a6a8a] font-light">
+                Commandes récentes
+              </span>
+              <div className="flex-1 border-t border-[#1e3a5f]" />
+              <Link
+                href="/client/orders"
+                className="text-[10px] uppercase tracking-[0.15em] text-[#3b82f6] hover:text-[#60a5fa] font-light flex items-center gap-1 transition"
+              >
+                Tout voir <ChevronRight size={12} />
+              </Link>
             </div>
-            <Link
-              href="/orders"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#3b82f6] text-[#3b82f6] text-xs uppercase tracking-[0.15em] font-light hover:bg-[#3b82f6]/10 transition self-start sm:self-auto"
-            >
-              Voir les commandes
-              <ChevronRight size={14} />
-            </Link>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {data.recentOrders.map((order) => {
+                const statusColor = STATUS_COLORS[order.status] || '#4a6a8a';
+                return (
+                  <Link
+                    key={order.id}
+                    href={`/client/orders/${order.id}`}
+                    className="group bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-5 sm:p-6 transition-all duration-500 hover:border-[#3b82f6]/40 hover:shadow-2xl hover:shadow-[#3b82f6]/5 block"
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    {/* Images produits en cascade */}
+                    <div className="flex items-center mb-5 -space-x-3">
+                      {order.items.length > 0 ? (
+                        order.items.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-[#0f1f33] bg-[#0a1628] flex-shrink-0"
+                            style={{ zIndex: order.items.length - idx }}
+                          >
+                            {item.productImage ? (
+                              <img
+                                src={item.productImage}
+                                alt={item.productName}
+                                className="w-full h-full object-contain p-1"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package size={18} className="text-[#4a6a8a]" />
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl border-2 border-[#0f1f33] bg-[#0a1628] flex items-center justify-center">
+                          <Package size={18} className="text-[#4a6a8a]" />
+                        </div>
+                      )}
+                      {order.itemsCount > order.items.length && (
+                        <div className="w-14 h-14 rounded-2xl border-2 border-[#0f1f33] bg-[#1a2a44] flex items-center justify-center text-[11px] text-[#8aabca] font-light">
+                          +{order.itemsCount - order.items.length}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] uppercase tracking-[0.15em] text-[#4a6a8a] font-light">
+                        #{String(order.id).padStart(8, '0')}
+                      </span>
+                      <span
+                        className="text-[10px] uppercase tracking-[0.15em] font-light px-3 py-1 rounded-full"
+                        style={{ background: `${statusColor}18`, border: `1px solid ${statusColor}30`, color: statusColor }}
+                      >
+                        {STATUS_LABELS[order.status] || order.status}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl font-light text-white tracking-tight">
+                        {order.total.toFixed(2)} <span className="text-xs text-[#4a6a8a]">TND</span>
+                      </span>
+                      <span className="flex items-center gap-1.5 text-[10px] text-[#4a6a8a] font-light">
+                        <Clock size={11} />
+                        {new Date(order.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
+
+       
       </div>
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
