@@ -216,16 +216,33 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
 
-      if (res.ok) {
-        if (isGuest) {
-          guestCart.clear();
-          const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
-          guestOrders.push(data.orderId);
-          localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
-        }
-        showAlert("success", "Commande confirmée avec succès !");
-        setTimeout(() => router.push(`/client/orders/${data.orderId}`), 1500);
-      } else {
+      // Remplace la partie if (res.ok) par ceci :
+
+if (res.ok) {
+  if (isGuest) {
+    guestCart.clear();
+    const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
+    guestOrders.push(data.orderId);
+    localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
+  }
+
+  const orderId = data.orderId;
+
+  // Auto-login pour guest
+  if (isGuest && data.signInToken) {
+    try {
+      const { useSignIn } = await import("@clerk/nextjs");
+      // On doit utiliser l'instance du hook, donc on redirige directement avec le token en query
+      router.push(`/client/orders/${orderId}?ticket=${data.signInToken}`);
+      return;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  showAlert("success", "Commande confirmée avec succès !");
+  setTimeout(() => router.push(`/client/orders/${orderId}`), 1200);
+} else {
         showAlert("error", data.error || "Erreur lors de la commande");
       }
     } catch {
