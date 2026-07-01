@@ -238,28 +238,9 @@ export default function HomePage() {
         }
     };
 
-  const handleBuyNow = async (productId: number) => {
-    guestCart.add(productId, 1);
-    try {
-        const res = await fetch("/api/orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                items: [{ productId, quantity: 1 }],
-                deliveryMethod: "livraison",
-            }),
-        });
-        if (res.ok) {
-            const data = await res.json();
-            const orderId = data.order?.id ?? data.id;
-            toast.success("Commande créée ! Redirection…");
-            router.push(`/client/orders/${orderId}`);
-        } else {
-            toast.error("Erreur lors de la commande");
-        }
-    } catch {
-        toast.error("Erreur réseau");
-    }
+   const handleBuyNow = (productId: number) => {
+   
+    router.push(`/client/checkout?productId=${productId}&quantity=1`);
 };
 
     // ✅ Toujours vers /client/panier sans passer par sign-in
