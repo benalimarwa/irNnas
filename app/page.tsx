@@ -238,14 +238,28 @@ export default function HomePage() {
         }
     };
 
-   const handleBuyNow = (productId: number) => {
-    if (!isSignedIn) {
-        guestCart.add(productId, 1);
-        router.push("/sign-in?redirect_url=/client/checkout");
-        return;
+  const handleBuyNow = async (productId: number) => {
+    guestCart.add(productId, 1);
+    try {
+        const res = await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                items: [{ productId, quantity: 1 }],
+                deliveryMethod: "livraison",
+            }),
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const orderId = data.order?.id ?? data.id;
+            toast.success("Commande créée ! Redirection…");
+            router.push(`/client/orders/${orderId}`);
+        } else {
+            toast.error("Erreur lors de la commande");
+        }
+    } catch {
+        toast.error("Erreur réseau");
     }
-    // On stocke l'intention d'achat "direct" (hors panier) pour que /client/checkout la récupère
-    router.push(`/client/checkout?productId=${productId}&quantity=1`);
 };
 
     // ✅ Toujours vers /client/panier sans passer par sign-in
