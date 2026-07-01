@@ -1,59 +1,114 @@
-// app/client/panier/page.tsx
-"use client";
-
+'use client';
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import {
   Trash2, ShoppingBag, Plus, Minus, ArrowLeft,
   CheckCircle, XCircle, AlertCircle, X,
 } from "lucide-react";
 
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  images: string[];
+  stock: number;
+  category: string;
+};
+
 type CartItem = {
   id: number;
   quantity: number;
-  size: string;
-  product: {
-    id: number;
-    name: string;
-    price: number;
-    images: string[];
-    stock: number;
-    category: string;
-  };
+  size: string | null;
+  product: Product;
 };
 
-type Cart = {
-  items: CartItem[];
-};
+type GuestItem = { productId: number; quantity: number };
 
-type AlertType = {
-  show: boolean;
-  type: "success" | "error" | "warning";
-  message: string;
+const GUEST_KEY = "irnas_guest_cart";
+
+const guestCart = {
+  get(): GuestItem[] {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem(GUEST_KEY) || "[]"); } catch { return []; }
+  },
+  save(items: GuestItem[]) {
+    localStorage.setItem(GUEST_KEY, JSON.stringify(items));
+  },
+  updateQuantity(productId: number, quantity: number) {
+    const items = guestCart.get();
+    const found = items.find(i => i.productId === productId);
+    if (found) found.quantity = quantity;
+    guestCart.save(items);
+  },
+  remove(productId: number) {
+    const items = guestCart.get().filter(i => i.productId !== productId);
+    guestCart.save(items);
+  },
 };
 
 export default function CartPage() {
-  const [cart, setCart] = useState<Cart>({ items: [] });
+  const { isSignedIn } = useUser();
+
+  const [cart, setCart] = useState<{ items: CartItem[] }>({ items: [] });
   const [loading, setLoading] = useState(true);
   const [updatingItem, setUpdatingItem] = useState<string | null>(null);
-  const [alert, setAlert] = useState<AlertType>({ show: false, type: "success", message: "" });
+  const [alert, setAlert] = useState<{ show: boolean; type: "success" | "error" | "warning"; message: string }>({
+    show: false, type: "success", message: "",
+  });
 
   const showAlert = (type: "success" | "error" | "warning", message: string) => {
     setAlert({ show: true, type, message });
     setTimeout(() => setAlert({ show: false, type: "success", message: "" }), 3000);
   };
 
+  // ── Charger le panier (auth ou guest) ─────────────────────────────────────
   const fetchCart = async () => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/cart");
-      if (res.ok) {
-        const data = await res.json();
-        setCart(data);
+      if (isSignedIn) {
+        const res = await fetch("/api/cart");
+        if (res.ok) {
+          const data = await res.json();
+          setCart(data);
+        } else {
+          showAlert("error", "Erreur lors du chargement du panier");
+        }
       } else {
-        showAlert("error", "Erreur lors du chargement du panier");
+        const guestItems = guestCart.get();
+
+        if (guestItems.length === 0) {
+          setCart({ items: [] });
+        } else {
+          // On récupère tous les produits puis on filtre côté client
+          // (évite de dépendre d'un paramètre ?ids= non garanti côté API)
+          const res = await fetch("/api/products");
+          if (res.ok) {
+            const allProducts: Product[] = await res.json();
+            const productMap = new Map(allProducts.map(p => [p.id, p]));
+
+            const enriched: CartItem[] = [];
+            for (const item of guestItems) {
+              const product = productMap.get(item.productId);
+              if (product) {
+                enriched.push({
+                  id: item.productId,
+                  quantity: item.quantity,
+                  size: null,
+                  product,
+                });
+              }
+            }
+
+            setCart({ items: enriched });
+          } else {
+            showAlert("error", "Erreur lors du chargement du panier");
+          }
+        }
       }
-    } catch {
-      showAlert("error", "Erreur réseau");
+    } catch (err) {
+      console.error(err);
+      showAlert("error", "Impossible de charger le panier");
     } finally {
       setLoading(false);
     }
@@ -61,27 +116,35 @@ export default function CartPage() {
 
   useEffect(() => {
     fetchCart();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]);
 
-  const updateQuantity = async (productId: number, size: string, newQuantity: number) => {
+  // ── Modifier la quantité ───────────────────────────────────────────────────
+  const updateQuantity = async (productId: number, size: string | null, newQuantity: number) => {
     if (newQuantity < 1) return;
-
     const key = `${productId}-${size}`;
     setUpdatingItem(key);
 
     try {
-      const res = await fetch("/api/cart", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, quantity: newQuantity, size }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setCart(data.cart);
+      if (isSignedIn) {
+        const res = await fetch("/api/cart", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId, quantity: newQuantity, size: size || "" }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setCart(data.cart);
+        } else {
+          showAlert("error", data.error || "Erreur lors de la mise à jour");
+        }
       } else {
-        showAlert("error", data.error || "Erreur lors de la mise à jour");
+        guestCart.updateQuantity(productId, newQuantity);
+        setCart(prev => ({
+          items: prev.items.map(item =>
+            item.product.id === productId ? { ...item, quantity: newQuantity } : item
+          ),
+        }));
       }
     } catch {
       showAlert("error", "Erreur réseau");
@@ -90,25 +153,31 @@ export default function CartPage() {
     }
   };
 
-  const removeFromCart = async (productId: number, size: string) => {
+  // ── Retirer un article ──────────────────────────────────────────────────────
+  const removeFromCart = async (productId: number, size: string | null) => {
     if (!confirm("Êtes-vous sûr de vouloir retirer cet article ?")) return;
-
     const key = `${productId}-${size}`;
     setUpdatingItem(key);
 
     try {
-      const res = await fetch(
-        `/api/cart?productId=${productId}&size=${encodeURIComponent(size)}`,
-        { method: "DELETE" }
-      );
-
-      const data = await res.json();
-
-      if (res.ok) {
-        showAlert("success", "Article retiré du panier");
-        setCart(data.cart);
+      if (isSignedIn) {
+        const res = await fetch(
+          `/api/cart?productId=${productId}&size=${encodeURIComponent(size || "")}`,
+          { method: "DELETE" }
+        );
+        const data = await res.json();
+        if (res.ok) {
+          showAlert("success", "Article retiré du panier");
+          setCart(data.cart);
+        } else {
+          showAlert("error", data.error || "Erreur lors de la suppression");
+        }
       } else {
-        showAlert("error", data.error || "Erreur lors de la suppression");
+        guestCart.remove(productId);
+        showAlert("success", "Article retiré du panier");
+        setCart(prev => ({
+          items: prev.items.filter(item => item.product.id !== productId),
+        }));
       }
     } catch {
       showAlert("error", "Erreur réseau");
@@ -122,7 +191,7 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
           <p className="mt-6 text-lg text-slate-400">Chargement du panier...</p>
@@ -133,19 +202,17 @@ export default function CartPage() {
 
   if (cart.items.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pt-24 px-4">
-        <div className="max-w-2xl mx-auto text-center py-20">
-          <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-700 rounded-3xl p-12 md:p-16">
-            <ShoppingBag size={80} className="mx-auto text-slate-500 mb-8" />
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Votre panier est vide</h1>
-            <p className="text-lg md:text-xl text-slate-400 mb-10">Découvrez nos collections exclusives</p>
-            <Link
-              href="/catalog"
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-blue-600 text-white px-8 md:px-10 py-5 rounded-3xl text-lg md:text-xl font-semibold hover:scale-105 transition"
-            >
-              Découvrir le catalogue
-            </Link>
-          </div>
+      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center pt-20">
+        <div className="text-center">
+          <ShoppingBag size={80} className="mx-auto text-[#4a6a8a] mb-6" />
+          <h1 className="text-4xl font-light text-white mb-3">Votre panier est vide</h1>
+          <p className="text-[#4a6a8a] mb-8">Découvrez nos collections exclusives</p>
+          <Link
+            href="/client/catalog"
+            className="inline-block px-8 py-4 bg-[#3b82f6] rounded-full text-white hover:bg-[#2563eb] transition"
+          >
+            Découvrir le catalogue
+          </Link>
         </div>
       </div>
     );
@@ -158,7 +225,7 @@ export default function CartPage() {
         <div className="fixed top-6 right-4 md:right-6 z-50 max-w-sm w-full px-4">
           <div className={`rounded-3xl p-5 flex gap-4 shadow-2xl backdrop-blur-xl ${
             alert.type === "success" ? "bg-emerald-900/90 border border-emerald-700" :
-            alert.type === "error" ? "bg-red-900/90 border border-red-700" : 
+            alert.type === "error" ? "bg-red-900/90 border border-red-700" :
             "bg-amber-900/90 border border-amber-700"
           }`}>
             {alert.type === "success" && <CheckCircle className="text-emerald-400 mt-0.5 flex-shrink-0" size={28} />}
@@ -178,7 +245,7 @@ export default function CartPage() {
         {/* Header */}
         <div className="mb-10 md:mb-12">
           <Link
-            href="/catalog"
+            href="/client/catalog"
             className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-400 transition mb-6"
           >
             <ArrowLeft size={20} />
