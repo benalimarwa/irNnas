@@ -1,12 +1,13 @@
 'use client';
-
+import Navbar from "@/components/ClientNavbar";
+import GuestAutoSignIn from "@/components/GuestAutoSignIn";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   CheckCircle, Package, Truck, Store, Calendar, Home, ArrowLeft, AlertCircle,
 } from "lucide-react";
-import Navbar from "@/components/ClientNavbar";
+import { Suspense } from "react";
 
 type OrderItem = {
   id: number;
@@ -90,7 +91,10 @@ export default function OrderConfirmationPage() {
 
   return (
     <div className="min-h-screen bg-[#0a1628] text-white">
-      <Navbar />
+      <Suspense fallback={null}>
+      <GuestAutoSignIn />
+    </Suspense>
+    <Navbar />
 
       {/* Dot grid */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.07]"

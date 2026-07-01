@@ -181,76 +181,68 @@ export default function CheckoutPage() {
 
   /* ── Submit ─────────────────────────────────────────────── */
   const handleSubmit = async () => {
-    const error = validate();
-    if (error) { showAlert("warning", error); return; }
+  const error = validate();
+  if (error) { showAlert("warning", error); return; }
 
-    setProcessing(true);
-    try {
-      const city = addressCountry === "TN" ? selectedCity : form.freeCity;
+  setProcessing(true);
+  try {
+    const city = addressCountry === "TN" ? selectedCity : form.freeCity;
 
-      const payload: Record<string, unknown> = {
-        deliveryMethod,
-        deliveryFee:  deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
-        customerInfo: {
-          email:       form.email.trim().toLowerCase(),
-          firstName:   form.firstName.trim(),
-          lastName:    form.lastName.trim(),
-          phone:       `${phoneCountry.dial} ${form.phone.trim()}`,
-          address:     deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
-          city:        deliveryMethod === "DELIVERY" ? (city || null) : null,
-          governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
-          postalCode:  deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
-          country:     deliveryMethod === "DELIVERY" ? addressCountry : null,
-          notes:       form.notes.trim() || null,
-        },
-      };
+    const payload: Record<string, unknown> = {
+      deliveryMethod,
+      deliveryFee:  deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
+      customerInfo: {
+        email:       form.email.trim().toLowerCase(),
+        firstName:   form.firstName.trim(),
+        lastName:    form.lastName.trim(),
+        phone:       `${phoneCountry.dial} ${form.phone.trim()}`,
+        address:     deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
+        city:        deliveryMethod === "DELIVERY" ? (city || null) : null,
+        governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
+        postalCode:  deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
+        country:     deliveryMethod === "DELIVERY" ? addressCountry : null,
+        notes:       form.notes.trim() || null,
+      },
+    };
+
+    if (isGuest) {
+      payload.items = guestItems;
+    }
+
+    const res  = await fetch("/api/orders", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      const orderId = data.orderId;
 
       if (isGuest) {
-        payload.items = guestItems;
+        guestCart.clear();
+        const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
+        guestOrders.push(orderId);
+        localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
       }
 
-      const res  = await fetch("/api/orders", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(payload),
-      });
-      const data = await res.json();
-
-      // Remplace la partie if (res.ok) par ceci :
-
-if (res.ok) {
-  if (isGuest) {
-    guestCart.clear();
-    const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
-    guestOrders.push(data.orderId);
-    localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
-  }
-
-  const orderId = data.orderId;
-
-  // Auto-login pour guest
-  if (isGuest && data.signInToken) {
-    try {
-      const { useSignIn } = await import("@clerk/nextjs");
-      // On doit utiliser l'instance du hook, donc on redirige directement avec le token en query
-      router.push(`/client/orders/${orderId}?ticket=${data.signInToken}`);
-      return;
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  showAlert("success", "Commande confirmée avec succès !");
-  setTimeout(() => router.push(`/client/orders/${orderId}`), 1200);
-} else {
-        showAlert("error", data.error || "Erreur lors de la commande");
+      // Auto-login pour guest : redirige avec le ticket, GuestAutoSignIn s'occupe du reste
+      if (isGuest && data.signInToken) {
+        router.push(`/client/orders/${orderId}?ticket=${data.signInToken}`);
+        return;
       }
-    } catch {
-      showAlert("error", "Erreur réseau");
-    } finally {
-      setProcessing(false);
+
+      showAlert("success", "Commande confirmée avec succès !");
+      setTimeout(() => router.push(`/client/orders/${orderId}`), 1200);
+    } else {
+      showAlert("error", data.error || "Erreur lors de la commande");
     }
-  };
+  } catch {
+    showAlert("error", "Erreur réseau");
+  } finally {
+    setProcessing(false);
+  }
+};
 
   /* ── Shared styles ──────────────────────────────────────── */
   const inputCls = `w-full bg-[#0a1628] border border-[#1e3a5f] rounded-2xl px-4 py-3 text-sm text-white placeholder:text-[#4a6a8a] focus:outline-none focus:border-[#3b82f6]/50 focus:ring-1 focus:ring-[#3b82f6]/20 transition disabled:opacity-40 disabled:cursor-not-allowed`;
