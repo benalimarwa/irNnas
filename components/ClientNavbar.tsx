@@ -130,7 +130,9 @@ export default function Navbar() {
   }, []);
 
   const isActive = (href: string) => pathname === href || pathname?.startsWith(href + "/");
-  const handleCartClick = () => router.push("/client/panier");
+ const handleCartClick = () => {
+        router.push("/client/panier");
+    };
   const visibleLinks = MENU_LINKS.filter(l => !l.auth || isSignedIn);
 
   return (
