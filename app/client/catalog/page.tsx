@@ -565,11 +565,11 @@ function CatalogueContent() {
                         <span className="text-lg font-light tracking-[0.2em] text-white">IRNAS</span>
                         <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
                     </div>
-                    <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2026 IRNAS — Tous droits réservés</p>
+                    <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2020 IRNAS — Tous droits réservés</p>
                     <div className="flex items-center gap-6 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
                         <Link href="#" className="hover:text-[#3b82f6] transition">Mentions</Link>
                         <Link href="#" className="hover:text-[#3b82f6] transition">Confidentialité</Link>
-                        <Link href="#" className="hover:text-[#3b82f6] transition">Contact</Link>
+                        <Link href="#" className="hover:text-[#3b82f6] transition">27888827</Link>
                     </div>
                 </div>
             </footer>

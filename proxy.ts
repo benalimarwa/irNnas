@@ -6,7 +6,7 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/catalogue(.*)",
+   "/client/catalog(.*)",
   "/api/products(.*)",
   "/api/webhooks(.*)",
   "/api/orders(.*)",        // ← guests peuvent passer commande
