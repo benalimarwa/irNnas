@@ -4,7 +4,6 @@ import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { useUser } from "@clerk/nextjs";
 import { ShoppingCart, Heart, ChevronDown, X, ChevronRight } from "lucide-react";
 import Navbar from "@/components/ClientNavbar";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,28 +26,6 @@ type Product = {
 };
 
 type CategoryOption = { value: string; label: string };
-type GuestItem = { productId: number; quantity: number };
-
-// ─── Guest cart helpers (localStorage) ───────────────────────────────────────
-const GUEST_KEY = "irnas_guest_cart";
-
-const guestCart = {
-    get(): GuestItem[] {
-        if (typeof window === "undefined") return [];
-        try { return JSON.parse(localStorage.getItem(GUEST_KEY) || "[]"); } catch { return []; }
-    },
-    add(productId: number, qty = 1) {
-        const items = guestCart.get();
-        const found = items.find(i => i.productId === productId);
-        if (found) found.quantity += qty;
-        else items.push({ productId, quantity: qty });
-        localStorage.setItem(GUEST_KEY, JSON.stringify(items));
-    },
-    count(): number {
-        return guestCart.get().reduce((s, i) => s + i.quantity, 0);
-    },
-    clear() { localStorage.removeItem(GUEST_KEY); },
-};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CATEGORY_LABELS: Record<string, string> = {
@@ -72,9 +49,8 @@ const MENU_LINKS = [
     { label: "À propos", href: "#" },
 ];
 
- function CatalogueContent() {
+function CatalogueContent() {
     const router = useRouter();
-    const { isSignedIn } = useUser();
 
     const [products, setProducts] = useState<Product[]>([]);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -93,15 +69,16 @@ const MENU_LINKS = [
     // Drawer mobile
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [drawerTab, setDrawerTab] = useState<"menu" | "categories">("menu");
-const searchParams = useSearchParams();
+    const searchParams = useSearchParams();
 
-// Lit le paramètre ?category=xxx (ou ?gender=xxx) dans l'URL et applique le filtre
-useEffect(() => {
-    const cat = searchParams.get("category");
-    const gender = searchParams.get("gender");
-    if (cat) setSelectedCategory(cat);
-    if (gender) setSelectedGender(gender);
-}, [searchParams]);
+    // Lit le paramètre ?category=xxx (ou ?gender=xxx) dans l'URL et applique le filtre
+    useEffect(() => {
+        const cat = searchParams.get("category");
+        const gender = searchParams.get("gender");
+        if (cat) setSelectedCategory(cat);
+        if (gender) setSelectedGender(gender);
+    }, [searchParams]);
+
     // ── Fetch produits ────────────────────────────────────────────────────────
     const fetchProducts = async () => {
         try {
@@ -140,31 +117,9 @@ useEffect(() => {
         } catch { }
     };
 
-    // Fusion guest cart → vrai panier après connexion
-    const syncGuestCart = async () => {
-        const items = guestCart.get();
-        if (items.length === 0) return;
-        await Promise.all(
-            items.map(item =>
-                fetch("/api/cart", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(item),
-                })
-            )
-        );
-        guestCart.clear();
-    };
-
     useEffect(() => { fetchProducts(); }, []);
 
-    useEffect(() => {
-        if (isSignedIn) {
-            syncGuestCart().then(() => fetchCartCount());
-        } else {
-            setCartCount(guestCart.count());
-        }
-    }, [isSignedIn]);
+    useEffect(() => { fetchCartCount(); }, []);
 
     // Filtrage réactif
     useEffect(() => {
@@ -185,12 +140,6 @@ useEffect(() => {
 
     // ── Actions ───────────────────────────────────────────────────────────────
     const addToCart = async (productId: number) => {
-        if (!isSignedIn) {
-            guestCart.add(productId, 1);
-            setCartCount(guestCart.count());
-            alert("✅ Produit ajouté ! Connectez-vous pour finaliser votre commande.");
-            return;
-        }
         try {
             const res = await fetch("/api/cart", {
                 method: "POST",
@@ -207,11 +156,6 @@ useEffect(() => {
     };
 
     const handleBuyNow = async (productId: number) => {
-        if (!isSignedIn) {
-            guestCart.add(productId, 1);
-            router.push("/sign-in?redirect_url=/client/panier");
-            return;
-        }
         try {
             const res = await fetch("/api/orders", {
                 method: "POST",
@@ -234,59 +178,48 @@ useEffect(() => {
     };
 
     const handleCartClick = () => {
-        
-            router.push("/client/panier");
-        
+        router.push("/client/panier");
     };
-const fetchFavorites = async () => {
-    if (!isSignedIn) return;
-    try {
-        const res = await fetch("/api/favorites");
-        if (res.ok) {
-            const data = await res.json();
-            setFavorites(data.map((p: Product) => p.id));
+
+    const fetchFavorites = async () => {
+        try {
+            const res = await fetch("/api/favorites");
+            if (res.ok) {
+                const data = await res.json();
+                setFavorites(data.map((p: Product) => p.id));
+            }
+        } catch (err) {
+            console.error("Erreur fetch favorites:", err);
         }
-    } catch (err) {
-        console.error("Erreur fetch favorites:", err);
-    }
-};
+    };
 
-useEffect(() => {
-    if (isSignedIn) {
-        fetchFavorites();
-    }
-}, [isSignedIn]);
-const toggleFavorite = async (productId: number) => {
-    if (!isSignedIn) {
-        alert("Connectez-vous pour sauvegarder vos favoris ❤️");
-        router.push("/sign-in?redirect_url=/client/catalog");
-        return;
-    }
+    useEffect(() => { fetchFavorites(); }, []);
 
-    try {
-        const res = await fetch("/api/favorites", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ productId }),
-        });
+    const toggleFavorite = async (productId: number) => {
+        try {
+            const res = await fetch("/api/favorites", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ productId }),
+            });
 
-        if (res.ok) {
-            const result = await res.json();
-            setFavorites(prev =>
-                result.status === "added"
-                    ? [...prev, productId]
-                    : prev.filter(id => id !== productId)
-            );
-        } else {
-            const errText = await res.text();
-            console.error("Erreur API favorites:", res.status, errText);
-            alert(`Erreur (${res.status}) : impossible de mettre à jour les favoris`);
+            if (res.ok) {
+                const result = await res.json();
+                setFavorites(prev =>
+                    result.status === "added"
+                        ? [...prev, productId]
+                        : prev.filter(id => id !== productId)
+                );
+            } else {
+                const errText = await res.text();
+                console.error("Erreur API favorites:", res.status, errText);
+                alert(`Erreur (${res.status}) : impossible de mettre à jour les favoris`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Erreur réseau lors de la mise à jour des favoris");
         }
-    } catch (err) {
-        console.error(err);
-        alert("Erreur réseau lors de la mise à jour des favoris");
-    }
-};
+    };
 
     const resetFilters = () => {
         setSelectedCategory("");
@@ -433,12 +366,8 @@ const toggleFavorite = async (productId: number) => {
 
             {/* ================================================================ */}
             {/* HEADER                                                           */}
-           <Navbar/>
+            <Navbar/>
 
-            {/* ================================================================ */}
-            {/* HERO                                                             */}
-            {/* ================================================================ */}
-           
             {/* ================================================================ */}
             {/* SHOP                                                             */}
             {/* ================================================================ */}
@@ -446,7 +375,7 @@ const toggleFavorite = async (productId: number) => {
 
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14">
                     <div>
-                       
+
                         <p className="mt-2 text-sm text-[#4a6a8a] tracking-widest uppercase font-light">
                             {filteredProducts.length} produit{filteredProducts.length !== 1 ? "s" : ""}
                             {hasActiveFilters && (
@@ -646,7 +575,9 @@ const toggleFavorite = async (productId: number) => {
             </footer>
         </div>
     );
-}export default function CataloguePage() {
+}
+
+export default function CataloguePage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
