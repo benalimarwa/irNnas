@@ -36,7 +36,7 @@ import toast, { Toaster } from "react-hot-toast";
 //
 // Gardez le fichier compressé (<8Mo, H.264, 1080p max) pour un chargement rapide.
 // ─────────────────────────────────────────────────────────────────────────
-const HERO_VIDEO_URL = "/video/pp.mp4";
+const HERO_VIDEO_URL = "/public/video/pp.mp4";
 const HERO_POSTER = "/hero-poster.jpg"; // image affichée pendant le chargement / si la vidéo échoue
 
 // ─── Types ──────────────────────────────────────────────────────────────
