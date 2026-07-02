@@ -483,22 +483,33 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
 <label className="block border-2 border-dashed border-white/20 rounded-3xl p-12 text-center cursor-pointer hover:border-[#D4AF37]">
   <Upload className="mx-auto mb-4 text-white/50" size={48} />
   <span className="text-white/70">{imageFile ? imageFile.name : "Cliquez ou glissez une image"}</span>
-  <p className="text-xs text-white/40 mt-2">JPG, PNG, WEBP, HEIC... tous formats acceptés</p>
+  <p className="text-xs text-white/40 mt-2">JPG, PNG, WEBP, HEIC, capture d'écran... tous formats acceptés</p>
   <input
     type="file"
-    accept="image/*,image/heic,image/heif,.heic,.heif,.avif"
-    capture="environment"
+    accept="image/*,.heic,.heif,.avif"
     className="hidden"
     onChange={onFile}
   />
 </label>
                   )}
 
-                  {(imagePreview || form.imageUrl) && (
-                    <div className="mt-6 rounded-2xl overflow-hidden border border-white/10">
-                      <img src={imagePreview || form.imageUrl} alt="Preview" className="w-full h-64 object-contain" />
-                    </div>
-                  )}
+                 {(imagePreview || form.imageUrl) && (
+  <div className="mt-6 rounded-2xl overflow-hidden border border-white/10">
+    <img
+      src={imagePreview || form.imageUrl}
+      alt="Preview"
+      className="w-full h-64 object-contain"
+      onError={(e) => {
+        (e.target as HTMLImageElement).style.display = "none";
+      }}
+    />
+    {imageFile && !imagePreview.startsWith("data:image/") && (
+      <p className="text-xs text-white/40 p-3">
+        Aperçu indisponible pour ce format (HEIC), mais le fichier "{imageFile.name}" sera bien envoyé.
+      </p>
+    )}
+  </div>
+)}
                 </div>
 
                 <div className="flex gap-4 pt-6">
