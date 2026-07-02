@@ -8,10 +8,11 @@ import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs";
 
 import {
   ShoppingCart, Heart, ChevronDown, X, ChevronRight,
-  Home, Package, Receipt, LogOut, LogIn, Sun, Moon, Menu,
+  Home, Package, Receipt, LogOut, LogIn, Sun, Moon, Menu, Tag,
 } from "lucide-react";
 
 type GuestItem = { productId: number; quantity: number };
+type CategoryOption = { value: string; label: string };
 
 const GUEST_KEY = "irnas_guest_cart";
 const guestCart = {
@@ -22,6 +23,20 @@ const guestCart = {
   count(): number { return guestCart.get().reduce((s, i) => s + i.quantity, 0); },
 };
 
+// ─── Labels catégories (garder synchro avec la page catalogue) ─────────────
+const CATEGORY_LABELS: Record<string, string> = {
+  pantalon: "Pantalon",
+  pull: "Pull",
+  veste: "Veste",
+  chemise: "Chemise",
+  accessoire: "Accessoire",
+  robe: "Robe",
+  jupe: "Jupe",
+  "t-shirt": "T-shirt",
+  chaussure: "Chaussure",
+  manteau: "Manteau",
+};
+
 const MENU_LINKS = [
   { label: "Accueil",    href: "/client",         icon: Home,    auth: false },
   { label: "Favoris",    href: "/client/favoris", icon: Heart,   auth: false },
@@ -30,7 +45,6 @@ const MENU_LINKS = [
 ];
 
 const CLERK_APPEARANCE = {
-  
   variables: {
     colorPrimary:         "#3b82f6",
     colorBackground:      "#0f1f33",
@@ -76,7 +90,13 @@ export default function Navbar() {
   const [profileOpen,  setProfileOpen]  = useState(false);
   const [guestOrderId, setGuestOrderId] = useState<number | null>(null);
 
+  // Catégories
+  const [categories,   setCategories]   = useState<CategoryOption[]>([]);
+  const [catMenuOpen,  setCatMenuOpen]  = useState(false);
+  const [mobileCatOpen, setMobileCatOpen] = useState(false);
+
   const profileRef = useRef<HTMLDivElement>(null);
+  const catMenuRef = useRef<HTMLDivElement>(null);
 
   // Cart count
   useEffect(() => {
@@ -104,6 +124,17 @@ export default function Navbar() {
     }
   }, [isSignedIn]);
 
+  // Charger la liste des catégories depuis les produits
+  useEffect(() => {
+    fetch("/api/products")
+      .then(r => r.ok ? r.json() : [])
+      .then((data: { category: string }[]) => {
+        const cats = Array.from(new Set(data.map(p => p.category))).filter(Boolean) as string[];
+        setCategories(cats.map(c => ({ value: c, label: CATEGORY_LABELS[c] ?? c })));
+      })
+      .catch(() => {});
+  }, []);
+
   // Theme
   useEffect(() => {
     const saved = localStorage.getItem("theme");
@@ -119,20 +150,32 @@ export default function Navbar() {
     localStorage.setItem("theme", next ? "dark" : "light");
   };
 
-  // Close profile dropdown on outside click
+  // Fermer les dropdowns au clic extérieur
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node))
         setProfileOpen(false);
+      if (catMenuRef.current && !catMenuRef.current.contains(e.target as Node))
+        setCatMenuOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const isActive = (href: string) => pathname === href || pathname?.startsWith(href + "/");
- const handleCartClick = () => {
-        router.push("/client/panier");
-    };
+
+  const handleCartClick = () => {
+    router.push("/client/panier");
+  };
+
+  // Redirige vers le catalogue avec le filtre catégorie appliqué
+  const goToCategory = (value: string) => {
+    setCatMenuOpen(false);
+    setMobileCatOpen(false);
+    setMobileOpen(false);
+    router.push(`/client/catalog?category=${encodeURIComponent(value)}`);
+  };
+
   const visibleLinks = MENU_LINKS.filter(l => !l.auth || isSignedIn);
 
   return (
@@ -184,6 +227,38 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
+
+            {/* Dropdown Catégories */}
+            {categories.length > 0 && (
+              <div className="relative" ref={catMenuRef}>
+                <button
+                  onClick={() => setCatMenuOpen(v => !v)}
+                  className={`flex items-center gap-2 px-5 py-2 text-xs uppercase tracking-[0.25em] font-light border-b transition pb-0.5 ${
+                    catMenuOpen
+                      ? "text-[#3b82f6] border-[#3b82f6]/40"
+                      : "border-transparent text-[#8aabca] hover:text-[#3b82f6] hover:border-[#3b82f6]/40"
+                  }`}
+                >
+                  <Tag className="w-4 h-4" />
+                  Catégories
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${catMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {catMenuOpen && (
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-56 bg-[#0f1f33] border border-[#1e3a5f] rounded-2xl shadow-2xl overflow-hidden z-50 py-2">
+                    {categories.map(cat => (
+                      <button
+                        key={cat.value}
+                        onClick={() => goToCategory(cat.value)}
+                        className="w-full text-left px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-light text-[#8aabca] hover:bg-[#1a2a44] hover:text-[#3b82f6] transition"
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Lien commande guest */}
             {!isSignedIn && guestOrderId && (
@@ -358,7 +433,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Links */}
+            {/* Links + Catégories */}
             <ul className="flex-1 overflow-y-auto mt-4 divide-y divide-[#1e3a5f]">
               {visibleLinks.map(({ label, href, icon: Icon }) => (
                 <li key={href}>
@@ -376,6 +451,38 @@ export default function Navbar() {
                   </Link>
                 </li>
               ))}
+
+              {/* Section catégories repliable */}
+              {categories.length > 0 && (
+                <li>
+                  <button
+                    onClick={() => setMobileCatOpen(v => !v)}
+                    className="w-full flex items-center justify-between gap-4 px-6 py-4 text-sm font-light uppercase tracking-[0.15em] text-[#8aabca] hover:text-[#3b82f6] hover:bg-[#3b82f6]/5 transition"
+                  >
+                    <span className="flex items-center gap-4">
+                      <Tag className="w-5 h-5" />
+                      Catégories
+                    </span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${mobileCatOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {mobileCatOpen && (
+                    <ul className="bg-[#0f1f33]">
+                      {categories.map(cat => (
+                        <li key={cat.value}>
+                          <button
+                            onClick={() => goToCategory(cat.value)}
+                            className="w-full flex items-center justify-between pl-14 pr-6 py-3 text-xs uppercase tracking-[0.15em] font-light text-[#8aabca] hover:text-[#3b82f6] hover:bg-[#3b82f6]/5 transition"
+                          >
+                            {cat.label}
+                            <ChevronRight className="w-4 h-4 text-[#4a6a8a]" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              )}
             </ul>
 
             {/* Bottom actions */}

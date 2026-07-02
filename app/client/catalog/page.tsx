@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+
 import { useUser } from "@clerk/nextjs";
 import { ShoppingCart, Heart, ChevronDown, X, ChevronRight } from "lucide-react";
 import Navbar from "@/components/ClientNavbar";
-
+import { useRouter, useSearchParams } from "next/navigation";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Product = {
     id: number;
@@ -94,7 +94,15 @@ export default function CataloguePage() {
     // Drawer mobile
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [drawerTab, setDrawerTab] = useState<"menu" | "categories">("menu");
+const searchParams = useSearchParams();
 
+// Lit le paramètre ?category=xxx (ou ?gender=xxx) dans l'URL et applique le filtre
+useEffect(() => {
+    const cat = searchParams.get("category");
+    const gender = searchParams.get("gender");
+    if (cat) setSelectedCategory(cat);
+    if (gender) setSelectedGender(gender);
+}, [searchParams]);
     // ── Fetch produits ────────────────────────────────────────────────────────
     const fetchProducts = async () => {
         try {
@@ -227,11 +235,9 @@ export default function CataloguePage() {
     };
 
     const handleCartClick = () => {
-        if (!isSignedIn) {
-            router.push("/sign-in?redirect_url=/client/panier");
-        } else {
+        
             router.push("/client/panier");
-        }
+        
     };
 const fetchFavorites = async () => {
     if (!isSignedIn) return;
