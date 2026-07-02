@@ -285,7 +285,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a1628] text-white overflow-x-hidden">
+   <div className="min-h-screen text-white overflow-x-hidden">
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Anton&family=Playfair+Display:ital@0;1&family=Inter:wght@300;400;500&display=swap');
         .font-display { font-family: 'Anton', sans-serif; }
