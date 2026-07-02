@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -72,8 +72,7 @@ const MENU_LINKS = [
     { label: "À propos", href: "#" },
 ];
 
-// ─── Component ────────────────────────────────────────────────────────────────
-export default function CataloguePage() {
+ function CatalogueContent() {
     const router = useRouter();
     const { isSignedIn } = useUser();
 
@@ -646,5 +645,20 @@ const toggleFavorite = async (productId: number) => {
                 </div>
             </footer>
         </div>
+    );
+}export default function CataloguePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
+                <div className="relative">
+                    <div className="w-20 h-20 border-2 border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center text-[#3b82f6] text-[10px] font-light tracking-[0.3em] animate-pulse">
+                        IRNAS
+                    </div>
+                </div>
+            </div>
+        }>
+            <CatalogueContent />
+        </Suspense>
     );
 }
