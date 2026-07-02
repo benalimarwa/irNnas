@@ -200,9 +200,7 @@ export default function Navbar() {
         <span className="text-2xl md:text-3xl font-light tracking-[0.2em] text-white group-hover:text-[#3b82f6] transition duration-500 hidden sm:inline">
           IRNAS
         </span>
-        <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/70 font-light hidden lg:block">
-          Fashion
-        </span>
+       
       </Link>
     </div>
 
