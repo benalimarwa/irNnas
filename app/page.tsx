@@ -36,7 +36,7 @@ import toast, { Toaster } from "react-hot-toast";
 //
 // Gardez le fichier compressé (<8Mo, H.264, 1080p max) pour un chargement rapide.
 // ─────────────────────────────────────────────────────────────────────────
-const HERO_VIDEO_URL = "https://your-cdn.com/path/to/hero-video.mp4";
+const HERO_VIDEO_URL = "/video/pp.mp4";
 const HERO_POSTER = "/hero-poster.jpg"; // image affichée pendant le chargement / si la vidéo échoue
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -702,7 +702,7 @@ export default function HomePage() {
           <FooterCol title="Maison" links={["Notre histoire", "Savoir-faire", "Presse", "Carrières"]} />
         </div>
         <div className="max-w-7xl mx-auto pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2026 IRNAS — Tous droits réservés</p>
+          <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2020 IRNAS — Tous droits réservés</p>
           <div className="flex items-center gap-6 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
             <Link href="#" className="hover:text-[#3b82f6] transition">Mentions légales</Link>
             <Link href="#" className="hover:text-[#3b82f6] transition">Confidentialité</Link>
