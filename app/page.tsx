@@ -36,7 +36,7 @@ import toast, { Toaster } from "react-hot-toast";
 //
 // Gardez le fichier compressé (<8Mo, H.264, 1080p max) pour un chargement rapide.
 // ─────────────────────────────────────────────────────────────────────────
-const HERO_VIDEO_URL = "/public/video/pp.mp4";
+const HERO_VIDEO_URL = "/video/pp.mp4";
 const HERO_POSTER = "/hero-poster.jpg"; // image affichée pendant le chargement / si la vidéo échoue
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -332,8 +332,10 @@ export default function HomePage() {
         )}
 
         {/* Voile de lisibilité */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/40 to-[#0a1628]/70" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/60 via-transparent to-transparent" />
+        {/* Voile de lisibilité — palette foncée professionnelle */}
+<div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/50 to-[#0a1628]/20" />
+<div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/70 via-[#0a1628]/10 to-transparent" />
+<div className="absolute inset-0" style={{ background: "radial-gradient(circle at 30% 20%, rgba(201,162,103,0.10), rgba(10,22,40,0.55))" }} />
 
         {/* Contrôles vidéo — discrets, coin haut droit */}
         {!videoFailed && (

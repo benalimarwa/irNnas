@@ -21,8 +21,21 @@ export default function RootLayout({
           <meta name="viewport" content="width=device-width, initial-scale=1" />
         </head>
         <body className="overflow-x-hidden w-full max-w-full min-h-screen">
+          {/* Fond vidéo fixe — derrière tout le contenu */}
+          <div className="video-background">
+            <video
+              src="/video/pp.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+            />
+          </div>
+          <div className="video-overlay" />
+
           <SyncUser />
-          <main className="pt-20 bg-black">{children}</main>
+          <main className="pt-20 relative z-10">{children}</main>
         </body>
       </html>
     </ClerkProvider>
