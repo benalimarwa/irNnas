@@ -413,20 +413,36 @@ function CatalogueInner() {
             {/* ================================================================ */}
             {/* FOOTER                                                           */}
             {/* ================================================================ */}
-            <footer className="border-t border-[#1a2a44] py-10 px-6">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <span className="text-lg font-light tracking-[0.2em] text-white">IRNAS</span>
-                        <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
-                    </div>
-                    <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2026 IRNAS — Tous droits réservés</p>
-                    <div className="flex items-center gap-6 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
-                        <Link href="#" className="hover:text-[#3b82f6] transition">Mentions</Link>
-                        <Link href="#" className="hover:text-[#3b82f6] transition">Confidentialité</Link>
-                        <Link href="#" className="hover:text-[#3b82f6] transition">Contact</Link>
-                    </div>
-                </div>
-            </footer>
+            {/* ================================================================ */}
+{/* FOOTER                                                           */}
+{/* ================================================================ */}
+<footer className="border-t border-[#1a2a44] py-10 px-6">
+    <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+            <span className="text-lg font-light tracking-[0.2em] text-white">IRNAS</span>
+            <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
+        </div>
+        <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2026 IRNAS — Tous droits réservés</p>
+        <div className="flex items-center gap-6 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
+            <a
+                href="https://www.instagram.com/iheb_saadani10?igsh=bXJweHpuZnAxcXM5"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#3b82f6] transition"
+            >
+                Instagram
+            </a>
+            <a 
+                href="https://www.tiktok.com/@iheb_saadani10?_r=1&_t=ZS-97nAdUJU9Rc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#3b82f6] transition">
+            
+                TikTok
+            </a>
+        </div>
+    </div>
+</footer>
         </div>
   );
 }export default function CataloguePage() {
