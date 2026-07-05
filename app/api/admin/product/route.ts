@@ -1,8 +1,7 @@
 // app/api/admin/product/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { put, del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
@@ -60,14 +59,12 @@ function getExtension(mimeType: string, fallbackName?: string): string {
     "image/bmp":        "bmp",
     "image/tiff":       "tiff",
     "image/svg+xml":    "svg",
-    // iPhone/Android parfois envoient ces types
     "application/octet-stream": "jpg",
   };
 
   const fromMime = mimeMap[mimeType.toLowerCase()];
   if (fromMime) return fromMime;
 
-  // Fallback sur l'extension du nom de fichier
   if (fallbackName) {
     const ext = fallbackName.split(".").pop()?.toLowerCase();
     if (ext && ["jpg","jpeg","png","gif","webp","heic","heif","avif","bmp","tiff"].includes(ext)) {
@@ -75,39 +72,37 @@ function getExtension(mimeType: string, fallbackName?: string): string {
     }
   }
 
-  return "jpg"; // défaut sûr
+  return "jpg";
 }
 
 /**
- * Sauvegarde un fichier File/Blob OU une data URL base64 dans /public/uploads/
- * et retourne le chemin public.
+ * Résout l'image finale à uploader vers Vercel Blob et retourne son URL publique.
  *
  * Accepte :
  *  - File (depuis <input type="file"> — smartphone, desktop, HEIC, etc.)
  *  - string base64 data URL (data:image/... ou data:application/octet-stream;...)
  *  - string URL https:// (conservée telle quelle)
- *  - string chemin /uploads/... (conservé tel quel)
+ *  - string URL blob.vercel-storage.com déjà existante (conservée telle quelle)
  */
 async function resolveImage(
   imageFile: File | null,
   imageUrl: string | null,
 ): Promise<string | undefined> {
 
-  const uploadsDir = join(process.cwd(), "public", "uploads");
-
   // ── 1. Fichier uploadé directement (priorité) ──────────────
   if (imageFile && imageFile.size > 0) {
     try {
-      await mkdir(uploadsDir, { recursive: true });
-
       const ext      = getExtension(imageFile.type, imageFile.name);
       const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const buffer   = Buffer.from(await imageFile.arrayBuffer());
 
-      await writeFile(join(uploadsDir, filename), buffer);
-      return `/uploads/${filename}`;
+      const blob = await put(filename, imageFile, {
+        access: "public",
+        addRandomSuffix: true,
+      });
+
+      return blob.url;
     } catch (err) {
-      console.error("resolveImage — échec sauvegarde fichier:", err);
+      console.error("resolveImage — échec upload fichier vers Blob:", err);
       return undefined;
     }
   }
@@ -115,43 +110,51 @@ async function resolveImage(
   // ── 2. Pas d'URL fournie ───────────────────────────────────
   if (!imageUrl || imageUrl.trim() === "") return undefined;
 
-  // ── 3. URL https:// — conserver telle quelle ──────────────
+  // ── 3. URL https:// déjà hébergée — conserver telle quelle ─
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
 
-  // ── 4. Chemin déjà enregistré — conserver ─────────────────
-  if (imageUrl.startsWith("/uploads/")) {
-    return imageUrl;
-  }
-
-  // ── 5. Data URL base64 ────────────────────────────────────
+  // ── 4. Data URL base64 (ex: capture webcam, certains uploads mobiles) ──
   if (imageUrl.startsWith("data:")) {
     try {
       const commaIdx = imageUrl.indexOf(",");
       if (commaIdx === -1) throw new Error("Data URL malformée");
 
-      const header     = imageUrl.slice(0, commaIdx);   // "data:image/jpeg;base64"
+      const header     = imageUrl.slice(0, commaIdx);
       const base64Data = imageUrl.slice(commaIdx + 1);
 
-      // Extraire le MIME type (ex: "image/heic", "application/octet-stream")
       const mimeMatch = header.match(/data:([^;]+)/);
       const mimeType  = mimeMatch?.[1] ?? "image/jpeg";
 
       const ext      = getExtension(mimeType);
       const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const buffer   = Buffer.from(base64Data, "base64");
 
-      await mkdir(uploadsDir, { recursive: true });
-      await writeFile(join(uploadsDir, filename), Buffer.from(base64Data, "base64"));
+      const blob = await put(filename, buffer, {
+        access: "public",
+        addRandomSuffix: true,
+        contentType: mimeType,
+      });
 
-      return `/uploads/${filename}`;
+      return blob.url;
     } catch (err) {
-      console.error("resolveImage — échec sauvegarde base64:", err);
+      console.error("resolveImage — échec upload base64 vers Blob:", err);
       return undefined;
     }
   }
 
   return undefined;
+}
+
+// Nettoyage best-effort d'une ancienne image Blob (ne bloque jamais la requête)
+async function deleteOldImage(url?: string | null) {
+  if (!url || !url.includes("blob.vercel-storage.com")) return;
+  try {
+    await del(url);
+  } catch (err) {
+    console.error("deleteOldImage — échec suppression:", err);
+  }
 }
 
 // ── POST ──────────────────────────────────────────────────────
@@ -170,7 +173,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    // Récupérer le fichier OU l'URL
     const imageFile = formData.get("image") as File | null;
     const imageUrl  = formData.get("imageUrl") as string | null;
 
@@ -236,6 +238,11 @@ export async function PUT(req: NextRequest) {
     const imageUrl      = formData.get("imageUrl") as string | null;
     const resolvedImage = await resolveImage(imageFile, imageUrl);
 
+    // Si une nouvelle image a été uploadée, on supprime l'ancienne du Blob storage
+    if (resolvedImage !== undefined && existing.images?.[0]) {
+      await deleteOldImage(existing.images[0]);
+    }
+
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -251,7 +258,6 @@ export async function PUT(req: NextRequest) {
         material:    common.material,
         fit:         common.fit,
         isNew:       common.isNew,
-        // Mettre à jour les images seulement si une nouvelle est fournie
         ...(resolvedImage !== undefined ? { images: [resolvedImage] } : {}),
       },
     });
@@ -295,6 +301,12 @@ export async function DELETE(req: NextRequest) {
     }
 
     await prisma.product.delete({ where: { id } });
+
+    // Nettoyage du Blob storage après suppression réussie
+    if (existing.images?.length) {
+      await Promise.all(existing.images.map(img => deleteOldImage(img)));
+    }
+
     return NextResponse.json({ success: true, message: "Produit supprimé" });
   } catch (error: any) {
     console.error("DELETE /api/admin/product:", error);
