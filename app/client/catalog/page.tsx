@@ -51,8 +51,9 @@ const MENU_LINKS = [
     { label: "À propos", href: "#" },
 ];
 
-export default function CatalogueContent() {
+function CatalogueInner() {
     const router = useRouter();
+    const searchParams = useSearchParams();   // ← déplacé ici, voir point 2
 
     const [products, setProducts] = useState<Product[]>([]);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -71,7 +72,7 @@ export default function CatalogueContent() {
     // Drawer mobile
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [drawerTab, setDrawerTab] = useState<"menu" | "categories">("menu");
-    const searchParams = useSearchParams();
+   
 
     // Lit les paramètres d'URL
     useEffect(() => {
@@ -428,4 +429,19 @@ export default function CatalogueContent() {
             </footer>
         </div>
   );
+}export default function CataloguePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
+                <div className="relative">
+                    <div className="w-20 h-20 border-2 border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center text-[#3b82f6] text-[10px] font-light tracking-[0.3em] animate-pulse">
+                        IRNAS
+                    </div>
+                </div>
+            </div>
+        }>
+            <CatalogueInner />
+        </Suspense>
+    );
 }
