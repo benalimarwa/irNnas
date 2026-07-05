@@ -51,7 +51,7 @@ const MENU_LINKS = [
     { label: "À propos", href: "#" },
 ];
 
-function CatalogueContent() {
+export default function CatalogueContent() {
     const router = useRouter();
 
     const [products, setProducts] = useState<Product[]>([]);
