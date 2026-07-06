@@ -44,10 +44,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(flattened);
   } catch (error: any) {
-    console.error("GET /api/products/filter:", error);
-    return NextResponse.json(
-      { error: error.message ?? "Erreur lors de la récupération des produits" },
-      { status: 500 }
-    );
-  }
-}
+  console.error("GET /api/products/filter — FULL ERROR:", error);
+  console.error("STACK:", error?.stack);
+  return NextResponse.json(
+    { error: error.message ?? "Erreur", stack: error?.stack, code: error?.code },
+    { status: 500 }
+  );
+  }}
