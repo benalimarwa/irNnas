@@ -10,17 +10,16 @@ import { auth } from "@clerk/nextjs/server";
 function parseCommon(formData: FormData) {
   const priceRaw = formData.get("price") as string;
   const stockRaw = formData.get("stock") as string;
-  const categoryIdRaw = formData.get("categoryId") as string;
 
   const price = parseFloat(priceRaw);
   const stock = parseInt(stockRaw);
-  const categoryId = parseInt(categoryIdRaw);
 
   return {
     name:        (formData.get("name")        as string)?.trim() || "",
     description: (formData.get("description") as string)?.trim() || "",
     price:       isNaN(price) ? 0 : price,
-    categoryId:  isNaN(categoryId) ? 0 : categoryId,
+    // ⚠️ Le client envoie le NOM de la catégorie (ex: "pantalon"), pas un id.
+    categoryName: (formData.get("category")   as string)?.trim() || "",
     gender:      (formData.get("gender")      as string)?.trim() || "unisex",
     color:       (formData.get("color")       as string)?.trim() || "",
     colorHex:    (formData.get("colorHex")    as string)?.trim() || "#888888",
@@ -36,12 +35,27 @@ function parseCommon(formData: FormData) {
 }
 
 function validateCommon(data: ReturnType<typeof parseCommon>): string | null {
-  if (!data.name)       return "Le nom est requis";
-  if (!data.categoryId) return "La catégorie est requise";
-  if (!data.gender)     return "Le genre est requis";
-  if (data.price < 0)   return "Le prix ne peut pas être négatif";
-  if (data.stock < 0)   return "Le stock ne peut pas être négatif";
+  if (!data.name)         return "Le nom est requis";
+  if (!data.categoryName) return "La catégorie est requise";
+  if (!data.gender)       return "Le genre est requis";
+  if (data.price < 0)     return "Le prix ne peut pas être négatif";
+  if (data.stock < 0)     return "Le stock ne peut pas être négatif";
   return null;
+}
+
+/**
+ * Résout un nom de catégorie (ex: "pantalon") vers son id Prisma.
+ * Si la catégorie n'existe pas encore (ex: catégorie créée à la volée
+ * dans le formulaire admin via "Nouvelle catégorie"), elle est créée.
+ * C'est ce lookup manquant qui provoquait le 500 (categoryId: 0 → FK violation).
+ */
+async function resolveCategoryId(categoryName: string): Promise<number> {
+  const category = await prisma.category.upsert({
+    where: { name: categoryName },
+    update: {},
+    create: { name: categoryName },
+  });
+  return category.id;
 }
 
 function getExtension(mimeType: string, fallbackName?: string): string {
@@ -175,6 +189,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
+    const categoryId = await resolveCategoryId(common.categoryName);
+
     const imageFile = formData.get("image") as File | null;
     const imageUrl = formData.get("imageUrl") as string | null;
 
@@ -185,7 +201,7 @@ export async function POST(req: NextRequest) {
         name: common.name,
         description: common.description,
         price: common.price,
-        categoryId: common.categoryId,
+        categoryId,
         gender: common.gender as any,
         color: common.color,
         colorHex: common.colorHex,
@@ -230,6 +246,8 @@ export async function PUT(req: NextRequest) {
     const validationError = validateCommon(common);
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
+    const categoryId = await resolveCategoryId(common.categoryName);
+
     const imageFile = formData.get("image") as File | null;
     const imageUrl = formData.get("imageUrl") as string | null;
     const resolvedImage = await resolveImage(imageFile, imageUrl);
@@ -240,7 +258,7 @@ export async function PUT(req: NextRequest) {
         name: common.name,
         description: common.description,
         price: common.price,
-        categoryId: common.categoryId,
+        categoryId,
         gender: common.gender as any,
         color: common.color,
         colorHex: common.colorHex,

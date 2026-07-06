@@ -56,6 +56,19 @@ const EMPTY_PRODUCT = {
   imageUrl: "",
 };
 
+// Helper : parse une Response en JSON sans jamais planter si le corps
+// est vide (ex: 500 renvoyé par la plateforme avant que le handler ne
+// s'exécute — c'est ce qui causait "Unexpected end of JSON input").
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
+
 export default function AdminProductsPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -89,8 +102,15 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     try {
       const res = await fetch(`/api/products/filter?search=${encodeURIComponent(search)}`);
-      const data = await res.json();
-      setProducts(data || []);
+      const data = await safeJson(res);
+
+      if (!res.ok) {
+        showAlert("error", data.error || `Erreur serveur (${res.status})`);
+        setProducts([]);
+        return;
+      }
+
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       showAlert("error", "Erreur lors du chargement des produits");
@@ -114,6 +134,15 @@ export default function AdminProductsPage() {
 
     if (!file.type.startsWith("image/") && !file.name.match(/\.(jpg|jpeg|png|gif|webp|heic|heif|avif|bmp|tiff)$/i)) {
       showAlert("error", "Veuillez sélectionner un fichier image valide");
+      return;
+    }
+
+    // Vercel serverless functions plafonnent le corps de requête à ~4.5MB.
+    // Un fichier trop lourd déclenche un 500 vide côté plateforme, avant
+    // même que la route ne s'exécute. On bloque donc ici en amont.
+    const MAX_SIZE = 4 * 1024 * 1024; // 4MB de marge de sécurité
+    if (file.size > MAX_SIZE) {
+      showAlert("error", "Image trop volumineuse (max 4MB). Compressez-la avant l'upload.");
       return;
     }
 
@@ -150,9 +179,7 @@ export default function AdminProductsPage() {
         body: fd,
       });
 
-      // On lit toujours le JSON, même en cas d'erreur, pour afficher
-      // le vrai message renvoyé par le serveur (voir route.ts corrigé).
-      const data = await res.json().catch(() => ({}));
+      const data = await safeJson(res);
 
       if (res.ok) {
         showAlert("success", editMode ? "Produit modifié avec succès !" : "Produit ajouté avec succès !");
@@ -176,7 +203,7 @@ export default function AdminProductsPage() {
 
     try {
       const checkRes = await fetch(`/api/admin/product/check?id=${productToDelete}`);
-      const checkData = await checkRes.json();
+      const checkData = await safeJson(checkRes);
 
       if (checkData.inOrders && checkData.count > 0) {
         showAlert("warning", `Ce produit est présent dans ${checkData.count} commande(s). Suppression impossible.`, "Action bloquée");
@@ -185,7 +212,7 @@ export default function AdminProductsPage() {
       }
 
       const res = await fetch(`/api/admin/product?id=${productToDelete}`, { method: "DELETE" });
-      const data = await res.json().catch(() => ({}));
+      const data = await safeJson(res);
 
       if (res.ok) {
         showAlert("success", "Produit supprimé avec succès");
@@ -568,7 +595,7 @@ export default function AdminProductsPage() {
                     <label className="block border-2 border-dashed border-white/20 rounded-3xl p-12 text-center cursor-pointer hover:border-[#D4AF37]">
                       <Upload className="mx-auto mb-4 text-white/50" size={48} />
                       <span className="text-white/70">{imageFile ? imageFile.name : "Cliquez ou glissez une image"}</span>
-                      <p className="text-xs text-white/40 mt-2">JPG, PNG, WEBP, HEIC, etc.</p>
+                      <p className="text-xs text-white/40 mt-2">JPG, PNG, WEBP, HEIC, etc. (max 4MB)</p>
                       <input
                         type="file"
                         accept="image/*,.heic,.heif,.avif"
