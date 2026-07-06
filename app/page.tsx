@@ -177,12 +177,24 @@ export default function HomePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    fetch("/api/products")
-      .then(r => (r.ok ? r.json() : []))
-      .then((data: Product[]) => setProducts(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  fetch("/api/products")
+    .then(r => (r.ok ? r.json() : []))
+    .then((data: any[]) => {
+      // L'API renvoie category comme un objet { id, name, createdAt }
+      // depuis le passage à la relation Category. On l'aplatit en string
+      // ici pour ne pas casser tout le code front qui attend category: string.
+      const normalized: Product[] = data.map(p => ({
+        ...p,
+        category:
+          p.category && typeof p.category === "object"
+            ? p.category.name
+            : p.category,
+      }));
+      setProducts(normalized);
+    })
+    .catch(() => {})
+    .finally(() => setLoading(false));
+}, []);
 
   useEffect(() => { setWishlistIds(wishlist.get()); }, []);
 
