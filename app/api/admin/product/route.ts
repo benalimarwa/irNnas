@@ -215,14 +215,19 @@ export async function POST(req: NextRequest) {
       include: { category: true },
     });
 
-    return NextResponse.json({ success: true, product });
   } catch (error: any) {
-    console.error("POST /api/admin/product:", error);
-    return NextResponse.json(
-      { error: error.message ?? "Erreur lors de la création" },
-      { status: 500 }
-    );
-  }
+  console.error("POST /api/admin/product — FULL:", error);
+  console.error("META:", error?.meta);
+  console.error("CODE:", error?.code);
+  return NextResponse.json(
+    {
+      error: error.message ?? "Erreur lors de la création",
+      meta: error?.meta,
+      code: error?.code,
+    },
+    { status: 500 }
+  );
+}
 }
 
 // ── PUT ───────────────────────────────────────────────────────
@@ -309,16 +314,10 @@ export async function DELETE(req: NextRequest) {
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ success: true, message: "Produit supprimé" });
   } catch (error: any) {
-  console.error("POST /api/admin/product — FULL:", error);
-  console.error("META:", error?.meta);
-  console.error("CODE:", error?.code);
-  return NextResponse.json(
-    {
-      error: error.message ?? "Erreur lors de la création",
-      meta: error?.meta,
-      code: error?.code,
-    },
-    { status: 500 }
-  );
-}
+    console.error("DELETE /api/admin/product:", error);
+    return NextResponse.json(
+      { error: error.message ?? "Erreur lors de la suppression" },
+      { status: 500 }
+    );
+  }
 }
