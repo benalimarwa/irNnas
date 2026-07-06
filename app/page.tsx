@@ -22,24 +22,10 @@ import {
 import Navbar from "@/components/ClientNavbar";
 import toast, { Toaster } from "react-hot-toast";
 
-// ─────────────────────────────────────────────────────────────────────────
-// 🎬 VIDÉO HERO
-// Remplacez cette URL par un lien DIRECT vers un fichier .mp4/.webm
-// (hébergé sur Cloudinary, Vercel Blob, S3, Mux…) — pas une page YouTube/Vimeo.
-//
-// Comment obtenir un lien gratuit et légal :
-//   1. Allez sur pexels.com/videos (ou coverr.co, mixkit.co)
-//   2. Cherchez "fashion runway" / "fashion editorial"
-//   3. Téléchargez le fichier MP4 en HD
-//   4. Uploadez-le sur Cloudinary / Vercel Blob → copiez l'URL directe
-//   5. Collez-la ci-dessous
-//
-// Gardez le fichier compressé (<8Mo, H.264, 1080p max) pour un chargement rapide.
-// ─────────────────────────────────────────────────────────────────────────
+// ─── Constantes (inchangées) ──────────────────────────────────────────
 const HERO_VIDEO_URL = "/video/pp.mp4";
-const HERO_POSTER = "/hero-poster.jpg"; // image affichée pendant le chargement / si la vidéo échoue
+const HERO_POSTER = "/hero-poster.jpg";
 
-// ─── Types ──────────────────────────────────────────────────────────────
 type Product = {
   id: number;
   name: string;
@@ -55,7 +41,6 @@ type Product = {
 
 type GuestItem = { productId: number; quantity: number };
 
-// ─── Guest cart (localStorage) ─────────────────────────────────────────
 const GUEST_KEY = "irnas_guest_cart";
 const WISHLIST_KEY = "irnas_wishlist";
 
@@ -121,15 +106,17 @@ const STATS = [
   { value: "500", suffix: "+", label: "pièces façonnées à la main chaque saison" },
 ];
 
+// ─── Toast style adapté au thème clair ──────────────────────────────
 const toastStyle = {
-  background: "#0f1f33",
-  color: "#ffffff",
-  border: "1px solid #1a2a44",
+  background: "#ffffff",
+  color: "#1a1a1a",
+  border: "1px solid #e0dcd6",
   borderRadius: "16px",
   padding: "12px 20px",
+  boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
 };
 
-// ─── Reveal on scroll ───────────────────────────────────────────────────
+// ─── Reveal (inchangé) ───────────────────────────────────────────────
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -176,29 +163,26 @@ export default function HomePage() {
   const [addedIds, setAddedIds] = useState<number[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // ─── Chargement des produits ──────────────────────────────────────
   useEffect(() => {
-  fetch("/api/products")
-    .then(r => (r.ok ? r.json() : []))
-    .then((data: any[]) => {
-      // L'API renvoie category comme un objet { id, name, createdAt }
-      // depuis le passage à la relation Category. On l'aplatit en string
-      // ici pour ne pas casser tout le code front qui attend category: string.
-      const normalized: Product[] = data.map(p => ({
-        ...p,
-        category:
-          p.category && typeof p.category === "object"
-            ? p.category.name
-            : p.category,
-      }));
-      setProducts(normalized);
-    })
-    .catch(() => {})
-    .finally(() => setLoading(false));
-}, []);
+    fetch("/api/products")
+      .then(r => (r.ok ? r.json() : []))
+      .then((data: any[]) => {
+        const normalized: Product[] = data.map(p => ({
+          ...p,
+          category:
+            p.category && typeof p.category === "object"
+              ? p.category.name
+              : p.category,
+        }));
+        setProducts(normalized);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => { setWishlistIds(wishlist.get()); }, []);
 
-  // Respecte prefers-reduced-motion : coupe l'autoplay vidéo si demandé
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce && videoRef.current) {
@@ -224,6 +208,7 @@ export default function HomePage() {
 
   useEffect(() => { if (isSignedIn) syncGuestCart(); }, [isSignedIn, syncGuestCart]);
 
+  // ─── Actions ──────────────────────────────────────────────────────
   const quickAdd = async (productId: number) => {
     if (!isSignedIn) {
       guestCart.add(productId, 1);
@@ -272,7 +257,7 @@ export default function HomePage() {
     setVideoMuted(v.muted);
   };
 
-  // Images représentatives pour la grille catégories
+  // ─── Helpers images ──────────────────────────────────────────────
   const findImage = (predicate: (p: Product) => boolean) =>
     products.find(predicate)?.images?.[0] ?? "/placeholder-category.jpg";
 
@@ -283,12 +268,13 @@ export default function HomePage() {
   const fallbackArrivals = newArrivals.length ? newArrivals : products.slice(0, 8);
   const lookbookImg = products[3]?.images?.[0] ?? products[0]?.images?.[0] ?? "/placeholder-category.jpg";
 
+  // ─── Loader ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
+      <div className="min-h-screen bg-[#faf8f6] flex items-center justify-center">
         <div className="relative">
-          <div className="w-16 h-16 border-2 border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center text-[#3b82f6] text-[10px] font-light tracking-[0.3em] animate-pulse">
+          <div className="w-16 h-16 border-2 border-[#b89a6b]/30 border-t-[#b89a6b] rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center text-[#b89a6b] text-[10px] font-light tracking-[0.3em] animate-pulse">
             IRNAS
           </div>
         </div>
@@ -296,8 +282,11 @@ export default function HomePage() {
     );
   }
 
+  // ──────────────────────────────────────────────────────────────────
+  // RENDU PRINCIPAL – TOUTES LES COULEURS ONT ÉTÉ MODIFIÉES
+  // ──────────────────────────────────────────────────────────────────
   return (
-   <div className="min-h-screen text-white overflow-x-hidden">
+    <div className="min-h-screen text-[#1a1a1a] overflow-x-hidden bg-[#faf8f6]">
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Anton&family=Playfair+Display:ital@0;1&family=Inter:wght@300;400;500&display=swap');
         .font-display { font-family: 'Anton', sans-serif; }
@@ -320,7 +309,7 @@ export default function HomePage() {
       <Navbar />
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* HERO — vidéo plein écran                                       */}
+      {/* HERO — vidéo (fond clair, overlays adaptés)                   */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <section className="relative h-screen min-h-[640px] w-full overflow-hidden">
         {!videoFailed ? (
@@ -343,26 +332,25 @@ export default function HomePage() {
           />
         )}
 
-        {/* Voile de lisibilité */}
-        {/* Voile de lisibilité — palette foncée professionnelle */}
-<div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/50 to-[#0a1628]/20" />
-<div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/70 via-[#0a1628]/10 to-transparent" />
-<div className="absolute inset-0" style={{ background: "radial-gradient(circle at 30% 20%, rgba(201,162,103,0.10), rgba(10,22,40,0.55))" }} />
+        {/* Overlays clairs pour lisibilité sur fond clair */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#faf8f6] via-[#faf8f6]/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#faf8f6]/70 via-transparent to-[#faf8f6]/20" />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 30% 20%, rgba(184,154,107,0.08), rgba(250,248,246,0.5))" }} />
 
-        {/* Contrôles vidéo — discrets, coin haut droit */}
+        {/* Contrôles vidéo (sur fond clair, bordures foncées) */}
         {!videoFailed && (
           <div className="absolute top-28 right-6 z-10 flex gap-2">
             <button
               onClick={toggleVideoPlay}
               aria-label={videoPlaying ? "Mettre en pause" : "Lire la vidéo"}
-              className="w-9 h-9 rounded-full border border-white/25 bg-black/20 backdrop-blur-sm flex items-center justify-center hover:border-white/60 transition"
+              className="w-9 h-9 rounded-full border border-[#1a1a1a]/20 bg-white/60 backdrop-blur-sm flex items-center justify-center hover:border-[#1a1a1a]/60 transition text-[#1a1a1a]"
             >
               {videoPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </button>
             <button
               onClick={toggleVideoMute}
               aria-label={videoMuted ? "Activer le son" : "Couper le son"}
-              className="w-9 h-9 rounded-full border border-white/25 bg-black/20 backdrop-blur-sm flex items-center justify-center hover:border-white/60 transition"
+              className="w-9 h-9 rounded-full border border-[#1a1a1a]/20 bg-white/60 backdrop-blur-sm flex items-center justify-center hover:border-[#1a1a1a]/60 transition text-[#1a1a1a]"
             >
               {videoMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
@@ -370,13 +358,13 @@ export default function HomePage() {
         )}
 
         <div className="relative z-10 h-full max-w-7xl mx-auto px-6 flex flex-col justify-end pb-28 pt-32">
-          <span className="hero-line text-[11px] uppercase tracking-[0.5em] text-[#c9a267] font-light mb-6">
+          <span className="hero-line text-[11px] uppercase tracking-[0.5em] text-[#b89a6b] font-light mb-6">
             Collection Automne — Hiver 2026
           </span>
-          <h1 className="hero-line font-display uppercase leading-[0.85] text-[15vw] sm:text-[10vw] lg:text-[7.5vw] tracking-tight" style={{ animationDelay: "0.1s" }}>
-            Sculpter <span className="font-accent normal-case text-[#c9a267]">l&apos;allure</span>
+          <h1 className="hero-line font-display uppercase leading-[0.85] text-[15vw] sm:text-[10vw] lg:text-[7.5vw] tracking-tight text-[#1a1a1a]" style={{ animationDelay: "0.1s" }}>
+            Sculpter <span className="font-accent normal-case text-[#b89a6b]">l&apos;allure</span>
           </h1>
-          <p className="hero-line mt-8 max-w-md text-sm text-[#8aabca] font-light leading-relaxed font-body" style={{ animationDelay: "0.2s" }}>
+          <p className="hero-line mt-8 max-w-md text-sm text-[#5a5a5a] font-light leading-relaxed font-body" style={{ animationDelay: "0.2s" }}>
             Des pièces pensées comme une architecture du corps — coupe précise,
             matières nobles, fabrication soignée.
           </p>
@@ -384,14 +372,14 @@ export default function HomePage() {
           <div className="hero-line mt-10 flex flex-wrap gap-4" style={{ animationDelay: "0.3s" }}>
             <Link
               href="/client/catalog?gender=women"
-              className="group flex items-center gap-3 px-8 py-4 bg-[#3b82f6] text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#2563eb] transition"
+              className="group flex items-center gap-3 px-8 py-4 bg-[#1e3a5f] text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#162b47] transition"
             >
               Collection Femme
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/client/catalog?gender=men"
-              className="group flex items-center gap-3 px-8 py-4 border border-white/30 text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:border-[#c9a267] hover:text-[#c9a267] transition"
+              className="group flex items-center gap-3 px-8 py-4 border border-[#1a1a1a]/30 text-[#1a1a1a] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:border-[#b89a6b] hover:text-[#b89a6b] transition"
             >
               Collection Homme
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
@@ -400,55 +388,55 @@ export default function HomePage() {
         </div>
 
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-          <ChevronDown className="w-5 h-5 text-white/50" />
+          <ChevronDown className="w-5 h-5 text-[#1a1a1a]/40" />
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* MARQUEE                                                         */}
+      {/* MARQUEE (fond clair)                                          */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <div className="border-y border-[#1e3a5f] bg-[#0f1f33] py-4 overflow-hidden">
+      <div className="border-y border-[#e0dcd6] bg-[#f0ede8] py-4 overflow-hidden">
         <div className="flex whitespace-nowrap marquee-track w-max">
           {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-            <span key={i} className="flex items-center text-xs uppercase tracking-[0.3em] font-light text-[#8aabca] mx-8">
+            <span key={i} className="flex items-center text-xs uppercase tracking-[0.3em] font-light text-[#5a5a5a] mx-8">
               {item}
-              <span className="ml-8 text-[#c9a267]">✦</span>
+              <span className="ml-8 text-[#b89a6b]">✦</span>
             </span>
           ))}
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* BARRE DE CONFIANCE                                              */}
+      {/* BARRE DE CONFIANCE (fond clair)                               */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <section className="max-w-7xl mx-auto px-6 py-14 grid grid-cols-2 md:grid-cols-4 gap-8">
         {TRUST_ITEMS.map((item, i) => (
           <Reveal key={item.label} delay={i * 80} className="flex flex-col items-start gap-3">
-            <item.icon className="w-5 h-5 text-[#c9a267]" strokeWidth={1.5} />
+            <item.icon className="w-5 h-5 text-[#b89a6b]" strokeWidth={1.5} />
             <div>
-              <p className="text-sm font-medium">{item.label}</p>
-              <p className="text-xs text-[#4a6a8a] font-light mt-0.5">{item.sub}</p>
+              <p className="text-sm font-medium text-[#1a1a1a]">{item.label}</p>
+              <p className="text-xs text-[#5a5a5a] font-light mt-0.5">{item.sub}</p>
             </div>
           </Reveal>
         ))}
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* MANIFESTE                                                       */}
+      {/* MANIFESTE                                                      */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <section className="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
         <Reveal>
-          <span className="text-[11px] uppercase tracking-[0.4em] text-[#3b82f6] font-light">
+          <span className="text-[11px] uppercase tracking-[0.4em] text-[#b89a6b] font-light">
             Notre approche
           </span>
-          <h2 className="font-display uppercase text-4xl md:text-5xl leading-[0.95] mt-4">
+          <h2 className="font-display uppercase text-4xl md:text-5xl leading-[0.95] mt-4 text-[#1a1a1a]">
             La rigueur <br />
             au service <br />
-            du <span className="font-accent normal-case text-[#c9a267]">geste</span>
+            du <span className="font-accent normal-case text-[#b89a6b]">geste</span>
           </h2>
         </Reveal>
         <Reveal delay={150}>
-          <p className="text-[#8aabca] text-base md:text-lg font-light leading-relaxed font-body">
+          <p className="text-[#5a5a5a] text-base md:text-lg font-light leading-relaxed font-body">
             IRNAS naît d&apos;une conviction simple : le vêtement doit tenir sur le corps
             comme une phrase bien construite — sans mot de trop. Chaque collection est
             développée en petites séries, loin des cycles de la fast fashion, pour laisser
@@ -458,7 +446,7 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* CATÉGORIES — grille bento                                       */}
+      {/* CATÉGORIES — grille bento                                     */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <section className="max-w-7xl mx-auto px-6 pb-28">
         <div className="grid grid-cols-2 lg:grid-cols-4 grid-rows-2 gap-4 h-[640px] lg:h-[520px]">
@@ -491,22 +479,22 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* NOUVEAUTÉS — scroll horizontal                                  */}
+      {/* NOUVEAUTÉS — scroll horizontal                                 */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {fallbackArrivals.length > 0 && (
         <section className="pb-28">
           <div className="max-w-7xl mx-auto px-6 flex items-end justify-between mb-8">
             <Reveal>
-              <span className="text-[11px] uppercase tracking-[0.4em] text-[#3b82f6] font-light">
+              <span className="text-[11px] uppercase tracking-[0.4em] text-[#b89a6b] font-light">
                 Fraîchement arrivé
               </span>
-              <h2 className="font-display uppercase text-3xl md:text-4xl mt-2">
+              <h2 className="font-display uppercase text-3xl md:text-4xl mt-2 text-[#1a1a1a]">
                 Nouveautés
               </h2>
             </Reveal>
             <Link
               href="/client/catalog"
-              className="hidden sm:flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#8aabca] hover:text-[#3b82f6] transition"
+              className="hidden sm:flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#5a5a5a] hover:text-[#1e3a5f] transition"
             >
               Tout voir <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
@@ -521,19 +509,19 @@ export default function HomePage() {
               return (
                 <div
                   key={product.id}
-                  className="group relative flex-shrink-0 w-[260px] sm:w-[290px] snap-start bg-[#0f1f33] border border-[#1a2a44] rounded-3xl overflow-hidden hover:border-[#3b82f6]/40 transition"
+                  className="group relative flex-shrink-0 w-[260px] sm:w-[290px] snap-start bg-white border border-[#e0dcd6] rounded-3xl overflow-hidden hover:border-[#b89a6b]/60 transition shadow-sm hover:shadow-md"
                 >
                   <button
                     onClick={() => toggleWishlist(product.id)}
                     aria-label={isWishlisted ? "Retirer des favoris" : "Ajouter aux favoris"}
-                    className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-[#0a1628]/70 backdrop-blur-sm flex items-center justify-center hover:bg-[#0a1628] transition"
+                    className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white transition shadow-sm"
                   >
                     <Heart
-                      className={`w-3.5 h-3.5 transition ${isWishlisted ? "fill-[#c9a267] text-[#c9a267]" : "text-white"}`}
+                      className={`w-3.5 h-3.5 transition ${isWishlisted ? "fill-[#b89a6b] text-[#b89a6b]" : "text-[#1a1a1a]/60"}`}
                     />
                   </button>
 
-                  <Link href={`/client/catalog?category=${product.category}`} className="block relative h-[320px] bg-[#0a1628] overflow-hidden">
+                  <Link href={`/client/catalog?category=${product.category}`} className="block relative h-[320px] bg-[#f5f2ed] overflow-hidden">
                     <Image
                       src={product.images[0] || "/placeholder-category.jpg"}
                       alt={product.name}
@@ -547,20 +535,20 @@ export default function HomePage() {
                       className="object-contain p-6 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                     />
                     {product.isNew && (
-                      <span className="absolute top-4 left-4 bg-[#c9a267] text-[#0a1628] text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full">
+                      <span className="absolute top-4 left-4 bg-[#b89a6b] text-white text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full">
                         Nouveau
                       </span>
                     )}
                   </Link>
                   <div className="p-5">
-                    <h3 className="text-sm font-medium truncate">{product.name}</h3>
-                    <p className="text-[11px] text-[#4a6a8a] mt-0.5 uppercase tracking-widest font-light">
+                    <h3 className="text-sm font-medium text-[#1a1a1a] truncate">{product.name}</h3>
+                    <p className="text-[11px] text-[#5a5a5a] mt-0.5 uppercase tracking-widest font-light">
                       {product.color} · {CATEGORY_LABELS[product.category] ?? product.category}
                     </p>
                     <div className="mt-3 flex items-baseline gap-2">
-                      <span className="text-lg font-light">{product.price.toFixed(2)} TND</span>
+                      <span className="text-lg font-light text-[#1a1a1a]">{product.price.toFixed(2)} TND</span>
                       {isOnSale && (
-                        <span className="text-xs text-[#4a6a8a] line-through">
+                        <span className="text-xs text-[#5a5a5a] line-through">
                           {product.originalPrice?.toFixed(2)} TND
                         </span>
                       )}
@@ -570,10 +558,10 @@ export default function HomePage() {
                       disabled={product.stock <= 0}
                       className={`mt-4 w-full py-2.5 rounded-xl text-[11px] uppercase tracking-[0.2em] font-medium transition ${
                         justAdded
-                          ? "bg-[#c9a267] text-[#0a1628]"
+                          ? "bg-[#b89a6b] text-white"
                           : product.stock > 0
-                          ? "bg-[#3b82f6] text-white hover:bg-[#2563eb]"
-                          : "bg-[#1a2a44] text-[#4a6a8a] cursor-not-allowed"
+                          ? "bg-[#1e3a5f] text-white hover:bg-[#162b47]"
+                          : "bg-[#e0dcd6] text-[#5a5a5a] cursor-not-allowed"
                       }`}
                     >
                       {justAdded ? "Ajouté ✓" : product.stock > 0 ? "Ajouter au panier" : "Rupture de stock"}
@@ -587,7 +575,7 @@ export default function HomePage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* LOOKBOOK — rupture éditoriale plein cadre                       */}
+      {/* LOOKBOOK — plein cadre                                        */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <section className="relative h-[85vh] min-h-[520px] w-full overflow-hidden">
         <Image
@@ -596,15 +584,15 @@ export default function HomePage() {
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/10 to-[#0a1628]/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#faf8f6] via-[#faf8f6]/10 to-transparent" />
         <div className="relative z-10 h-full max-w-7xl mx-auto px-6 flex flex-col justify-end pb-20">
           <Reveal>
-            <p className="font-accent normal-case text-2xl md:text-4xl max-w-xl leading-snug text-white">
+            <p className="font-accent normal-case text-2xl md:text-4xl max-w-xl leading-snug text-[#1a1a1a]">
               « Une pièce bien coupée ne se remarque pas — elle se ressent. »
             </p>
             <Link
               href="/client/catalog"
-              className="mt-8 inline-flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-[#c9a267] hover:text-white transition group"
+              className="mt-8 inline-flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-[#b89a6b] hover:text-[#1a1a1a] transition group"
             >
               Voir le lookbook complet
               <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
@@ -614,16 +602,16 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* CHIFFRES — respiration claire                                   */}
+      {/* CHIFFRES (fond clair, texte foncé)                            */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <section className="bg-[#f4f2ee] text-[#0a1628]">
+      <section className="bg-[#f0ede8] text-[#1a1a1a]">
         <div className="max-w-7xl mx-auto px-6 py-24 grid sm:grid-cols-3 gap-12">
           {STATS.map((stat, i) => (
             <Reveal key={stat.label} delay={i * 100} className="text-center sm:text-left">
               <p className="font-display text-5xl md:text-6xl">
-                {stat.value}<span className="font-accent normal-case text-3xl md:text-4xl text-[#3b82f6]">{stat.suffix}</span>
+                {stat.value}<span className="font-accent normal-case text-3xl md:text-4xl text-[#b89a6b]">{stat.suffix}</span>
               </p>
-              <p className="mt-3 text-sm text-[#4a5568] font-light font-body max-w-[220px] mx-auto sm:mx-0">
+              <p className="mt-3 text-sm text-[#5a5a5a] font-light font-body max-w-[220px] mx-auto sm:mx-0">
                 {stat.label}
               </p>
             </Reveal>
@@ -632,29 +620,29 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* FABRICATION — séquence réelle, numérotée à raison               */}
+      {/* FABRICATION                                                   */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <section className="border-t border-[#1a2a44]">
+      <section className="border-t border-[#e0dcd6]">
         <div className="max-w-7xl mx-auto px-6 py-28">
           <Reveal>
-            <span className="text-[11px] uppercase tracking-[0.4em] text-[#3b82f6] font-light">
+            <span className="text-[11px] uppercase tracking-[0.4em] text-[#b89a6b] font-light">
               De l&apos;idée au vêtement
             </span>
-            <h2 className="font-display uppercase text-3xl md:text-4xl mt-2 mb-14">
+            <h2 className="font-display uppercase text-3xl md:text-4xl mt-2 mb-14 text-[#1a1a1a]">
               Trois étapes, une pièce
             </h2>
           </Reveal>
 
           <div className="grid md:grid-cols-3 gap-8">
             {CRAFT_STEPS.map((step, i) => (
-              <Reveal key={step.label} delay={i * 120} className="border-t border-[#c9a267]/40 pt-6">
-                <span className="font-accent text-4xl text-[#c9a267]">
+              <Reveal key={step.label} delay={i * 120} className="border-t border-[#b89a6b]/30 pt-6">
+                <span className="font-accent text-4xl text-[#b89a6b]">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h3 className="text-lg font-medium uppercase tracking-[0.15em] mt-4 mb-3">
+                <h3 className="text-lg font-medium uppercase tracking-[0.15em] mt-4 mb-3 text-[#1a1a1a]">
                   {step.label}
                 </h3>
-                <p className="text-sm text-[#8aabca] font-light leading-relaxed font-body">
+                <p className="text-sm text-[#5a5a5a] font-light leading-relaxed font-body">
                   {step.text}
                 </p>
               </Reveal>
@@ -664,15 +652,15 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* NEWSLETTER                                                      */}
+      {/* NEWSLETTER (fond clair)                                      */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <section className="border-t border-[#1a2a44] bg-[#0f1f33]">
+      <section className="border-t border-[#e0dcd6] bg-[#f0ede8]">
         <div className="max-w-3xl mx-auto px-6 py-24 text-center">
           <Reveal>
-            <h2 className="font-display uppercase text-3xl md:text-4xl mb-4">
-              Restez <span className="font-accent normal-case text-[#c9a267]">informé</span>
+            <h2 className="font-display uppercase text-3xl md:text-4xl mb-4 text-[#1a1a1a]">
+              Restez <span className="font-accent normal-case text-[#b89a6b]">informé</span>
             </h2>
-            <p className="text-sm text-[#8aabca] font-light mb-8 font-body">
+            <p className="text-sm text-[#5a5a5a] font-light mb-8 font-body">
               Accès prioritaire aux nouvelles collections et aux ventes privées.
             </p>
             <form
@@ -687,11 +675,11 @@ export default function HomePage() {
                 type="email"
                 required
                 placeholder="Votre email"
-                className="flex-1 bg-[#0a1628] border border-[#1e3a5f] rounded-full py-3.5 px-6 text-sm text-white placeholder:text-[#4a6a8a] focus:outline-none focus:border-[#3b82f6]/50 transition"
+                className="flex-1 bg-white border border-[#e0dcd6] rounded-full py-3.5 px-6 text-sm text-[#1a1a1a] placeholder:text-[#5a5a5a] focus:outline-none focus:border-[#b89a6b]/50 transition"
               />
               <button
                 type="submit"
-                className="px-8 py-3.5 bg-[#3b82f6] text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#2563eb] transition"
+                className="px-8 py-3.5 bg-[#1e3a5f] text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#162b47] transition"
               >
                 S&apos;inscrire
               </button>
@@ -701,13 +689,13 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* FOOTER                                                          */}
+      {/* FOOTER (clair)                                                */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-[#1a2a44] pt-16 pb-10 px-6">
-        <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-[#1a2a44]">
+      <footer className="border-t border-[#e0dcd6] pt-16 pb-10 px-6 bg-white">
+        <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-[#e0dcd6]">
           <div>
-            <span className="text-lg font-light tracking-[0.2em] text-white">IRNAS</span>
-            <p className="mt-4 text-xs text-[#4a6a8a] font-light leading-relaxed max-w-[220px] font-body">
+            <span className="text-lg font-light tracking-[0.2em] text-[#1a1a1a]">IRNAS</span>
+            <p className="mt-4 text-xs text-[#5a5a5a] font-light leading-relaxed max-w-[220px] font-body">
               Fabrication en petites séries, pensée pour durer bien au-delà d&apos;une saison.
             </p>
           </div>
@@ -716,11 +704,11 @@ export default function HomePage() {
           <FooterCol title="Maison" links={["Notre histoire", "Savoir-faire", "Presse", "Carrières"]} />
         </div>
         <div className="max-w-7xl mx-auto pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">© 2020 IRNAS — Tous droits réservés</p>
-          <div className="flex items-center gap-6 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
-            <Link href="#" className="hover:text-[#3b82f6] transition">Mentions légales</Link>
-            <Link href="#" className="hover:text-[#3b82f6] transition">Confidentialité</Link>
-            <Link href="#" className="hover:text-[#3b82f6] transition">CGV</Link>
+          <p className="text-[10px] text-[#5a5a5a] tracking-widest font-light">© 2020 IRNAS — Tous droits réservés</p>
+          <div className="flex items-center gap-6 text-[10px] text-[#5a5a5a] tracking-widest font-light uppercase">
+            <Link href="#" className="hover:text-[#b89a6b] transition">Mentions légales</Link>
+            <Link href="#" className="hover:text-[#b89a6b] transition">Confidentialité</Link>
+            <Link href="#" className="hover:text-[#b89a6b] transition">CGV</Link>
           </div>
         </div>
       </footer>
@@ -728,15 +716,15 @@ export default function HomePage() {
   );
 }
 
-// ─── Footer column ──────────────────────────────────────────────────────
+// ─── Footer column (adapté au clair) ────────────────────────────────
 function FooterCol({ title, links }: { title: string; links: string[] }) {
   return (
     <div>
-      <h4 className="text-[11px] uppercase tracking-[0.3em] text-[#8aabca] font-light mb-4">{title}</h4>
+      <h4 className="text-[11px] uppercase tracking-[0.3em] text-[#5a5a5a] font-light mb-4">{title}</h4>
       <ul className="space-y-2.5">
         {links.map(link => (
           <li key={link}>
-            <Link href="#" className="text-sm text-[#4a6a8a] hover:text-white transition font-body">
+            <Link href="#" className="text-sm text-[#5a5a5a] hover:text-[#1a1a1a] transition font-body">
               {link}
             </Link>
           </li>
@@ -746,14 +734,14 @@ function FooterCol({ title, links }: { title: string; links: string[] }) {
   );
 }
 
-// ─── Category tile ──────────────────────────────────────────────────────
+// ─── Category tile (fond clair) ──────────────────────────────────────
 function CategoryTile({
   href, label, image, className = "", big = false,
 }: { href: string; label: string; image: string; className?: string; big?: boolean }) {
   return (
     <Link
       href={href}
-      className={`group relative overflow-hidden rounded-3xl border border-[#1a2a44] hover:border-[#c9a267]/50 transition ${className}`}
+      className={`group relative overflow-hidden rounded-3xl border border-[#e0dcd6] hover:border-[#b89a6b]/70 transition bg-[#f5f2ed] ${className}`}
     >
       <Image
         src={image}
@@ -761,12 +749,12 @@ function CategoryTile({
         fill
         className="object-cover transition-transform duration-700 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-[#0a1628]/10 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#faf8f6] via-[#faf8f6]/10 to-transparent" />
       <div className="absolute bottom-0 left-0 p-6 flex items-center gap-2">
-        <span className={`font-display uppercase tracking-tight ${big ? "text-3xl md:text-4xl" : "text-xl md:text-2xl"}`}>
+        <span className={`font-display uppercase tracking-tight text-[#1a1a1a] ${big ? "text-3xl md:text-4xl" : "text-xl md:text-2xl"}`}>
           {label}
         </span>
-        <ArrowUpRight className="w-5 h-5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition" />
+        <ArrowUpRight className="w-5 h-5 text-[#1a1a1a] opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition" />
       </div>
     </Link>
   );
