@@ -18,21 +18,11 @@ export default function RootLayout({
     <ClerkProvider localization={frFR}>
       <html lang="fr">
         <head>
-          {/* ✅ CRUCIAL — sans ça le mobile affiche en mode desktop */}
           <meta name="viewport" content="width=device-width, initial-scale=1" />
         </head>
         <body className="overflow-x-hidden w-full max-w-full min-h-screen flex flex-col">
-          {/* Fond vidéo fixe — derrière tout le contenu */}
-          <div className="video-background">
-            <video
-              src="/video/pp.mp4"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-            />
-          </div>
+          {/* Fond plat, sombre et professionnel */}
+          <div className="video-background" />
           <div className="video-overlay" />
 
           <SyncUser />
