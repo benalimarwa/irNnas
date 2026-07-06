@@ -4,7 +4,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-
+import { useUser } from "@clerk/nextjs";
 import { ShoppingCart, Heart, ChevronDown, X, ChevronRight } from "lucide-react";
 import Navbar from "@/components/ClientNavbar";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -54,7 +54,7 @@ const MENU_LINKS = [
 function CatalogueInner() {
     const router = useRouter();
     const searchParams = useSearchParams();   // ← déplacé ici, voir point 2
-
+const { isSignedIn } = useUser();
     const [products, setProducts] = useState<Product[]>([]);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -204,7 +204,14 @@ function CatalogueInner() {
         }
     };
 
-    useEffect(() => { fetchFavorites(); }, []);
+   // APRÈS
+useEffect(() => {
+  if (isSignedIn) {
+    fetchFavorites();
+  } else {
+    setFavorites([]); // invité : pas de favoris
+  }
+}, [isSignedIn]);
 
     const toggleFavorite = async (productId: number) => {
         try {

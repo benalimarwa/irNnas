@@ -6,13 +6,14 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-   "/client/catalog(.*)",
+  "/client",                 // 👈 ajout : page d'accueil client, accessible aux invités
+  "/client/catalog(.*)",
   "/api/products(.*)",
   "/api/webhooks(.*)",
-  "/api/orders(.*)",        // ← guests peuvent passer commande
-  "/client/panier(.*)",     // ← panier accessible sans compte
-  "/client/checkout(.*)",   // ← checkout accessible sans compte
-  "/client/orders/(.*)",    // ← confirmation de commande accessible sans compte
+  "/api/orders(.*)",
+  "/client/panier(.*)",
+  "/client/checkout(.*)",
+  "/client/orders/(.*)",
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
