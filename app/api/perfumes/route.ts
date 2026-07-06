@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const perfumes = await prisma.product.findMany({
-    where: { category: "parfum" },
+    where: { category: { name: "parfum" } },
     orderBy: { price: "desc" },
   });
 

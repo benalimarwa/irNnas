@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
             }
           : {},
         category
-          ? { category: { equals: category, mode: "insensitive" } }
+          ? { category: { name: { equals: category, mode: "insensitive" } } }
           : {},
         gender && Object.values(Gender).includes(gender as Gender)
           ? { gender: gender as Gender }

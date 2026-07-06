@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const perfumes = await prisma.product.findMany({
-      where: { category: 'parfum' },
+      where: { category: { name: 'parfum' } },
       select: {
         name: true,
         description: true,
