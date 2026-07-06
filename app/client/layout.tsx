@@ -161,14 +161,7 @@ export default function ClientLayout({
           {children}
         </main>
 
-        <footer className="client-footer">
-          <p>© IRNAS</p>
-          <div className="client-footer-links">
-            <a href="/mentions-legales">Mentions légales</a>
-            <a href="/confidentialite">Confidentialité</a>
-            <a href="/contact">Contact</a>
-          </div>
-        </footer>
+        
       </div>
     </ClerkProvider>
   );
