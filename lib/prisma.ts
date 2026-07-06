@@ -1,20 +1,16 @@
-// lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import pkg from "pg";
-const { Pool } = pkg;
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: true,
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL!,
 });
-
-const adapter = new PrismaPg(pool);
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({ adapter, log: ["error"] });
+  globalForPrisma.prisma ||
+  new PrismaClient({ adapter });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
