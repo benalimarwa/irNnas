@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const PARFUM_CATEGORY_NAME = "parfum";
+
+// Helper: get (or create) the "parfum" category and return its id
+async function getParfumCategoryId(): Promise<number> {
+  const category = await prisma.category.upsert({
+    where: { name: PARFUM_CATEGORY_NAME },
+    update: {},
+    create: { name: PARFUM_CATEGORY_NAME },
+  });
+  return category.id;
+}
+
 // GET - liste des parfums (ou un seul par id)
 export async function GET(req: NextRequest) {
   try {
@@ -15,9 +27,10 @@ export async function GET(req: NextRequest) {
 
       const perfume = await prisma.product.findUnique({
         where: { id },
+        include: { category: true },
       });
 
-      if (!perfume || perfume.category !== "parfum") {
+      if (!perfume || perfume.category.name !== PARFUM_CATEGORY_NAME) {
         return NextResponse.json({ error: "Parfum introuvable" }, { status: 404 });
       }
 
@@ -25,8 +38,9 @@ export async function GET(req: NextRequest) {
     }
 
     const perfumes = await prisma.product.findMany({
-      where: { category: "parfum" },
+      where: { category: { name: PARFUM_CATEGORY_NAME } },
       orderBy: { createdAt: "desc" },
+      include: { category: true },
     });
 
     return NextResponse.json(perfumes);
@@ -54,9 +68,10 @@ export async function PUT(req: NextRequest) {
     // Vérifier que le parfum existe
     const existingPerfume = await prisma.product.findUnique({
       where: { id },
+      include: { category: true },
     });
 
-    if (!existingPerfume || existingPerfume.category !== "parfum") {
+    if (!existingPerfume || existingPerfume.category.name !== PARFUM_CATEGORY_NAME) {
       return NextResponse.json(
         { error: `Parfum avec ID ${id} introuvable` },
         { status: 404 }
@@ -112,7 +127,7 @@ export async function PUT(req: NextRequest) {
         name,
         description: description ?? existingPerfume.description,
         price,
-        category: "parfum",
+        categoryId: existingPerfume.categoryId, // stays "parfum", unchanged
         gender,
         color,
         colorHex,
@@ -123,6 +138,7 @@ export async function PUT(req: NextRequest) {
         images,
         isNew: isNewStr ? isNewStr === "true" : existingPerfume.isNew,
       },
+      include: { category: true },
     });
 
     return NextResponse.json(perfume);
@@ -186,12 +202,14 @@ export async function POST(req: NextRequest) {
       ? sizesStr.split(",").map((s) => s.trim()).filter(Boolean)
       : [];
 
+    const categoryId = await getParfumCategoryId();
+
     const perfume = await prisma.product.create({
       data: {
         name,
         description,
         price,
-        category: "parfum",
+        categoryId,
         gender,
         color,
         colorHex,
@@ -202,6 +220,7 @@ export async function POST(req: NextRequest) {
         images,
         isNew: isNewStr === "true",
       },
+      include: { category: true },
     });
 
     return NextResponse.json(perfume, { status: 201 });
