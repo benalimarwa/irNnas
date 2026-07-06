@@ -17,11 +17,14 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Début du seeding...');
 
+  // ⚠️ Ordre important : Favorite doit être nettoyé AVANT Product
+  await prisma.favorite.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.cartItem.deleteMany();
   await prisma.cart.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
   await prisma.user.deleteMany();
   console.log('🧹 Base nettoyée');
 
@@ -50,12 +53,25 @@ async function main() {
   }
   console.log('✅ Users créés');
 
+  // ✅ Créer les catégories d'abord
+  const categoryNames = [
+    "pantalon", "pull", "veste", "chemise", "accessoire",
+    "robe", "chaussure", "manteau", "t-shirt", "jupe",
+  ];
+
+  const categoryMap = {};
+  for (const name of categoryNames) {
+    const cat = await prisma.category.create({ data: { name } });
+    categoryMap[name] = cat.id;
+  }
+  console.log('✅ Catégories créées');
+
   const products = [
     {
       name: "Pantalon Cargo Noir",
       description: "Pantalon cargo large avec poches utilitaires. Style streetwear premium.",
       price: 89.99,
-      category: "pantalon",
+      categoryId: categoryMap["pantalon"],
       gender: "unisex",
       color: "Noir",
       colorHex: "#111111",
@@ -73,7 +89,7 @@ async function main() {
       name: "Pull Oversize Cachemire",
       description: "Pull en maille douce ultra confortable.",
       price: 129.99,
-      category: "pull",
+      categoryId: categoryMap["pull"],
       gender: "unisex",
       color: "Beige",
       colorHex: "#D2B48C",
@@ -88,7 +104,7 @@ async function main() {
       name: "Veste Denim Vintage",
       description: "Veste en jean brut premium.",
       price: 149.99,
-      category: "veste",
+      categoryId: categoryMap["veste"],
       gender: "unisex",
       color: "Bleu Denim",
       colorHex: "#4A6B8A",
@@ -103,7 +119,7 @@ async function main() {
       name: "Chemise Oxford Blanche",
       description: "Chemise classique élégante.",
       price: 69.99,
-      category: "chemise",
+      categoryId: categoryMap["chemise"],
       gender: "men",
       color: "Blanc",
       colorHex: "#FFFFFF",
@@ -118,7 +134,7 @@ async function main() {
       name: "Sac Bandoulière Cuir",
       description: "Sac bandoulière élégant en similicuir.",
       price: 59.99,
-      category: "accessoire",
+      categoryId: categoryMap["accessoire"],
       gender: "unisex",
       color: "Marron",
       colorHex: "#8B4513",
@@ -133,7 +149,7 @@ async function main() {
       name: "Robe Satin Émeraude",
       description: "Robe longue en satin fluide, coupe ajustée et élégante.",
       price: 159.99,
-      category: "robe",
+      categoryId: categoryMap["robe"],
       gender: "women",
       color: "Émeraude",
       colorHex: "#046307",
@@ -148,7 +164,7 @@ async function main() {
       name: "Sneakers Blanches Premium",
       description: "Sneakers minimalistes en cuir véritable.",
       price: 119.99,
-      category: "chaussure",
+      categoryId: categoryMap["chaussure"],
       gender: "unisex",
       color: "Blanc",
       colorHex: "#FAFAFA",
@@ -163,7 +179,7 @@ async function main() {
       name: "Trench Coat Camel",
       description: "Trench classique intemporel, coupe droite.",
       price: 219.99,
-      category: "manteau",
+      categoryId: categoryMap["manteau"],
       gender: "unisex",
       color: "Camel",
       colorHex: "#C19A6B",
@@ -178,7 +194,7 @@ async function main() {
       name: "T-shirt Basique Blanc",
       description: "T-shirt essentiel en coton bio.",
       price: 24.99,
-      category: "t-shirt",
+      categoryId: categoryMap["t-shirt"],
       gender: "unisex",
       color: "Blanc",
       colorHex: "#FFFFFF",
@@ -193,7 +209,7 @@ async function main() {
       name: "Jupe Plissée Noire",
       description: "Jupe plissée midi, tombée fluide.",
       price: 79.99,
-      category: "jupe",
+      categoryId: categoryMap["jupe"],
       gender: "women",
       color: "Noir",
       colorHex: "#111111",
