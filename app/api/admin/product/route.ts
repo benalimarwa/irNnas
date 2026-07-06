@@ -10,15 +10,17 @@ import { auth } from "@clerk/nextjs/server";
 function parseCommon(formData: FormData) {
   const priceRaw = formData.get("price") as string;
   const stockRaw = formData.get("stock") as string;
+  const categoryIdRaw = formData.get("categoryId") as string;
 
   const price = parseFloat(priceRaw);
   const stock = parseInt(stockRaw);
+  const categoryId = parseInt(categoryIdRaw);
 
   return {
     name:        (formData.get("name")        as string)?.trim() || "",
     description: (formData.get("description") as string)?.trim() || "",
     price:       isNaN(price) ? 0 : price,
-    category:    (formData.get("category")    as string)?.trim() || "",
+    categoryId:  isNaN(categoryId) ? 0 : categoryId,
     gender:      (formData.get("gender")      as string)?.trim() || "unisex",
     color:       (formData.get("color")       as string)?.trim() || "",
     colorHex:    (formData.get("colorHex")    as string)?.trim() || "#888888",
@@ -34,11 +36,11 @@ function parseCommon(formData: FormData) {
 }
 
 function validateCommon(data: ReturnType<typeof parseCommon>): string | null {
-  if (!data.name)     return "Le nom est requis";
-  if (!data.category) return "La catégorie est requise";
-  if (!data.gender)   return "Le genre est requis";
-  if (data.price < 0) return "Le prix ne peut pas être négatif";
-  if (data.stock < 0) return "Le stock ne peut pas être négatif";
+  if (!data.name)       return "Le nom est requis";
+  if (!data.categoryId) return "La catégorie est requise";
+  if (!data.gender)     return "Le genre est requis";
+  if (data.price < 0)   return "Le prix ne peut pas être négatif";
+  if (data.stock < 0)   return "Le stock ne peut pas être négatif";
   return null;
 }
 
@@ -66,7 +68,6 @@ async function resolveImage(
   imageFile: File | null,
   imageUrl: string | null,
 ): Promise<string | undefined> {
-  // 1. Fichier uploadé
   if (imageFile && imageFile.size > 0) {
     try {
       const ext = getExtension(imageFile.type, imageFile.name);
@@ -76,7 +77,7 @@ async function resolveImage(
         access: "public",
       });
 
-      return blob.url; // ex: https://xxxx.public.blob.vercel-storage.com/product_....jpg
+      return blob.url;
     } catch (err) {
       console.error("resolveImage — file error:", err);
       throw new Error("Impossible de sauvegarder l'image");
@@ -85,12 +86,10 @@ async function resolveImage(
 
   if (!imageUrl?.trim()) return undefined;
 
-  // 2. URL externe déjà hébergée (http(s) ou déjà un blob vercel)
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
 
-  // 3. Data URL (base64) venant du preview file-reader
   if (imageUrl.startsWith("data:")) {
     try {
       const commaIdx = imageUrl.indexOf(",");
@@ -120,6 +119,48 @@ async function resolveImage(
   return undefined;
 }
 
+// ── GET ───────────────────────────────────────────────────────
+// Retourne un produit unique (?id=) ou la liste complète, catégorie incluse.
+export async function GET(req: NextRequest) {
+  try {
+    const { userId: clerkId } = await auth();
+    if (!clerkId) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+
+    const idRaw = new URL(req.url).searchParams.get("id");
+
+    if (idRaw) {
+      const id = parseInt(idRaw);
+      if (isNaN(id)) {
+        return NextResponse.json({ error: "ID invalide" }, { status: 400 });
+      }
+
+      const product = await prisma.product.findUnique({
+        where: { id },
+        include: { category: true },
+      });
+
+      if (!product) {
+        return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
+      }
+
+      return NextResponse.json(product);
+    }
+
+    const products = await prisma.product.findMany({
+      include: { category: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(products);
+  } catch (error: any) {
+    console.error("GET /api/admin/product:", error);
+    return NextResponse.json(
+      { error: error.message ?? "Erreur lors de la récupération des produits" },
+      { status: 500 }
+    );
+  }
+}
+
 // ── POST ──────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -144,7 +185,7 @@ export async function POST(req: NextRequest) {
         name: common.name,
         description: common.description,
         price: common.price,
-        category: common.category as any,
+        categoryId: common.categoryId,
         gender: common.gender as any,
         color: common.color,
         colorHex: common.colorHex,
@@ -155,6 +196,7 @@ export async function POST(req: NextRequest) {
         isNew: common.isNew,
         images: resolvedImage ? [resolvedImage] : [],
       },
+      include: { category: true },
     });
 
     return NextResponse.json({ success: true, product });
@@ -198,7 +240,7 @@ export async function PUT(req: NextRequest) {
         name: common.name,
         description: common.description,
         price: common.price,
-        category: common.category as any,
+        categoryId: common.categoryId,
         gender: common.gender as any,
         color: common.color,
         colorHex: common.colorHex,
@@ -209,6 +251,7 @@ export async function PUT(req: NextRequest) {
         isNew: common.isNew,
         ...(resolvedImage !== undefined && { images: [resolvedImage] }),
       },
+      include: { category: true },
     });
 
     return NextResponse.json({ success: true, product });
