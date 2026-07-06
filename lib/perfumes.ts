@@ -10,7 +10,7 @@ const familles: Record<string, string[]> = {
 
 export async function getAllPerfumesGrouped(): Promise<Record<string, Product[]>> {
   const perfumes = await prisma.product.findMany({
-    where: { category: "parfum" },
+    where: { category: { name: "parfum" } },
     orderBy: { price: "desc" },
   });
 

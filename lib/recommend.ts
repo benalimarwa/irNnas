@@ -40,10 +40,10 @@ export async function recommendPerfumes(answers: QuizAnswers): Promise<Product[]
   const genderValues = GENDER_MAP[gender.toLowerCase()] ?? ["unisex"];
   const genderEnums = genderValues as ("men" | "women" | "unisex")[];
 
-  // On cherche uniquement les parfums (category = 'parfum') en stock
+  // On cherche uniquement les parfums (category.name = 'parfum') en stock
   let products = await prisma.product.findMany({
     where: {
-      category: "parfum",
+      category: { name: "parfum" },
       stock: { gt: 0 },
       gender: { in: genderEnums },
     },
@@ -55,7 +55,7 @@ export async function recommendPerfumes(answers: QuizAnswers): Promise<Product[]
   if (products.length < 3) {
     products = await prisma.product.findMany({
       where: {
-        category: "parfum",
+        category: { name: "parfum" },
         stock: { gt: 0 },
         gender: { in: [...genderEnums, "unisex"] },
       },
@@ -67,7 +67,7 @@ export async function recommendPerfumes(answers: QuizAnswers): Promise<Product[]
   // Fallback 2 : tous les parfums en stock
   if (products.length === 0) {
     products = await prisma.product.findMany({
-      where: { category: "parfum", stock: { gt: 0 } },
+      where: { category: { name: "parfum" }, stock: { gt: 0 } },
       orderBy: { price: "desc" },
       take: 50,
     });
