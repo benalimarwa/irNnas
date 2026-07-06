@@ -190,7 +190,7 @@ export default function Navbar() {
 
       <Link href="/client" className="group flex items-center gap-2 flex-shrink-0">
         <Image
-          src="/llogoo.jpg"
+          src="/llpo.jpg"
           alt="IRNAS"
           width={140}
           height={50}
