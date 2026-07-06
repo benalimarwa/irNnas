@@ -5,7 +5,6 @@ import {
   Plus, Search, X, Edit, Trash2, Package, Upload,
   CheckCircle, XCircle, AlertTriangle, LayoutGrid, List,
 } from "lucide-react";
-import AdminNavbar from "@/components/AdminNavbar";
 
 type Product = {
   id: number;
@@ -78,7 +77,7 @@ export default function AdminProductsPage() {
   // Alert
   const [alert, setAlert] = useState<AlertType>({ show: false, type: "success", message: "" });
 
-  // Delete confirmation modal
+  // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState<number | null>(null);
 
@@ -109,26 +108,24 @@ export default function AdminProductsPage() {
     if (videoRef.current) videoRef.current.play().catch(() => {});
   }, []);
 
- // Remplacez la fonction onFile
-const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // Accepter tout type image (jpeg, png, webp, heic, heif depuis iPhone, etc.)
-  if (!file.type.startsWith("image/") && !file.name.match(/\.(jpg|jpeg|png|gif|webp|heic|heif|avif|bmp|tiff)$/i)) {
-    showAlert("error", "Veuillez sélectionner un fichier image valide");
-    return;
-  }
+    if (!file.type.startsWith("image/") && !file.name.match(/\.(jpg|jpeg|png|gif|webp|heic|heif|avif|bmp|tiff)$/i)) {
+      showAlert("error", "Veuillez sélectionner un fichier image valide");
+      return;
+    }
 
-  setImageFile(file);
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const result = reader.result as string;
-    setImagePreview(result);
-    setForm(f => ({ ...f, imageUrl: result }));
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setImagePreview(result);
+      setForm(f => ({ ...f, imageUrl: result }));
+    };
+    reader.readAsDataURL(file);
   };
-  reader.readAsDataURL(file);
-};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,8 +138,11 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
 
     fd.append("isNew", form.isNew.toString());
 
-    if (imgMode === "file" && imageFile) fd.append("image", imageFile);
-    else if (form.imageUrl) fd.append("imageUrl", form.imageUrl);
+    if (imgMode === "file" && imageFile) {
+      fd.append("image", imageFile);
+    } else if (form.imageUrl && !form.imageUrl.startsWith("data:")) {
+      fd.append("imageUrl", form.imageUrl);
+    }
 
     try {
       const res = await fetch("/api/admin/product", {
@@ -163,7 +163,7 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     }
   };
 
-  const confirmDelete = async (id: number) => {
+  const confirmDelete = (id: number) => {
     setProductToDelete(id);
     setShowDeleteConfirm(true);
   };
@@ -255,7 +255,6 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
         .admin-products { font-family: 'Instrument Sans', system-ui, sans-serif; }
-        .hero-title { font-family: 'Syne', sans-serif; }
       `}</style>
 
       <div className="admin-products min-h-screen relative overflow-hidden bg-[#0A0A0A] text-[#F8F6F2]">
@@ -266,11 +265,7 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
           </video>
         </div>
         <div className="fixed inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(212,175,55,0.12),rgba(0,0,0,0.88))] z-10" />
-
-        {/* Golden Grid */}
         <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0 pointer-events-none" />
-
-      
 
         <div className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-20">
           {/* Header */}
@@ -280,7 +275,6 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
                 <Package size={16} className="text-[#D4AF37]" />
                 ADMINISTRATION
               </div>
-              
             </div>
 
             <button
@@ -384,7 +378,7 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
           )}
         </div>
 
-        {/* === FORM MODAL === */}
+        {/* === MODAL FORMULAIRE === */}
         {showModal && (
           <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-6">
             <div className="bg-[#111] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[95vh] overflow-auto">
@@ -394,75 +388,154 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
               </div>
 
               <form onSubmit={handleSubmit} className="p-8 space-y-8">
-                {/* Champs du formulaire (identiques à l'ancienne version) */}
+                {/* Identité */}
                 <div>
                   <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Identité</p>
-                  <input className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" type="text" placeholder="Nom du produit" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-                  <textarea className="w-full mt-4 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 h-28 focus:outline-none focus:border-[#D4AF37] resize-none" placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                  <input 
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                    type="text" 
+                    placeholder="Nom du produit" 
+                    required 
+                    value={form.name} 
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} 
+                  />
+                  <textarea 
+                    className="w-full mt-4 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 h-28 focus:outline-none focus:border-[#D4AF37] resize-none" 
+                    placeholder="Description" 
+                    value={form.description} 
+                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))} 
+                  />
                 </div>
 
-                {/* Catégorie dynamique */}
+                {/* Catégorie */}
                 <div>
                   <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Catégorie</p>
                   <div className="flex gap-2 flex-wrap">
-                    <select className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                    <select 
+                      className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                      value={form.category} 
+                      onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                    >
                       {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                     <div className="flex gap-2">
-                      <input type="text" placeholder="Nouvelle catégorie" value={newCategory} onChange={e => setNewCategory(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addNewCategory(); } }} className="w-40 bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-[#D4AF37]" />
+                      <input 
+                        type="text" 
+                        placeholder="Nouvelle catégorie" 
+                        value={newCategory} 
+                        onChange={e => setNewCategory(e.target.value)} 
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addNewCategory(); } }} 
+                        className="w-40 bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-[#D4AF37]" 
+                      />
                       <button type="button" onClick={addNewCategory} className="bg-[#D4AF37] hover:bg-[#F5E6A3] text-black px-4 rounded-2xl text-sm font-medium">Ajouter</button>
                     </div>
                   </div>
                 </div>
 
-                {/* Autres champs (genre, prix, stock, etc.) */}
+                {/* Genre + Prix */}
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Genre</p>
-                    <select className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}>
+                    <select 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                      value={form.gender} 
+                      onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
+                    >
                       {GENDERS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                     </select>
                   </div>
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Prix (TND)</p>
-                    <input className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" type="number" step="0.01" min="0" required value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+                    <input 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                      type="number" 
+                      step="0.01" 
+                      min="0" 
+                      required 
+                      value={form.price} 
+                      onChange={e => setForm(f => ({ ...f, price: e.target.value }))} 
+                    />
                   </div>
                 </div>
 
+                {/* Stock + Tailles */}
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Stock</p>
-                    <input className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" type="number" min="0" required value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} />
+                    <input 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                      type="number" 
+                      min="0" 
+                      required 
+                      value={form.stock} 
+                      onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} 
+                    />
                   </div>
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Tailles</p>
-                    <input className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" type="text" placeholder="S,M,L,XL" value={form.sizes} onChange={e => setForm(f => ({ ...f, sizes: e.target.value }))} />
+                    <input 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                      type="text" 
+                      placeholder="S,M,L,XL" 
+                      value={form.sizes} 
+                      onChange={e => setForm(f => ({ ...f, sizes: e.target.value }))} 
+                    />
                   </div>
                 </div>
 
+                {/* Couleur + Matière */}
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Couleur</p>
                     <div className="flex gap-3">
-                      <input className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" type="text" placeholder="ex: Bleu marine" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} />
-                      <input type="color" value={form.colorHex} onChange={e => setForm(f => ({ ...f, colorHex: e.target.value }))} className="w-14 h-14 rounded-2xl border border-white/10 cursor-pointer" />
+                      <input 
+                        className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                        type="text" 
+                        placeholder="ex: Bleu marine" 
+                        value={form.color} 
+                        onChange={e => setForm(f => ({ ...f, color: e.target.value }))} 
+                      />
+                      <input 
+                        type="color" 
+                        value={form.colorHex} 
+                        onChange={e => setForm(f => ({ ...f, colorHex: e.target.value }))} 
+                        className="w-14 h-14 rounded-2xl border border-white/10 cursor-pointer" 
+                      />
                     </div>
                   </div>
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Matière</p>
-                    <input className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" type="text" placeholder="ex: 100% Coton" value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} />
+                    <input 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                      type="text" 
+                      placeholder="ex: 100% Coton" 
+                      value={form.material} 
+                      onChange={e => setForm(f => ({ ...f, material: e.target.value }))} 
+                    />
                   </div>
                 </div>
 
+                {/* Fit + Badge */}
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Coupe (Fit)</p>
-                    <input className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" type="text" placeholder="Slim, Regular..." value={form.fit} onChange={e => setForm(f => ({ ...f, fit: e.target.value }))} />
+                    <input 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                      type="text" 
+                      placeholder="Slim, Regular..." 
+                      value={form.fit} 
+                      onChange={e => setForm(f => ({ ...f, fit: e.target.value }))} 
+                    />
                   </div>
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Badge</p>
                     <label className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 cursor-pointer hover:border-[#D4AF37]">
-                      <input type="checkbox" checked={form.isNew} onChange={e => setForm(f => ({ ...f, isNew: e.target.checked }))} className="w-5 h-5 accent-[#D4AF37]" />
+                      <input 
+                        type="checkbox" 
+                        checked={form.isNew} 
+                        onChange={e => setForm(f => ({ ...f, isNew: e.target.checked }))} 
+                        className="w-5 h-5 accent-[#D4AF37]" 
+                      />
                       <span>Marquer comme Nouveau</span>
                     </label>
                   </div>
@@ -477,39 +550,40 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
                   </div>
 
                   {imgMode === "url" ? (
-                    <input type="url" placeholder="https://" value={form.imageUrl} onChange={e => { setForm(f => ({ ...f, imageUrl: e.target.value })); setImagePreview(""); }} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" />
+                    <input 
+                      type="url" 
+                      placeholder="https://" 
+                      value={form.imageUrl} 
+                      onChange={e => { 
+                        setForm(f => ({ ...f, imageUrl: e.target.value })); 
+                        setImagePreview(""); 
+                      }} 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
+                    />
                   ) : (
-                    // Remplacez le label du file input
-<label className="block border-2 border-dashed border-white/20 rounded-3xl p-12 text-center cursor-pointer hover:border-[#D4AF37]">
-  <Upload className="mx-auto mb-4 text-white/50" size={48} />
-  <span className="text-white/70">{imageFile ? imageFile.name : "Cliquez ou glissez une image"}</span>
-  <p className="text-xs text-white/40 mt-2">JPG, PNG, WEBP, HEIC, capture d'écran... tous formats acceptés</p>
-  <input
-    type="file"
-    accept="image/*,.heic,.heif,.avif"
-    className="hidden"
-    onChange={onFile}
-  />
-</label>
+                    <label className="block border-2 border-dashed border-white/20 rounded-3xl p-12 text-center cursor-pointer hover:border-[#D4AF37]">
+                      <Upload className="mx-auto mb-4 text-white/50" size={48} />
+                      <span className="text-white/70">{imageFile ? imageFile.name : "Cliquez ou glissez une image"}</span>
+                      <p className="text-xs text-white/40 mt-2">JPG, PNG, WEBP, HEIC, etc.</p>
+                      <input
+                        type="file"
+                        accept="image/*,.heic,.heif,.avif"
+                        className="hidden"
+                        onChange={onFile}
+                      />
+                    </label>
                   )}
 
-                 {(imagePreview || form.imageUrl) && (
-  <div className="mt-6 rounded-2xl overflow-hidden border border-white/10">
-    <img
-      src={imagePreview || form.imageUrl}
-      alt="Preview"
-      className="w-full h-64 object-contain"
-      onError={(e) => {
-        (e.target as HTMLImageElement).style.display = "none";
-      }}
-    />
-    {imageFile && !imagePreview.startsWith("data:image/") && (
-      <p className="text-xs text-white/40 p-3">
-        Aperçu indisponible pour ce format (HEIC), mais le fichier "{imageFile.name}" sera bien envoyé.
-      </p>
-    )}
-  </div>
-)}
+                  {(imagePreview || form.imageUrl) && (
+                    <div className="mt-6 rounded-2xl overflow-hidden border border-white/10">
+                      <img
+                        src={imagePreview || form.imageUrl}
+                        alt="Preview"
+                        className="w-full h-64 object-contain"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-4 pt-6">
@@ -523,13 +597,13 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
           </div>
         )}
 
-        {/* === DELETE CONFIRMATION MODAL === */}
+        {/* === MODAL SUPPRESSION === */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/90 z-[110] flex items-center justify-center p-6">
             <div className="bg-[#111] border border-red-500/30 rounded-3xl max-w-md w-full p-8 text-center">
               <AlertTriangle className="mx-auto text-red-500 mb-6" size={48} />
               <h3 className="text-2xl font-semibold mb-3">Supprimer ce produit ?</h3>
-              <p className="text-white/70 mb-8">Cette action est irréversible et supprimera définitivement le produit.</p>
+              <p className="text-white/70 mb-8">Cette action est irréversible.</p>
               
               <div className="flex gap-4">
                 <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-4 border border-white/30 rounded-2xl font-medium hover:bg-white/10">Annuler</button>
@@ -539,17 +613,23 @@ const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
           </div>
         )}
 
-        {/* Global Alert */}
+        {/* === ALERT GLOBAL === */}
         {alert.show && (
-          <div className={`fixed top-6 right-6 z-[200] flex items-start gap-3 border rounded-2xl px-5 py-4 max-w-sm shadow-2xl ${alert.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10' : alert.type === 'error' ? 'border-red-500/30 bg-red-500/10' : 'border-amber-500/30 bg-amber-500/10'}`}>
+          <div className={`fixed top-6 right-6 z-[200] flex items-start gap-3 border rounded-2xl px-5 py-4 max-w-sm shadow-2xl 
+            ${alert.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10' : 
+              alert.type === 'error' ? 'border-red-500/30 bg-red-500/10' : 'border-amber-500/30 bg-amber-500/10'}`}>
             {alert.type === 'success' && <CheckCircle size={24} className="text-emerald-400" />}
             {alert.type === 'error' && <XCircle size={24} className="text-red-400" />}
             {alert.type === 'warning' && <AlertTriangle size={24} className="text-amber-400" />}
+            
             <div>
               {alert.title && <div className="font-semibold">{alert.title}</div>}
               <div className="text-sm text-white/80">{alert.message}</div>
             </div>
-            <button onClick={() => setAlert(a => ({ ...a, show: false }))} className="ml-auto text-white/50 hover:text-white"><X size={18} /></button>
+            
+            <button onClick={() => setAlert(a => ({ ...a, show: false }))} className="ml-auto text-white/50 hover:text-white">
+              <X size={18} />
+            </button>
           </div>
         )}
       </div>
