@@ -4,34 +4,50 @@ import { prisma } from "@/lib/prisma";
 import { Gender } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
+  try {
+    const { searchParams } = new URL(req.url);
 
-  const search   = searchParams.get("search")   ?? "";
-  const category = searchParams.get("category") ?? "";
-  const gender   = searchParams.get("gender")   ?? "";
+    const search   = searchParams.get("search")   ?? "";
+    const category = searchParams.get("category") ?? "";
+    const gender   = searchParams.get("gender")   ?? "";
 
-  const products = await prisma.product.findMany({
-    where: {
-      AND: [
-        search
-          ? {
-              OR: [
-                { name:        { contains: search, mode: "insensitive" } },
-                { color:       { contains: search, mode: "insensitive" } },
-                { description: { contains: search, mode: "insensitive" } },
-              ],
-            }
-          : {},
-        category
-          ? { category: { name: { equals: category, mode: "insensitive" } } }
-          : {},
-        gender && Object.values(Gender).includes(gender as Gender)
-          ? { gender: gender as Gender }
-          : {},
-      ],
-    },
-    orderBy: { createdAt: "desc" },
-  });
+    const products = await prisma.product.findMany({
+      where: {
+        AND: [
+          search
+            ? {
+                OR: [
+                  { name:        { contains: search, mode: "insensitive" } },
+                  { color:       { contains: search, mode: "insensitive" } },
+                  { description: { contains: search, mode: "insensitive" } },
+                ],
+              }
+            : {},
+          category
+            ? { category: { name: { equals: category, mode: "insensitive" } } }
+            : {},
+          gender && Object.values(Gender).includes(gender as Gender)
+            ? { gender: gender as Gender }
+            : {},
+        ],
+      },
+      include: { category: true },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json(products);
+    // Le front attend `category` en string (voir type Product côté admin),
+    // pas l'objet relation complet renvoyé par Prisma via `include`.
+    const flattened = products.map(p => ({
+      ...p,
+      category: p.category?.name ?? "",
+    }));
+
+    return NextResponse.json(flattened);
+  } catch (error: any) {
+    console.error("GET /api/products/filter:", error);
+    return NextResponse.json(
+      { error: error.message ?? "Erreur lors de la récupération des produits" },
+      { status: 500 }
+    );
+  }
 }
