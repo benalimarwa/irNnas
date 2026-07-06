@@ -83,31 +83,40 @@ function CatalogueInner() {
     }, [searchParams]);
 
     // ── Fetch produits ────────────────────────────────────────────────────────
-    const fetchProducts = async () => {
-        try {
-            const res = await fetch("/api/products");
-            if (res.ok) {
-                const data: Product[] = await res.json();
-                setProducts(data);
-                setFilteredProducts(data);
+  const fetchProducts = async () => {
+    try {
+        const res = await fetch("/api/products");
+        if (res.ok) {
+            const raw: any[] = await res.json();
 
-                const cats: CategoryOption[] = (
-                    Array.from(new Set(data.map(p => p.category))) as string[]
-                ).map(c => ({ value: c, label: CATEGORY_LABELS[c] ?? c }));
-                setCategoryOptions(cats);
+            // Aplatit category (objet {id, name, createdAt}) en simple string
+            const data: Product[] = raw.map(p => ({
+                ...p,
+                category:
+                    p.category && typeof p.category === "object"
+                        ? p.category.name
+                        : p.category,
+            }));
 
-                const gens: CategoryOption[] = (
-                    Array.from(new Set(data.map(p => p.gender))) as string[]
-                ).filter(Boolean).map(g => ({ value: g, label: g }));
-                setGenderOptions(gens);
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
+            setProducts(data);
+            setFilteredProducts(data);
+
+            const cats: CategoryOption[] = (
+                Array.from(new Set(data.map(p => p.category))) as string[]
+            ).map(c => ({ value: c, label: CATEGORY_LABELS[c] ?? c }));
+            setCategoryOptions(cats);
+
+            const gens: CategoryOption[] = (
+                Array.from(new Set(data.map(p => p.gender))) as string[]
+            ).filter(Boolean).map(g => ({ value: g, label: g }));
+            setGenderOptions(gens);
         }
-    };
-
+    } catch (err) {
+        console.error(err);
+    } finally {
+        setLoading(false);
+    }
+};
     const fetchCartCount = async () => {
         try {
             const res = await fetch("/api/cart");
