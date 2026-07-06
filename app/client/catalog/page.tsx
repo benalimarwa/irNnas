@@ -172,28 +172,15 @@ function CatalogueInner() {
         }
     };
 
-    const handleBuyNow = async (productId: number, size?: string) => {
-        try {
-            const res = await fetch("/api/orders", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    items: [{ productId, quantity: 1, size: size ?? null }],
-                    deliveryMethod: "livraison",
-                }),
-            });
-            if (res.ok) {
-                const data = await res.json();
-                const orderId = data.order?.id ?? data.id;
-                router.push(`/client/orders/${orderId}`);
-            } else {
-                const data = await res.json().catch(() => ({}));
-                alert(data.error || "Erreur lors de la commande");
-            }
-        } catch {
-            alert("Erreur réseau");
-        }
-    };
+  const handleBuyNow = (productId: number, size?: string) => {
+    // On stocke l'article "achat direct" pour que la page checkout
+    // le récupère et affiche son propre formulaire (email, adresse, etc.)
+    sessionStorage.setItem(
+        "irnas_buynow",
+        JSON.stringify({ productId, quantity: 1, size: size ?? null })
+    );
+    router.push("/client/checkout?mode=buynow");
+};
 
     const handleCartClick = () => {
         router.push("/client/panier");
@@ -444,7 +431,7 @@ function CatalogueInner() {
                                             </button>
                                             <button
                                                 onClick={() => handleBuyNow(product.id, currentSize)}
-                                                disabled={actionsDisabled}
+                                                
                                                 className={`flex-1 py-3 rounded-xl text-[11px] uppercase tracking-[0.2em] font-medium border transition ${
                                                     !actionsDisabled
                                                         ? "border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10"
