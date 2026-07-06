@@ -43,11 +43,15 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json(flattened);
-  } catch (error: any) {
+ } catch (error: any) {
   console.error("GET /api/products/filter — FULL ERROR:", error);
-  console.error("STACK:", error?.stack);
   return NextResponse.json(
-    { error: error.message ?? "Erreur", stack: error?.stack, code: error?.code },
+    {
+      error: error?.message ?? "Erreur",
+      code: error?.code,
+      name: error?.name,
+      stack: error?.stack,
+    },
     { status: 500 }
   );
-  }}
+}}
