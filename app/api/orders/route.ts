@@ -10,6 +10,14 @@ import { prisma } from "@/lib/prisma";
    - Guest with email          → finds existing user by email
                                  OR creates a new guest user in DB + Clerk
                                  → returns a signInToken for auto-login
+
+   Résolution des items de commande :
+   - Si `items` est fourni dans le corps de la requête (ex: "Acheter
+     maintenant" depuis la fiche produit / le catalogue), ils sont
+     TOUJOURS prioritaires, connecté ou non.
+   - Sinon, pour un utilisateur connecté, on retombe sur son panier
+     en base de données.
+   - Sinon (invité sans items fournis), 400 "Panier vide".
 ───────────────────────────────────────────────────────────── */
 export async function POST(req: NextRequest) {
   try {
@@ -106,8 +114,16 @@ export async function POST(req: NextRequest) {
 
     /* ── 2. Resolve cart items ───────────────────────────── */
     let cartItems: Array<{ productId: number; quantity: number; size?: string | null }> = [];
+    let usedProvidedItems = false;
 
-    if (clerkId) {
+    if (bodyItems?.length) {
+      // "Acheter maintenant" (ou tout appel précisant explicitement les items)
+      // → toujours prioritaire, que l'utilisateur soit connecté ou non.
+      cartItems = bodyItems;
+      usedProvidedItems = true;
+    } else if (clerkId) {
+      // Pas d'items fournis explicitement → on retombe sur le panier DB
+      // de l'utilisateur connecté.
       const cart = await prisma.cart.findUnique({
         where: { userId: dbUser!.id },
         include: { items: true },
@@ -121,10 +137,7 @@ export async function POST(req: NextRequest) {
         size: i.size,
       }));
     } else {
-      if (!bodyItems?.length) {
-        return NextResponse.json({ error: "Panier vide" }, { status: 400 });
-      }
-      cartItems = bodyItems;
+      return NextResponse.json({ error: "Panier vide" }, { status: 400 });
     }
 
     /* ── 3. Fetch product prices & validate stock ─────────── */
@@ -198,8 +211,10 @@ export async function POST(req: NextRequest) {
         )
       );
 
-      // Clear cart for authenticated users
-      if (clerkId) {
+      // Clear cart for authenticated users — uniquement si la commande
+      // provient réellement du panier (pas d'un "Acheter maintenant"
+      // qui a fourni ses propres items).
+      if (clerkId && !usedProvidedItems) {
         const cart = await tx.cart.findUnique({ where: { userId: dbUser!.id } });
         if (cart) {
           await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
@@ -215,4 +230,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
-
