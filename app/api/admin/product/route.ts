@@ -5,6 +5,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { Prisma } from "@prisma/client";
 
 // ── helpers ───────────────────────────────────────────────────
 
@@ -154,6 +155,48 @@ async function resolveImage(
   return undefined;
 }
 
+/**
+ * Transforme n'importe quelle erreur (Prisma ou autre) en un message
+ * exploitable, et logge le détail complet côté serveur pour debug.
+ * C'est ça qui va enfin nous dire POURQUOI ça plante en 500.
+ */
+function formatError(error: unknown, context: string): { message: string; status: number } {
+  console.error(`[${context}]`, error);
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    console.error("Prisma error code:", error.code, "meta:", error.meta);
+
+    switch (error.code) {
+      case "P2002":
+        return { message: `Un produit avec ces valeurs uniques existe déjà (${JSON.stringify(error.meta?.target)})`, status: 409 };
+      case "P2003":
+        return { message: "Référence invalide (clé étrangère)", status: 400 };
+      case "P2025":
+        return { message: "Produit introuvable", status: 404 };
+      default:
+        return { message: `Erreur base de données (${error.code}): ${error.message}`, status: 500 };
+    }
+  }
+
+  if (error instanceof Prisma.PrismaClientValidationError) {
+    // Très souvent la cause d'un 500 "silencieux" : un champ ne correspond pas
+    // au schéma (ex: valeur qui n'existe pas dans un enum Prisma comme
+    // "category" ou "gender").
+    return {
+      message:
+        "Données invalides pour la base : vérifie que 'category' et 'gender' correspondent bien " +
+        "aux valeurs autorisées par le schéma Prisma (enum).",
+      status: 400,
+    };
+  }
+
+  if (error instanceof Error) {
+    return { message: error.message, status: 500 };
+  }
+
+  return { message: "Erreur inconnue", status: 500 };
+}
+
 // ── POST ──────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -196,11 +239,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, product });
   } catch (error: any) {
-    console.error("POST /api/admin/product:", error);
-    return NextResponse.json(
-      { error: error.message ?? "Erreur lors de la création" },
-      { status: 500 }
-    );
+    const { message, status } = formatError(error, "POST /api/admin/product");
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
@@ -258,11 +298,8 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, product });
   } catch (error: any) {
-    console.error("PUT /api/admin/product:", error);
-    return NextResponse.json(
-      { error: error.message ?? "Erreur lors de la mise à jour" },
-      { status: 500 }
-    );
+    const { message, status } = formatError(error, "PUT /api/admin/product");
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
@@ -297,10 +334,7 @@ export async function DELETE(req: NextRequest) {
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ success: true, message: "Produit supprimé" });
   } catch (error: any) {
-    console.error("DELETE /api/admin/product:", error);
-    return NextResponse.json(
-      { error: error.message ?? "Erreur lors de la suppression" },
-      { status: 500 }
-    );
+    const { message, status } = formatError(error, "DELETE /api/admin/product");
+    return NextResponse.json({ error: message }, { status });
   }
 }

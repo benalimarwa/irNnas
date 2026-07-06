@@ -150,13 +150,16 @@ export default function AdminProductsPage() {
         body: fd,
       });
 
+      // On lit toujours le JSON, même en cas d'erreur, pour afficher
+      // le vrai message renvoyé par le serveur (voir route.ts corrigé).
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
         showAlert("success", editMode ? "Produit modifié avec succès !" : "Produit ajouté avec succès !");
         closeModal();
         fetchProducts();
       } else {
-        const data = await res.json();
-        showAlert("error", data.error || "Erreur lors de l'opération");
+        showAlert("error", data.error || `Erreur lors de l'opération (${res.status})`);
       }
     } catch {
       showAlert("error", "Erreur réseau");
@@ -182,12 +185,13 @@ export default function AdminProductsPage() {
       }
 
       const res = await fetch(`/api/admin/product?id=${productToDelete}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok) {
         showAlert("success", "Produit supprimé avec succès");
         fetchProducts();
       } else {
-        showAlert("error", "Erreur lors de la suppression");
+        showAlert("error", data.error || "Erreur lors de la suppression");
       }
     } catch {
       showAlert("error", "Erreur réseau");
