@@ -43,7 +43,6 @@ model Order {
   confirmedBy User?       @relation("OrderConfirmedBy", fields: [confirmedById], references: [id])
   items       OrderItem[]
 }
-
 model Product {
   id          Int         @id @default(autoincrement())
   name        String
@@ -61,10 +60,20 @@ model Product {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   stockStatus StockStatus @default(NORMAL)
-  category    String
+  categoryId  Int
+  category    Category    @relation(fields: [categoryId], references: [id])
   cartItems   CartItem[]
   favorites   Favorite[]
   orderItems  OrderItem[]
+
+  @@index([categoryId])
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  products  Product[]
 }
 
 model Favorite {
