@@ -5,9 +5,6 @@
   - Added the required column `categoryId` to the `Product` table without a default value. This is not possible if the table is not empty.
 
 */
--- AlterTable
-ALTER TABLE "Product" DROP COLUMN "category",
-ADD COLUMN     "categoryId" INTEGER NOT NULL;
 
 -- CreateTable
 CREATE TABLE "Category" (
@@ -20,6 +17,22 @@ CREATE TABLE "Category" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
+
+-- Étape 1 : créer une catégorie par défaut
+INSERT INTO "Category" (name, "createdAt")
+VALUES ('non-classe', NOW())
+ON CONFLICT (name) DO NOTHING;
+
+-- Étape 2 : ajouter la colonne categoryId en NULLABLE d'abord
+ALTER TABLE "Product" ADD COLUMN "categoryId" INTEGER;
+
+-- Étape 3 : remplir les produits existants avec cette catégorie par défaut
+UPDATE "Product"
+SET "categoryId" = (SELECT id FROM "Category" WHERE name = 'non-classe')
+WHERE "categoryId" IS NULL;
+
+-- Étape 4 : rendre la colonne obligatoire
+ALTER TABLE "Product" ALTER COLUMN "categoryId" SET NOT NULL;
 
 -- CreateIndex
 CREATE INDEX "Product_categoryId_idx" ON "Product"("categoryId");
