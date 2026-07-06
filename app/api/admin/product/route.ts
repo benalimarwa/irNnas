@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { Gender } from "@prisma/client";   // ← Important
+import { Gender } from "@prisma/client";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
@@ -11,7 +11,7 @@ async function ensureUploadDir() {
   try {
     await mkdir(UPLOAD_DIR, { recursive: true });
   } catch (e) {
-    console.error("Erreur création dossier uploads:", e);
+    console.error("Erreur dossier uploads:", e);
   }
 }
 
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(products);
   } catch (error) {
     console.error("[GET /api/products]", error);
-    return NextResponse.json({ error: "Erreur lors du chargement" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur chargement produits" }, { status: 500 });
   }
 }
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     const description = formData.get("description") as string;
     const price = parseFloat(formData.get("price") as string);
     const category = formData.get("category") as string;
-    const gender = formData.get("gender") as Gender;           // ← Correction ici
+    const genderRaw = formData.get("gender") as string;
     const color = formData.get("color") as string;
     const colorHex = formData.get("colorHex") as string;
     const stock = parseInt(formData.get("stock") as string);
@@ -69,6 +69,8 @@ export async function POST(req: NextRequest) {
     const material = formData.get("material") as string;
     const fit = formData.get("fit") as string;
     const isNew = formData.get("isNew") === "true";
+
+    const gender = genderRaw as Gender;
 
     const imageFile = formData.get("image") as File | null;
     let imageUrl = formData.get("imageUrl") as string | null;
@@ -83,30 +85,21 @@ export async function POST(req: NextRequest) {
       imageUrl = `/uploads/${filename}`;
     }
 
-    if (!imageUrl) return NextResponse.json({ error: "Image requise" }, { status: 400 });
+    if (!imageUrl) {
+      return NextResponse.json({ error: "Une image est requise" }, { status: 400 });
+    }
 
     const product = await prisma.product.create({
       data: {
-        name,
-        description,
-        price,
-        category,
-        gender,                    // ← Maintenant typé correctement
-        color,
-        colorHex: colorHex || "#888888",
-        stock,
-        images: [imageUrl],
-        sizes,
-        material,
-        fit,
-        isNew,
+        name, description, price, category, gender, color, colorHex,
+        stock, images: [imageUrl], sizes, material, fit, isNew,
       },
     });
 
     return NextResponse.json({ success: true, product });
   } catch (error: any) {
-    console.error("POST error:", error);
-    return NextResponse.json({ error: error.message || "Erreur création" }, { status: 500 });
+    console.error("POST /api/admin/product error:", error);
+    return NextResponse.json({ error: error.message || "Erreur lors de la création" }, { status: 500 });
   }
 }
 
@@ -124,7 +117,7 @@ export async function PUT(req: NextRequest) {
     const description = formData.get("description") as string;
     const price = parseFloat(formData.get("price") as string);
     const category = formData.get("category") as string;
-    const gender = formData.get("gender") as Gender;           // ← Correction ici
+    const genderRaw = formData.get("gender") as string;
     const color = formData.get("color") as string;
     const colorHex = formData.get("colorHex") as string;
     const stock = parseInt(formData.get("stock") as string);
@@ -132,6 +125,8 @@ export async function PUT(req: NextRequest) {
     const material = formData.get("material") as string;
     const fit = formData.get("fit") as string;
     const isNew = formData.get("isNew") === "true";
+
+    const gender = genderRaw as Gender;
 
     const imageFile = formData.get("image") as File | null;
     let imageUrl = formData.get("imageUrl") as string | null;
@@ -149,30 +144,20 @@ export async function PUT(req: NextRequest) {
     const product = await prisma.product.update({
       where: { id },
       data: {
-        name,
-        description,
-        price,
-        category,
-        gender,                    // ← Correction ici
-        color,
-        colorHex,
-        stock,
-        sizes,
-        material,
-        fit,
-        isNew,
+        name, description, price, category, gender, color, colorHex,
+        stock, sizes, material, fit, isNew,
         ...(imageUrl && { images: [imageUrl] }),
       },
     });
 
     return NextResponse.json({ success: true, product });
   } catch (error: any) {
-    console.error("PUT error:", error);
-    return NextResponse.json({ error: error.message || "Erreur mise à jour" }, { status: 500 });
+    console.error("PUT /api/admin/product error:", error);
+    return NextResponse.json({ error: error.message || "Erreur lors de la mise à jour" }, { status: 500 });
   }
 }
 
-// ====================== DELETE ======================
+// DELETE (simplifié)
 export async function DELETE(req: NextRequest) {
   try {
     const { userId: clerkId } = await auth();
@@ -186,6 +171,6 @@ export async function DELETE(req: NextRequest) {
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur suppression" }, { status: 500 });
   }
 }
