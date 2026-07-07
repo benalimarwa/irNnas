@@ -211,15 +211,53 @@ setLoading(false);
     });
     const data = await res.json();
 
-    if (res.ok) {
-      const orderId = data.orderId;
+   if (res.ok) {
+  const orderId = data.orderId;
 
-      if (isGuest) {
-        guestCart.clear();
-        const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
-        guestOrders.push(orderId);
-        localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
-      }
+  // Construire la liste des produits pour le snapshot
+  const productsSnapshot = isGuest
+    ? guestItems.map(i => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        size: i.size ?? null,
+      }))
+    : authItems.map(i => ({
+        productId: i.product.id,
+        name: i.product.name,
+        price: i.product.price,
+        quantity: i.quantity,
+        size: i.size ?? null,
+      }));
+
+  // Sauvegarde dans la table OrderSnapshot (nouvelle table, indépendante)
+  fetch("/api/order-snapshot", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      orderId,
+      customerEmail: form.email.trim().toLowerCase(),
+      customerFirstName: form.firstName.trim(),
+      customerLastName: form.lastName.trim(),
+      customerPhone: `${phoneCountry.dial} ${form.phone.trim()}`,
+      deliveryMethod,
+      deliveryFee: deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
+      total: isGuest ? null : total,
+      address: deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
+      city: deliveryMethod === "DELIVERY" ? (addressCountry === "TN" ? selectedCity : form.freeCity) || null : null,
+      governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
+      postalCode: deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
+      country: deliveryMethod === "DELIVERY" ? addressCountry : null,
+      notes: form.notes.trim() || null,
+      products: productsSnapshot,
+    }),
+  }).catch(err => console.error("Erreur sauvegarde snapshot:", err));
+
+  if (isGuest) {
+    guestCart.clear();
+    const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
+    guestOrders.push(orderId);
+    localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
+  }
 
       // Auto-login pour guest : redirige avec le ticket, GuestAutoSignIn s'occupe du reste
       if (isGuest && data.signInToken) {

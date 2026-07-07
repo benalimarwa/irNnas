@@ -119,7 +119,32 @@ model OrderItem {
 
   @@unique([orderId, productId, size])
 }
+model OrderSnapshot {
+  id             Int      @id @default(autoincrement())
+  orderId        Int?     // référence informative vers Order.id, pas de relation stricte pour ne rien casser
+  customerEmail  String
+  customerFirstName String
+  customerLastName  String
+  customerPhone  String
+  deliveryMethod String
+  deliveryFee    Float
+  total          Float
 
+  // Adresse (peut être null si retrait en magasin)
+  address        String?
+  city           String?
+  governorate    String?
+  postalCode     String?
+  country        String?
+  notes          String?
+
+  // Produits commandés, stockés en JSON pour rester indépendant des tables Product/OrderItem
+  products       Json
+
+  createdAt      DateTime @default(now())
+
+  @@index([orderId])
+}
 enum UserRole {
   CLIENT
   ADMIN
