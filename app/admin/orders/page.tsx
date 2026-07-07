@@ -13,6 +13,24 @@ interface OrderItem {
   price: number;
 }
 
+interface OrderSnapshot {
+  customerEmail: string;
+  customerFirstName: string;
+  customerLastName: string;
+  customerPhone: string;
+  deliveryMethod: string;
+  deliveryFee: number;
+  total: number;
+  address: string | null;
+  city: string | null;
+  governorate: string | null;
+  postalCode: string | null;
+  country: string | null;
+  notes: string | null;
+  products: any;
+  createdAt: string;
+}
+
 interface Order {
   id: number;
   userId: string;
@@ -23,6 +41,7 @@ interface Order {
   deliveryMethod: string;
   createdAt: string;
   items: OrderItem[];
+  snapshot: OrderSnapshot | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -276,7 +295,63 @@ export default function AdminOrdersPage() {
                         ))}
                       </div>
                     </div>
+                        {/* Détails enregistrés (nouvelle table OrderSnapshot) */}
+{order.snapshot && (
+  <div className="mt-6 sm:mt-8 border-t border-white/10 pt-6 sm:pt-8">
+    <p className="text-white/60 text-xs sm:text-sm mb-3 sm:mb-4">
+      DÉTAILS DE LA COMMANDE (SNAPSHOT)
+    </p>
+    <div className="grid sm:grid-cols-2 gap-4 sm:gap-8">
+      <div>
+        <p className="text-white/40 text-xs mb-1">Contact au moment de la commande</p>
+        <p className="text-sm sm:text-base">
+          {order.snapshot.customerFirstName} {order.snapshot.customerLastName}
+        </p>
+        <p className="text-white/60 text-sm">{order.snapshot.customerEmail}</p>
+        <p className="text-white/60 text-sm">{order.snapshot.customerPhone}</p>
+      </div>
 
+      {order.snapshot.deliveryMethod === "DELIVERY" && (
+        <div>
+          <p className="text-white/40 text-xs mb-1">Adresse de livraison</p>
+          <p className="text-sm sm:text-base flex items-start gap-2">
+            <MapPin size={16} className="text-[#D4AF37] mt-0.5 flex-shrink-0" />
+            <span>
+              {order.snapshot.address && <>{order.snapshot.address}<br /></>}
+              {order.snapshot.city}
+              {order.snapshot.governorate ? `, ${order.snapshot.governorate}` : ""}
+              {order.snapshot.postalCode ? ` — ${order.snapshot.postalCode}` : ""}
+              {order.snapshot.country ? `, ${order.snapshot.country}` : ""}
+            </span>
+          </p>
+        </div>
+      )}
+
+      {order.snapshot.notes && (
+        <div className="sm:col-span-2">
+          <p className="text-white/40 text-xs mb-1">Notes / Instructions</p>
+          <p className="text-sm sm:text-base text-white/80">{order.snapshot.notes}</p>
+        </div>
+      )}
+
+      <div>
+        <p className="text-white/40 text-xs mb-1">Frais de livraison</p>
+        <p className="text-sm sm:text-base">
+          {order.snapshot.deliveryFee > 0 ? `${order.snapshot.deliveryFee} TND` : "Gratuit"}
+        </p>
+      </div>
+
+      {order.snapshot.total > 0 && (
+        <div>
+          <p className="text-white/40 text-xs mb-1">Montant total (snapshot)</p>
+          <p className="text-sm sm:text-base font-semibold text-[#D4AF37]">
+            {order.snapshot.total.toFixed(2)} TND
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
                     {/* Actions */}
                     <div className="mt-6 sm:mt-10 flex flex-wrap gap-3 sm:gap-4">
                       {order.status === "pending" && (

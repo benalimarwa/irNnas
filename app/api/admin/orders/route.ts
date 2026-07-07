@@ -48,9 +48,25 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    // ─── Récupérer les snapshots liés (nouvelle table, indépendante) ──────
+    const orderIds = orders.map((o) => o.id);
+    const snapshots = await prisma.orderSnapshot.findMany({
+      where: { orderId: { in: orderIds } },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Map orderId -> snapshot le plus récent
+    const snapshotByOrderId = new Map<number, (typeof snapshots)[number]>();
+    for (const snap of snapshots) {
+      if (snap.orderId != null && !snapshotByOrderId.has(snap.orderId)) {
+        snapshotByOrderId.set(snap.orderId, snap);
+      }
+    }
+
     const formattedOrders = orders.map((order) => {
-      // ─── Parser les infos de livraison ───────────────────────────────────
+      // ─── Parser les infos de livraison (ancien système) ────────────────
       const delivery = parseDeliveryMethod(order.deliveryMethod ?? "PICKUP");
+      const snapshot = snapshotByOrderId.get(order.id) ?? null;
 
       return {
         id:           order.id,
@@ -61,7 +77,7 @@ export async function GET(req: NextRequest) {
         status:       order.status,
         createdAt:    order.createdAt.toISOString(),
 
-        // ─── Infos livraison parsées ──────────────────────────────────────
+        // ─── Infos livraison parsées (ancien système) ──────────────────────
         deliveryMethod: delivery.method,          // "PICKUP" | "DELIVERY"
         deliveryInfo: delivery.method === "DELIVERY"
           ? {
@@ -73,7 +89,7 @@ export async function GET(req: NextRequest) {
               country:     delivery.country     ?? null,
               notes:       delivery.notes       ?? null,
             }
-          : null,                                 // null si retrait en magasin
+          : null,
 
         items: order.items.map((item) => ({
           id:          item.id,
@@ -81,6 +97,27 @@ export async function GET(req: NextRequest) {
           quantity:    item.quantity,
           price:       item.price,
         })),
+
+        // ─── Détails enregistrés dans OrderSnapshot (nouvelle table) ───────
+        snapshot: snapshot
+          ? {
+              customerEmail:     snapshot.customerEmail,
+              customerFirstName: snapshot.customerFirstName,
+              customerLastName:  snapshot.customerLastName,
+              customerPhone:     snapshot.customerPhone,
+              deliveryMethod:    snapshot.deliveryMethod,
+              deliveryFee:       snapshot.deliveryFee,
+              total:             snapshot.total,
+              address:           snapshot.address,
+              city:              snapshot.city,
+              governorate:       snapshot.governorate,
+              postalCode:        snapshot.postalCode,
+              country:           snapshot.country,
+              notes:             snapshot.notes,
+              products:          snapshot.products,
+              createdAt:         snapshot.createdAt.toISOString(),
+            }
+          : null,
       };
     });
 
