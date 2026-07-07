@@ -7,7 +7,9 @@ export default function Footer() {
                     <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
                 </div>
 
-                <p className="text-[10px] text-[#4a6a8a] tracking-widest font-light">© 2026 IRNAS — Tous droits réservés</p>
+                <p className="text-[10px] text-[#4a6a8a] tracking-widest font-light">© 2020 IRNAS — Tous droits réservés</p>
+                   <p className="text-[10px] text-[#4a6a8a] tracking-widest font-light">27888827</p>
+
 
                 <div className="flex items-center gap-3">
                     <a
