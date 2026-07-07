@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useUser, useClerk } from "@clerk/nextjs";
 import {
@@ -70,8 +70,9 @@ const TUNISIA_DATA: Record<string, string[]> = {
 const GOVERNORATES = Object.keys(TUNISIA_DATA).sort();
 
 /* ─── Component ─────────────────────────────────────────────── */
-export default function CheckoutPage() {
+function CheckoutInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk(); // if needed elsewhere
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -123,6 +124,24 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (isSignedIn === undefined) return; // Clerk still loading
 
+    const isBuyNow = searchParams.get("mode") === "buynow";
+    let buyNowItem: { productId: number; quantity: number; size?: string | null } | null = null;
+
+    if (isBuyNow) {
+      try {
+        const raw = sessionStorage.getItem("irnas_buynow");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          buyNowItem = {
+            productId: parsed.productId,
+            quantity:  parsed.quantity ?? 1,
+            size:      parsed.size ?? null,
+          };
+        }
+      } catch {}
+      sessionStorage.removeItem("irnas_buynow"); // usage unique
+    }
+
     if (isSignedIn) {
       // Pre-fill form with Clerk user data
       setForm(f => ({
@@ -132,20 +151,39 @@ export default function CheckoutPage() {
         lastName:  user?.lastName  ?? "",
       }));
 
-     fetch("/api/cart")
-  .then(r => r.ok ? r.json() : null)
-  .then(data => {
-    if (data?.items?.length) setCart(data);
-  })
-  .catch(() => showAlert("error", "Impossible de charger le panier"))
-  .finally(() => setLoading(false));
+      const loadCart = () =>
+        fetch("/api/cart")
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (data?.items?.length) setCart(data);
+          })
+          .catch(() => showAlert("error", "Impossible de charger le panier"))
+          .finally(() => setLoading(false));
+
+      if (buyNowItem) {
+        // Ajoute silencieusement le produit "achat direct" au panier puis charge
+        fetch("/api/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buyNowItem),
+        })
+          .catch(() => {})
+          .finally(loadCart);
+      } else {
+        loadCart();
+      }
     } else {
-      // Guest — read localStorage
-     const items = guestCart.get();
-setGuestItems(items);
-setLoading(false);
+      // Guest
+      if (buyNowItem) {
+        setGuestItems([buyNowItem]);
+        setLoading(false);
+      } else {
+        const items = guestCart.get();
+        setGuestItems(items);
+        setLoading(false);
+      }
     }
-  }, [isSignedIn, user, router]);
+  }, [isSignedIn, user, router, searchParams]);
 
   /* ── Derived values ─────────────────────────────────────── */
   const authItems  = cart.items;
@@ -664,5 +702,12 @@ setLoading(false);
         </div>
       </footer>
     </div>
+  );
+}
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a1628] flex items-center justify-center">Chargement...</div>}>
+      <CheckoutInner />
+    </Suspense>
   );
 }
