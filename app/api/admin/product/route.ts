@@ -94,7 +94,7 @@ async function resolveImage(
       return blob.url;
     } catch (err) {
       console.error("resolveImage — file error:", err);
-      throw new Error("Impossible de sauvegarder l'image");   // ← this message
+      throw new Error("Impossible de sauvegarder l'image");
     }
   }
 
@@ -215,19 +215,24 @@ export async function POST(req: NextRequest) {
       include: { category: true },
     });
 
+    // ✅ FIX : il manquait ce return. Sans lui, Next.js plante avec
+    // "API resolved without sending a response", ce qui se traduisait
+    // côté client par un 500 avec un corps vide (JSON.parse crash).
+    return NextResponse.json({ success: true, product }, { status: 201 });
+
   } catch (error: any) {
-  console.error("POST /api/admin/product — FULL:", error);
-  console.error("META:", error?.meta);
-  console.error("CODE:", error?.code);
-  return NextResponse.json(
-    {
-      error: error.message ?? "Erreur lors de la création",
-      meta: error?.meta,
-      code: error?.code,
-    },
-    { status: 500 }
-  );
-}
+    console.error("POST /api/admin/product — FULL:", error);
+    console.error("META:", error?.meta);
+    console.error("CODE:", error?.code);
+    return NextResponse.json(
+      {
+        error: error.message ?? "Erreur lors de la création",
+        meta: error?.meta,
+        code: error?.code,
+      },
+      { status: 500 }
+    );
+  }
 }
 
 // ── PUT ───────────────────────────────────────────────────────
