@@ -94,7 +94,7 @@ async function resolveImage(
       return blob.url;
     } catch (err) {
       console.error("resolveImage — file error:", err);
-      throw new Error("Impossible de sauvegarder l'image");
+      throw new Error("Impossible de sauvegarder l'image");   // ← this message
     }
   }
 
