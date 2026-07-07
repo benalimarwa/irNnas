@@ -166,7 +166,7 @@ export default function AdminDashboard() {
     }}
     onLoadedData={() => console.log("✅ Vidéo chargée avec succès")}
   >
-    <source src="/video/mm.mp4" type="video/mp4" />
+    <source src="/video/pp.mp4" type="video/mp4" />
   </video>
 </div>
 
