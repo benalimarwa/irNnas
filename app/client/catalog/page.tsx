@@ -169,9 +169,13 @@ function CatalogueInner() {
     }
   };
 
-  const handleBuyNow = () => {
-  router.push("/client/checkout");
-};
+  const handleBuyNow = (productId: number, size?: string) => {
+    sessionStorage.setItem(
+      "irnas_buynow",
+      JSON.stringify({ productId, quantity: 1, size: size ?? null })
+    );
+    router.push("/client/checkout?mode=buynow");
+  };
 
   const toggleFavorite = async (productId: number) => {
     if (!isSignedIn) {
@@ -361,7 +365,7 @@ function CatalogueInner() {
                         Ajouter
                       </button>
                       <button
-                        onClick={() => handleBuyNow()}
+                        onClick={() => handleBuyNow(product.id, currentSize)}
                         disabled={actionsDisabled}
                         className="py-3 border border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10 rounded-2xl text-sm font-medium transition"
                       >
