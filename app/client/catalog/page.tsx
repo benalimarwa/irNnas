@@ -169,13 +169,20 @@ function CatalogueInner() {
     }
   };
 
-  const handleBuyNow = (productId: number, size?: string) => {
-    sessionStorage.setItem(
-      "irnas_buynow",
-      JSON.stringify({ productId, quantity: 1, size: size ?? null })
-    );
-    router.push("/client/checkout?mode=buynow");
-  };
+  const handleBuyNow = (product: Product, size?: string) => {
+  sessionStorage.setItem(
+    "irnas_buynow",
+    JSON.stringify({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.images[0] || null,
+      quantity: 1,
+      size: size ?? null,
+    })
+  );
+  router.push("/client/checkout?mode=buynow");
+};
 
   const toggleFavorite = async (productId: number) => {
     if (!isSignedIn) {
@@ -365,12 +372,11 @@ function CatalogueInner() {
                         Ajouter
                       </button>
                       <button
-                        onClick={() => handleBuyNow(product.id, currentSize)}
-                        disabled={actionsDisabled}
-                        className="py-3 border border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10 rounded-2xl text-sm font-medium transition"
-                      >
-                        Acheter
-                      </button>
+  onClick={() => handleBuyNow(product, currentSize)}
+  className="py-3 border border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10 rounded-2xl text-sm font-medium transition"
+>
+  Acheter
+</button>
                     </div>
                   </div>
                 </div>
