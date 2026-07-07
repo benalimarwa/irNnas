@@ -132,23 +132,18 @@ export default function CheckoutPage() {
         lastName:  user?.lastName  ?? "",
       }));
 
-      fetch("/api/cart")
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (data?.items?.length) setCart(data);
-          else router.push("/client/panier");
-        })
-        .catch(() => showAlert("error", "Impossible de charger le panier"))
-        .finally(() => setLoading(false));
+     fetch("/api/cart")
+  .then(r => r.ok ? r.json() : null)
+  .then(data => {
+    if (data?.items?.length) setCart(data);
+  })
+  .catch(() => showAlert("error", "Impossible de charger le panier"))
+  .finally(() => setLoading(false));
     } else {
       // Guest — read localStorage
-      const items = guestCart.get();
-      if (!items.length) {
-        router.push("/client/panier");
-      } else {
-        setGuestItems(items);
-        setLoading(false);
-      }
+     const items = guestCart.get();
+setGuestItems(items);
+setLoading(false);
     }
   }, [isSignedIn, user, router]);
 
