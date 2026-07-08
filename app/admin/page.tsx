@@ -194,9 +194,189 @@ export default function AdminDashboard() {
             <h1 className="hero-title gradient-text">Tableau de bord</h1>
           </div>
 
-          {/* KPI Cards - inchangé */}
-          {/* Charts - inchangé */}
-          {/* Top Products & Low Stock - inchangé */}
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
+            {[
+              { 
+                label: "Chiffre d'affaires", 
+                value: stats.totalRevenue, 
+                unit: "TND", 
+                icon: TrendingUp, 
+                color: "#D4AF37" 
+              },
+              { 
+                label: "Commandes", 
+                value: stats.totalOrders, 
+                sub: stats.pendingOrders, 
+                subLabel: "en attente", 
+                icon: ShoppingBag, 
+                color: "#D4AF37" 
+              },
+              { 
+                label: "Produits", 
+                value: stats.totalProducts, 
+                icon: Package, 
+                color: "#D4AF37" 
+              },
+              { 
+                label: "Clients", 
+                value: stats.totalUsers, 
+                icon: Users, 
+                color: "#D4AF37" 
+              },
+            ].map((kpi, i) => (
+              <div key={i} className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 border border-white/10 hover:border-[#D4AF37]/50 transition-all group">
+                <div className="flex justify-between items-start mb-4 sm:mb-8">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-[#D4AF37]/10 to-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <kpi.icon className="text-[#D4AF37]" size={24} />
+                  </div>
+                  <div className="text-emerald-400 flex items-center gap-1 text-xs sm:text-sm">
+                    <ArrowUpRight size={16} /> +12%
+                  </div>
+                </div>
+
+                <div className="text-2xl sm:text-5xl font-bold tracking-tighter mb-1 font-mono">
+                  {kpi.value.toLocaleString('fr-FR')}
+                  {kpi.unit && <span className="text-lg sm:text-2xl font-normal text-white/60"> {kpi.unit}</span>}
+                </div>
+
+                <div className="text-sm sm:text-base text-white/60">{kpi.label}</div>
+                {kpi.sub !== undefined && (
+                  <div className="text-xs sm:text-sm text-amber-400 mt-1">
+                    {kpi.sub} {kpi.subLabel}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Charts - première ligne : Stock et Catégorie */}
+          <div className="grid lg:grid-cols-2 gap-6 mb-8">
+            {/* Stock Chart */}
+            <div className={`glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 transition-all ${
+              expandedStock ? 'lg:col-span-2' : ''
+            }`}>
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-semibold">Niveaux de stock</h3>
+                <button
+                  onClick={() => setExpandedStock(!expandedStock)}
+                  className="p-2 rounded-full hover:bg-white/10 transition"
+                  aria-label={expandedStock ? "Réduire" : "Agrandir"}
+                >
+                  {expandedStock ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                </button>
+              </div>
+              <div className={`transition-all duration-300 ${
+                expandedStock ? 'h-[70vh]' : 'h-48 sm:h-64 md:h-80'
+              }`}>
+                <StockProductChart />
+              </div>
+            </div>
+
+            {/* Category Chart */}
+            <div className={`glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 transition-all ${
+              expandedCategory ? 'lg:col-span-2' : ''
+            }`}>
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-semibold">Distribution par catégorie</h3>
+                <button
+                  onClick={() => setExpandedCategory(!expandedCategory)}
+                  className="p-2 rounded-full hover:bg-white/10 transition"
+                  aria-label={expandedCategory ? "Réduire" : "Agrandir"}
+                >
+                  {expandedCategory ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                </button>
+              </div>
+              <div className={`transition-all duration-300 ${
+                expandedCategory ? 'h-[70vh]' : 'h-48 sm:h-64 md:h-80'
+              }`}>
+                <CategoryProductChart />
+              </div>
+            </div>
+          </div>
+
+          {/* Orders Chart (pleine largeur) */}
+          <div className={`glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 mb-8 transition-all ${
+            expandedOrders ? 'h-[80vh]' : ''
+          }`}>
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-semibold flex items-center justify-between w-full">
+                <span>Évolution des commandes</span>
+                <span className="text-sm text-white/50 hidden sm:inline">12 derniers mois</span>
+              </h3>
+              <button
+                onClick={() => setExpandedOrders(!expandedOrders)}
+                className="p-2 rounded-full hover:bg-white/10 transition ml-2"
+                aria-label={expandedOrders ? "Réduire" : "Agrandir"}
+              >
+                {expandedOrders ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+              </button>
+            </div>
+            <div className={`transition-all duration-300 ${
+              expandedOrders ? 'h-[70vh]' : 'h-56 sm:h-72 md:h-96'
+            }`}>
+              <OrdersMonthChart />
+            </div>
+          </div>
+
+          {/* Bottom Sections */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Top Products */}
+            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Top 5 Produits</h3>
+              <div className="space-y-4 sm:space-y-5">
+                {topProducts.length > 0 ? (
+                  topProducts.map((p, i) => (
+                    <div key={i} className="flex items-center gap-3 sm:gap-4">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center text-xs sm:text-sm font-bold">
+                        {i+1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm sm:text-base truncate">{p.name}</p>
+                        <div className="h-1.5 bg-white/10 rounded-full mt-1 sm:mt-2 overflow-hidden">
+                          <div 
+                            className="h-full bg-[#D4AF37] transition-all" 
+                            style={{ width: `${Math.min((p.sales / (topProducts[0]?.sales || 1)) * 100, 100)}%` }} 
+                          />
+                        </div>
+                      </div>
+                      <div className="text-right text-xs sm:text-sm flex-shrink-0">
+                        <p>{p.sales} ventes</p>
+                        <p className="text-[#D4AF37]">{p.revenue.toFixed(0)} TND</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-white/50">Aucune donnée disponible</p>
+                )}
+              </div>
+            </div>
+
+            {/* Low Stock */}
+            <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8">
+              <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                <AlertTriangle className="text-amber-400" size={20} />
+                <h3 className="text-lg sm:text-xl font-semibold">Stock faible</h3>
+              </div>
+              <div className="space-y-3">
+                {lowStock.length > 0 ? (
+                  lowStock.map((p) => (
+                    <div key={p.id} className="flex justify-between items-center bg-white/5 p-3 sm:p-4 rounded-xl sm:rounded-2xl">
+                      <div>
+                        <p className="font-medium text-sm sm:text-base">{p.name}</p>
+                        <p className="text-xs text-white/50">{p.category}</p>
+                      </div>
+                      <span className={`px-3 sm:px-4 py-1 rounded-full text-xs sm:text-sm ${p.stock === 0 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                        {p.stock} restants
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-white/50">Aucun produit en stock faible</p>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Recent Orders - adapté */}
           <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 mt-6 sm:mt-8">
