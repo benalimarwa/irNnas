@@ -1,8 +1,9 @@
 // app/api/admin/dashboard/stockparprod/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const { userId } = await auth();
 
@@ -12,47 +13,34 @@ export async function GET() {
 
     console.log("📦 Récupération des stocks par produit...");
 
-    let stockData: { name: string; stock: number }[] = [];
-
-    // Tentative de chargement depuis la base de données
-    try {
-      const { prisma } = await import("@/lib/prisma");
-
-      const perfumes = await prisma.product.findMany({
-        select: {
-          name: true,
-          stock: true,
+    const products = await prisma.product.findMany({
+      select: {
+        name: true,
+        stock: true,
+      },
+      where: {
+        stock: {
+          gt: 0, // Seulement les produits en stock
         },
-        where: {
-          stock: {
-            gt: 0, // Seulement les produits en stock
-          },
-        },
-        orderBy: {
-          stock: "desc",
-        },
-        take: 10,
-      });
+      },
+      orderBy: {
+        stock: "desc",
+      },
+      take: 10,
+    });
 
-      console.log(`✅ ${perfumes.length} produits récupérés`);
+    console.log(`✅ ${products.length} produits récupérés depuis la table Product`);
 
-      if (perfumes.length > 0) {
-        stockData = perfumes.map((perfume) => ({
-          name: perfume.name.length > 20 
-            ? perfume.name.substring(0, 18) + "..." 
-            : perfume.name,
-          stock: perfume.stock,
-        }));
+    let stockData = products.map((product) => ({
+      name: product.name.length > 20 
+        ? product.name.substring(0, 18) + "..." 
+        : product.name,
+      stock: product.stock,
+    }));
 
-        console.log("📊 Données de stock:", stockData);
-      }
-    } catch (prismaError) {
-      console.warn("⚠️ Erreur Prisma:", prismaError);
-    }
-
-    // Fallback si aucune donnée
+    // Fallback si aucune donnée en base (utile en dev)
     if (stockData.length === 0) {
-      console.log("⚠️ Utilisation de données fictives");
+      console.log("⚠️ Aucune donnée en base → utilisation des données fictives");
       stockData = [
         { name: "Dior Sauvage", stock: 68 },
         { name: "Chanel N°5", stock: 52 },

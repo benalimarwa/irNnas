@@ -46,31 +46,39 @@ export function CategoryProductChart() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchCategoryProducts() {
-      try {
-        const response = await fetch("/api/admin/dashboard/catparprod");
+  // components/CategoryProductChart.tsx
+useEffect(() => {
+  async function fetchCategoryProducts() {
+    try {
+      const response = await fetch("/api/admin/dashboard/catparprod");
+      if (!response.ok) throw new Error("Erreur réseau");
 
-        if (!response.ok) throw new Error("Erreur de chargement");
+      const data: { category: string; products: number }[] = await response.json();
+      
+      const colors = generateUniqueColors(data.length);
+      
+      const coloredData = data.map((item, index) => ({
+        ...item,
+        fill: colors[index],
+      }));
 
-        const data = await response.json();
-        const colors = generateUniqueColors(data.length);
-
-        const coloredData = data.map((item: any, index: number) => ({
-          ...item,
-          fill: colors[index],
-        }));
-
-        setChartData(coloredData);
-      } catch (err) {
-        setError("Impossible de charger les données");
-      } finally {
-        setIsLoading(false);
-      }
+      setChartData(coloredData);
+    } catch (err) {
+      console.error(err);
+      setError("Impossible de charger les catégories");
+      // Fallback visuel
+      setChartData([
+        { category: "Homme", products: 45, fill: "#EA580C" },
+        { category: "Femme", products: 38, fill: "#C2410C" },
+        { category: "Unisexe", products: 27, fill: "#F59E0B" },
+      ]);
+    } finally {
+      setIsLoading(false);
     }
+  }
 
-    fetchCategoryProducts();
-  }, []);
+  fetchCategoryProducts();
+}, []);
 
   if (isLoading) {
     return (
