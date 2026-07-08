@@ -28,10 +28,9 @@ interface RecentOrder {
   id: number;
   userName: string;
   total: number;
-  status?: string;
+  status: string;
   createdAt: string;
-  confirmedBy?: string;        // Nom de l'admin qui a confirmé
-  confirmedById?: string;
+  confirmedBy?: string;        // ← Ajouté
 }
 
 interface LowStockProduct {
@@ -41,6 +40,22 @@ interface LowStockProduct {
   category: string;
 }
 
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-amber-500/10 text-amber-400",
+  confirmed: "bg-blue-500/10 text-blue-400",
+  shipped: "bg-indigo-500/10 text-indigo-400",
+  delivered: "bg-emerald-500/10 text-emerald-400",
+  cancelled: "bg-red-500/10 text-red-400",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "En attente",
+  confirmed: "Confirmée",
+  shipped: "Expédiée",
+  delivered: "Livrée",
+  cancelled: "Annulée",
+};
+
 export default function AdminDashboard() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -49,66 +64,41 @@ export default function AdminDashboard() {
   const [expandedOrders, setExpandedOrders] = useState(false);
 
   const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 0,
-    totalOrders: 0,
-    totalProducts: 0,
-    totalRevenue: 0,
-    pendingOrders: 0,
+    totalUsers: 0, totalOrders: 0, totalProducts: 0, totalRevenue: 0, pendingOrders: 0,
   });
-
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Vidéo background
+  // Vidéo
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
       video.play().catch(err => console.log("Autoplay bloqué:", err));
+
+      video.onerror = () => console.error("❌ Erreur vidéo - Vérifie que /public/video/mm.mp4 existe");
+      video.onloadeddata = () => console.log("✅ Vidéo chargée correctement");
     }
   }, []);
 
-  // Chargement des données du dashboard
+  // Chargement du dashboard
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        setError(null);
-        
-        const [statsRes, topRes, recentRes, lowRes] = await Promise.all([
-          fetch("/api/admin/dashboard/stats"),
-          fetch("/api/admin/dashboard/top-products"),
-          fetch("/api/admin/dashboard/recent-orders"),
-          fetch("/api/admin/dashboard/low-stock"),
-        ]);
-
-        if (!statsRes.ok || !topRes.ok || !recentRes.ok || !lowRes.ok) {
-          throw new Error("Une ou plusieurs requêtes ont échoué");
-        }
-
         const [s, tp, ro, ls] = await Promise.all([
-          statsRes.json(),
-          topRes.json(),
-          recentRes.json(),
-          lowRes.json(),
+          fetch("/api/admin/dashboard/stats").then(r => r.json()),
+          fetch("/api/admin/dashboard/top-products").then(r => r.json()),
+          fetch("/api/admin/dashboard/recent-orders").then(r => r.json()),
+          fetch("/api/admin/dashboard/low-stock").then(r => r.json()),
         ]);
 
-        setStats({
-          totalUsers: s.totalUsers || 0,
-          totalOrders: s.totalOrders || 0,
-          totalProducts: s.totalProducts || 0,
-          totalRevenue: s.totalRevenue || 0,
-          pendingOrders: s.pendingOrders || 0,
-        });
-
+        setStats(s);
         setTopProducts(Array.isArray(tp) ? tp : []);
         setRecentOrders(Array.isArray(ro) ? ro : []);
         setLowStock(Array.isArray(ls) ? ls : []);
-
       } catch (e) {
         console.error("Erreur chargement dashboard:", e);
-        setError("Impossible de charger les données du tableau de bord");
       } finally {
         setLoading(false);
       }
@@ -128,25 +118,8 @@ export default function AdminDashboard() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="text-red-400 text-center">
-          <p className="text-xl mb-4">⚠️ {error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-[#D4AF37] text-black rounded-full font-medium hover:bg-[#F5E6A3] transition"
-          >
-            Réessayer
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
-      {/* Styles globaux */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap');
         :root {
@@ -155,33 +128,65 @@ export default function AdminDashboard() {
           --glass-bg: rgba(17, 17, 17, 0.85);
           --glass-border: rgba(255, 255, 255, 0.08);
         }
-        .admin-dashboard { 
-          font-family: 'Instrument Sans', system-ui, sans-serif; 
-          color: #F8F6F2; 
+        .admin-dashboard { font-family: 'Instrument Sans', system-ui, sans-serif; color: #F8F6F2; }
+        .glass-card {
+          background: var(--glass-bg);
+          backdrop-filter: blur(24px);
+          border: 1px solid var(--glass-border);
+          box-shadow: 0 8px 32px -12px rgba(0,0,0,0.6);
         }
-        /* ... reste de tes styles ... */
+        .hero-title {
+          font-family: 'Syne', sans-serif;
+          font-size: clamp(2rem, 5vw, 4.5rem);
+          font-weight: 800;
+          letter-spacing: -0.04em;
+        }
+        .gradient-text {
+          background: linear-gradient(135deg, #D4AF37, #F5E6A3);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+        .video-background {
+          position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+        }
+        .video-background video {
+          width: 100%; height: 100%; object-fit: cover; opacity: 0.25;
+          filter: brightness(0.65) contrast(1.1);
+        }
+        .video-overlay {
+          position: fixed; inset: 0;
+          background: radial-gradient(circle at 30% 20%, rgba(212,175,55,0.12), rgba(0,0,0,0.85));
+          z-index: 1; pointer-events: none;
+        }
       `}</style>
 
       <div className="admin-dashboard min-h-screen relative overflow-x-hidden">
-        {/* Vidéo + overlays (gardé tel quel) */}
-        <div className="video-background">
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0.25, filter: 'brightness(0.65) contrast(1.1)' }}
-          >
-            <source src="/video/pp.mp4" type="video/mp4" />
-          </video>
-        </div>
+   {/* === VIDÉO D'ARRIÈRE-PLAN === */}
+<div className="video-background">
+  <video
+    ref={videoRef}
+    autoPlay
+    muted
+    loop
+    playsInline
+    preload="metadata"
+    className="absolute inset-0 w-full h-full object-cover"
+    style={{ opacity: 0.25, filter: 'brightness(0.65) contrast(1.1)' }}
+    onError={(e) => {
+      console.error("❌ Erreur chargement vidéo");
+      e.currentTarget.style.display = 'none';
+    }}
+    onLoadedData={() => console.log("✅ Vidéo chargée avec succès")}
+  >
+    <source src="/video/pp.mp4" type="video/mp4" />
+  </video>
+</div>
 
-        <div className="video-overlay" />
+<div className="video-overlay" />
         <div className="video-overlay" />
 
+        {/* Grille de points dorés */}
         <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0 pointer-events-none" />
 
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-16 sm:pb-24 relative z-10">
@@ -378,51 +383,51 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Recent Orders - adapté */}
-          <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 mt-6 sm:mt-8">
-            <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 flex items-center gap-3">
-              <Clock className="text-[#D4AF37]" size={20} /> 
-              Commandes Confirmées
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm sm:text-base">
-                <thead>
-                  <tr className="border-b border-white/10 text-white/60 text-xs sm:text-sm">
-                    <th className="text-left pb-3 sm:pb-4">N°</th>
-                    <th className="text-left pb-3 sm:pb-4">Client</th>
-                    <th className="text-left pb-3 sm:pb-4">Confirmée par</th>
-                    <th className="text-left pb-3 sm:pb-4 hidden md:table-cell">Date</th>
-                    <th className="text-right pb-3 sm:pb-4">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10">
-                  {recentOrders.length > 0 ? (
-                    recentOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-white/5 transition">
-                        <td className="py-3 sm:py-5">#{order.id}</td>
-                        <td className="py-3 sm:py-5 font-medium">{order.userName}</td>
-                        <td className="py-3 sm:py-5 text-emerald-400 font-medium">
-                          {order.confirmedBy || "Admin"}
-                        </td>
-                        <td className="py-3 sm:py-5 text-white/60 hidden md:table-cell">
-                          {new Date(order.createdAt).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="py-3 sm:py-5 text-right font-semibold text-[#D4AF37]">
-                          {order.total.toFixed(2)} TND
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center text-white/50">
-                        Aucune commande confirmée pour le moment
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+{/* Recent Orders */}
+<div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 mt-6 sm:mt-8">
+  <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 flex items-center gap-3">
+    <Clock className="text-[#D4AF37]" size={20} /> 
+    Commandes Confirmées
+  </h3>
+  <div className="overflow-x-auto">
+    <table className="w-full text-sm sm:text-base">
+      <thead>
+        <tr className="border-b border-white/10 text-white/60 text-xs sm:text-sm">
+          <th className="text-left pb-3 sm:pb-4">N°</th>
+          <th className="text-left pb-3 sm:pb-4">Client</th>
+          <th className="text-left pb-3 sm:pb-4">Confirmée par</th>
+          <th className="text-left pb-3 sm:pb-4 hidden md:table-cell">Date</th>
+          <th className="text-right pb-3 sm:pb-4">Total</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-white/10">
+        {recentOrders.length > 0 ? (
+          recentOrders.map((order) => (
+            <tr key={order.id} className="hover:bg-white/5 transition">
+              <td className="py-3 sm:py-5">#{order.id}</td>
+              <td className="py-3 sm:py-5 font-medium">{order.userName}</td>
+              <td className="py-3 sm:py-5 text-emerald-400 font-medium">
+                {order.confirmedBy || "Admin"}
+              </td>
+              <td className="py-3 sm:py-5 text-white/60 hidden md:table-cell">
+                {new Date(order.createdAt).toLocaleDateString('fr-FR')}
+              </td>
+              <td className="py-3 sm:py-5 text-right font-semibold text-[#D4AF37]">
+                {order.total.toFixed(2)} TND
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={5} className="py-12 text-center text-white/50">
+              Aucune commande confirmée pour le moment
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
         </div>
       </div>
     </>
