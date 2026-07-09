@@ -19,8 +19,6 @@ type CartItem = {
 };
 type GuestItem = { productId: number; quantity: number; size?: string | null };
 type DeliveryMethod = "PICKUP" | "DELIVERY";
-type CountryOption = { code: string; name: string; dial: string; flag: string };
-type StateOption = { code: string; name: string };
 
 /* ─── Guest cart (localStorage) ─────────────────────────────── */
 const GUEST_KEY = "irnas_guest_cart";
@@ -34,7 +32,42 @@ const guestCart = {
 
 /* ─── Constants ─────────────────────────────────────────────── */
 const DELIVERY_FEE = 7;
-const DEFAULT_PHONE_COUNTRY: CountryOption = { code: "TN", name: "Tunisie", dial: "+216", flag: "🇹🇳" };
+
+const COUNTRIES = [
+  { code: "TN", name: "Tunisie",             dial: "+216", flag: "🇹🇳" },
+  { code: "DZ", name: "Algérie",             dial: "+213", flag: "🇩🇿" },
+  { code: "MA", name: "Maroc",               dial: "+212", flag: "🇲🇦" },
+  { code: "LY", name: "Libye",               dial: "+218", flag: "🇱🇾" },
+  { code: "EG", name: "Égypte",              dial: "+20",  flag: "🇪🇬" },
+  { code: "SA", name: "Arabie Saoudite",     dial: "+966", flag: "🇸🇦" },
+  { code: "AE", name: "Émirats arabes unis", dial: "+971", flag: "🇦🇪" },
+  { code: "FR", name: "France",              dial: "+33",  flag: "🇫🇷" },
+  { code: "BE", name: "Belgique",            dial: "+32",  flag: "🇧🇪" },
+  { code: "DE", name: "Allemagne",           dial: "+49",  flag: "🇩🇪" },
+  { code: "GB", name: "Royaume-Uni",         dial: "+44",  flag: "🇬🇧" },
+  { code: "IT", name: "Italie",              dial: "+39",  flag: "🇮🇹" },
+  { code: "US", name: "États-Unis",          dial: "+1",   flag: "🇺🇸" },
+];
+
+const TUNISIA_DATA: Record<string, string[]> = {
+  "Ariana":    ["Ariana Ville","Ettadhamen","Ghazela","Kalâat el-Andalous","Mnihla","Raoued","Sidi Thabet"],
+  "Ben Arous": ["Ben Arous","Bou Mhel el-Bassatine","El Mourouj","Ezzahra","Fouchana","Hammam Chott","Hammam Lif","Mégrine","Radès"],
+  "Bizerte":   ["Bizerte Nord","Bizerte Sud","El Alia","Mateur","Menzel Bourguiba","Ras Jebel"],
+  "Gabès":     ["El Hamma","Gabès Médina","Gabès Ouest","Gabès Sud","Ghannouch","Mareth"],
+  "Gafsa":     ["El Guettar","Gafsa Nord","Gafsa Sud","Mdhilla","Métlaoui","Redeyef"],
+  "Kairouan":  ["Bouhajla","El Alaa","Haffouz","Kairouan Nord","Kairouan Sud"],
+  "Kasserine": ["Fériana","Kasserine Nord","Kasserine Sud","Sbeitla","Thala"],
+  "Manouba":   ["Borj El Amri","Djedeida","Douar Hicher","Manouba","Oued Ellil","Tébourba"],
+  "Médenine":  ["Ben Gardane","Djerba — Ajim","Djerba — Houmt Souk","Djerba — Midoun","Médenine Nord","Zarzis"],
+  "Monastir":  ["Bekalta","Jammel","Ksar Hellal","Moknine","Monastir","Zeramdine"],
+  "Nabeul":    ["El Haouaria","Grombalia","Hammamet","Kelibia","Korba","Nabeul","Soliman","El Mida","Menzel Temime","Menzel Bouzelfa"],
+  "Sfax":      ["Agareb","Kerkennah","Mahres","Sakiet Eddaier","Sfax Est","Sfax Médina","Sfax Ouest"],
+  "Sousse":    ["Akouda","Bouficha","Enfidha","Hammam Sousse","Kalâa Kebira","Msaken","Sousse Médina"],
+  "Tunis":     ["Bab Bhar","Bab Souika","Carthage","El Kram","El Menzah","La Goulette","La Marsa","Le Bardo","Sidi Bou Saïd"],
+  "Zaghouan":  ["El Fahs","Zaghouan","Zriba"],
+  "Béja":      ["Amdoun","Béja Nord","Béja Sud","Medjez el-Bab","Nefza","Téboursouk"],
+};
+const GOVERNORATES = Object.keys(TUNISIA_DATA).sort();
 
 /* ─── Component ─────────────────────────────────────────────── */
 function CheckoutInner() {
@@ -54,20 +87,12 @@ function CheckoutInner() {
   });
 
   const [deliveryMethod,      setDeliveryMethod]      = useState<DeliveryMethod>("PICKUP");
+  const [phoneCountry,        setPhoneCountry]        = useState(COUNTRIES[0]);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearch,       setCountrySearch]       = useState("");
-
-  // ── Données géographiques dynamiques ──────────────────────
-  const [countries, setCountries] = useState<CountryOption[]>([]);
-  const [states, setStates] = useState<StateOption[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
-
-  const [phoneCountry,   setPhoneCountry]   = useState<CountryOption>(DEFAULT_PHONE_COUNTRY);
-  const [addressCountry, setAddressCountry] = useState("TN");
-  const [selectedGov,    setSelectedGov]    = useState(""); // isoCode de l'état/gouvernorat
-  const [selectedCity,   setSelectedCity]   = useState("");
+  const [addressCountry,      setAddressCountry]      = useState("TN");
+  const [selectedGov,         setSelectedGov]         = useState("");
+  const [selectedCity,        setSelectedCity]        = useState("");
 
   const [form, setForm] = useState({
     email: "", firstName: "", lastName: "", phone: "",
@@ -92,45 +117,8 @@ function CheckoutInner() {
     return () => document.removeEventListener("mousedown", handle);
   }, []);
 
-  /* ── Charger la liste des pays une seule fois ───────────── */
-  useEffect(() => {
-    fetch("/api/locations/countries")
-      .then(r => r.json())
-      .then((data: CountryOption[]) => {
-        setCountries(data);
-        const tn = data.find(c => c.code === "TN");
-        if (tn) setPhoneCountry(tn);
-      })
-      .catch(() => {});
-  }, []);
-
-  /* ── Charger gouvernorats/régions quand le pays change ──── */
-  useEffect(() => {
-    setSelectedGov("");
-    setSelectedCity("");
-    setCities([]);
-    if (!addressCountry) return;
-
-    setLoadingStates(true);
-    fetch(`/api/locations/states?country=${addressCountry}`)
-      .then(r => r.json())
-      .then(setStates)
-      .catch(() => setStates([]))
-      .finally(() => setLoadingStates(false));
-  }, [addressCountry]);
-
-  /* ── Charger les villes quand le gouvernorat change ──────── */
-  useEffect(() => {
-    setSelectedCity("");
-    if (!selectedGov) { setCities([]); return; }
-
-    setLoadingCities(true);
-    fetch(`/api/locations/cities?country=${addressCountry}&state=${selectedGov}`)
-      .then(r => r.json())
-      .then(setCities)
-      .catch(() => setCities([]))
-      .finally(() => setLoadingCities(false));
-  }, [selectedGov, addressCountry]);
+  useEffect(() => { setSelectedCity(""); }, [selectedGov]);
+  useEffect(() => { setSelectedGov(""); setSelectedCity(""); }, [addressCountry]);
 
   /* ── Load cart ──────────────────────────────────────────── */
   useEffect(() => {
@@ -208,12 +196,6 @@ function CheckoutInner() {
   const deliveryFee = deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0;
   const total       = subtotal + deliveryFee;
 
-  // Le pays de livraison a-t-il des régions/gouvernorats dans la base ?
-  const hasStates = states.length > 0;
-
-  // Nom lisible du gouvernorat sélectionné (pour l'envoi au backend)
-  const selectedGovName = states.find(s => s.code === selectedGov)?.name ?? "";
-
   /* ── Validation ─────────────────────────────────────────── */
   function validate(): string | null {
     if (isGuest && !form.email.trim()) return "L'adresse email est obligatoire";
@@ -222,9 +204,9 @@ function CheckoutInner() {
     if (!form.firstName.trim() || !form.lastName.trim()) return "Prénom et nom sont obligatoires";
     if (!form.phone.trim()) return "Le numéro de téléphone est obligatoire";
     if (deliveryMethod === "DELIVERY") {
-      if (hasStates && (!selectedGov || !selectedCity))
+      if (addressCountry === "TN" && (!selectedGov || !selectedCity))
         return "Veuillez sélectionner le gouvernorat et la ville";
-      if (!hasStates && !form.freeCity.trim())
+      if (addressCountry !== "TN" && !form.freeCity.trim())
         return "Veuillez remplir la ville";
     }
     return null;
@@ -232,113 +214,113 @@ function CheckoutInner() {
 
   /* ── Submit ─────────────────────────────────────────────── */
   const handleSubmit = async () => {
-    const error = validate();
-    if (error) { showAlert("warning", error); return; }
+  const error = validate();
+  if (error) { showAlert("warning", error); return; }
 
-    setProcessing(true);
-    try {
-      const city = hasStates ? selectedCity : form.freeCity;
+  setProcessing(true);
+  try {
+    const city = addressCountry === "TN" ? selectedCity : form.freeCity;
 
-      const payload: Record<string, unknown> = {
-        deliveryMethod,
-        deliveryFee:  deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
-        customerInfo: {
-          email:       form.email.trim().toLowerCase(),
-          firstName:   form.firstName.trim(),
-          lastName:    form.lastName.trim(),
-          phone:       `${phoneCountry.dial} ${form.phone.trim()}`,
-          address:     deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
-          city:        deliveryMethod === "DELIVERY" ? (city || null) : null,
-          governorate: deliveryMethod === "DELIVERY" && hasStates ? (selectedGovName || null) : null,
-          postalCode:  deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
-          country:     deliveryMethod === "DELIVERY" ? addressCountry : null,
-          notes:       form.notes.trim() || null,
-        },
-      };
+    const payload: Record<string, unknown> = {
+      deliveryMethod,
+      deliveryFee:  deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
+      customerInfo: {
+        email:       form.email.trim().toLowerCase(),
+        firstName:   form.firstName.trim(),
+        lastName:    form.lastName.trim(),
+        phone:       `${phoneCountry.dial} ${form.phone.trim()}`,
+        address:     deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
+        city:        deliveryMethod === "DELIVERY" ? (city || null) : null,
+        governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
+        postalCode:  deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
+        country:     deliveryMethod === "DELIVERY" ? addressCountry : null,
+        notes:       form.notes.trim() || null,
+      },
+    };
 
-      if (isGuest) {
-        payload.items = guestItems;
-      }
-
-      const res  = await fetch("/api/orders", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(payload),
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        const orderId = data.orderId;
-
-        // Construire la liste des produits pour le snapshot
-        const productsSnapshot = isGuest
-          ? guestItems.map(i => ({
-              productId: i.productId,
-              quantity: i.quantity,
-              size: i.size ?? null,
-            }))
-          : authItems.map(i => ({
-              productId: i.product.id,
-              name: i.product.name,
-              price: i.product.price,
-              quantity: i.quantity,
-              size: i.size ?? null,
-            }));
-
-        // Sauvegarde dans la table OrderSnapshot (nouvelle table, indépendante)
-        fetch("/api/order-snapshot", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId,
-            customerEmail: form.email.trim().toLowerCase(),
-            customerFirstName: form.firstName.trim(),
-            customerLastName: form.lastName.trim(),
-            customerPhone: `${phoneCountry.dial} ${form.phone.trim()}`,
-            deliveryMethod,
-            deliveryFee: deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
-            total: isGuest ? null : total,
-            address: deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
-            city: deliveryMethod === "DELIVERY" ? (city || null) : null,
-            governorate: deliveryMethod === "DELIVERY" && hasStates ? (selectedGovName || null) : null,
-            postalCode: deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
-            country: deliveryMethod === "DELIVERY" ? addressCountry : null,
-            notes: form.notes.trim() || null,
-            products: productsSnapshot,
-          }),
-        }).catch(err => console.error("Erreur sauvegarde snapshot:", err));
-
-        if (isGuest) {
-          guestCart.clear();
-          const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
-          guestOrders.push(orderId);
-          localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
-        }
-
-        // Auto-login pour guest : redirige avec le ticket, GuestAutoSignIn s'occupe du reste
-        if (isGuest && data.signInToken) {
-          router.push(`/client/orders/${orderId}?ticket=${data.signInToken}`);
-          return;
-        }
-
-        showAlert("success", "Commande confirmée avec succès !");
-        setTimeout(() => router.push(`/client/orders/${orderId}`), 1200);
-      } else {
-        showAlert("error", data.error || "Erreur lors de la commande");
-      }
-    } catch {
-      showAlert("error", "Erreur réseau");
-    } finally {
-      setProcessing(false);
+    if (isGuest) {
+      payload.items = guestItems;
     }
-  };
+
+    const res  = await fetch("/api/orders", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+   if (res.ok) {
+  const orderId = data.orderId;
+
+  // Construire la liste des produits pour le snapshot
+  const productsSnapshot = isGuest
+    ? guestItems.map(i => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        size: i.size ?? null,
+      }))
+    : authItems.map(i => ({
+        productId: i.product.id,
+        name: i.product.name,
+        price: i.product.price,
+        quantity: i.quantity,
+        size: i.size ?? null,
+      }));
+
+  // Sauvegarde dans la table OrderSnapshot (nouvelle table, indépendante)
+  fetch("/api/order-snapshot", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      orderId,
+      customerEmail: form.email.trim().toLowerCase(),
+      customerFirstName: form.firstName.trim(),
+      customerLastName: form.lastName.trim(),
+      customerPhone: `${phoneCountry.dial} ${form.phone.trim()}`,
+      deliveryMethod,
+      deliveryFee: deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
+      total: isGuest ? null : total,
+      address: deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
+      city: deliveryMethod === "DELIVERY" ? (addressCountry === "TN" ? selectedCity : form.freeCity) || null : null,
+      governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
+      postalCode: deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
+      country: deliveryMethod === "DELIVERY" ? addressCountry : null,
+      notes: form.notes.trim() || null,
+      products: productsSnapshot,
+    }),
+  }).catch(err => console.error("Erreur sauvegarde snapshot:", err));
+
+  if (isGuest) {
+    guestCart.clear();
+    const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
+    guestOrders.push(orderId);
+    localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
+  }
+
+      // Auto-login pour guest : redirige avec le ticket, GuestAutoSignIn s'occupe du reste
+      if (isGuest && data.signInToken) {
+        router.push(`/client/orders/${orderId}?ticket=${data.signInToken}`);
+        return;
+      }
+
+      showAlert("success", "Commande confirmée avec succès !");
+      setTimeout(() => router.push(`/client/orders/${orderId}`), 1200);
+    } else {
+      showAlert("error", data.error || "Erreur lors de la commande");
+    }
+  } catch {
+    showAlert("error", "Erreur réseau");
+  } finally {
+    setProcessing(false);
+  }
+};
 
   /* ── Shared styles ──────────────────────────────────────── */
   const inputCls = `w-full bg-[#0a1628] border border-[#1e3a5f] rounded-2xl px-4 py-3 text-sm text-white placeholder:text-[#4a6a8a] focus:outline-none focus:border-[#3b82f6]/50 focus:ring-1 focus:ring-[#3b82f6]/20 transition disabled:opacity-40 disabled:cursor-not-allowed`;
   const labelCls = "block text-[10px] uppercase tracking-[0.15em] text-[#4a6a8a] font-light mb-2";
   const cardCls  = "bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-6 md:p-8 hover:border-[#3b82f6]/20 transition";
 
-  const filteredCountries = countries.filter(c =>
+  const filteredCountries = COUNTRIES.filter(c =>
     c.name.toLowerCase().includes(countrySearch.toLowerCase()) || c.dial.includes(countrySearch)
   );
 
@@ -537,7 +519,7 @@ function CheckoutInner() {
                       <div className="relative">
                         <select value={addressCountry} onChange={e => setAddressCountry(e.target.value)}
                           className={inputCls + " appearance-none pr-10 cursor-pointer"}>
-                          {countries.map(c => (
+                          {COUNTRIES.map(c => (
                             <option key={c.code} value={c.code} style={{ background: "#0f1f33" }}>
                               {c.flag} {c.name}
                             </option>
@@ -547,19 +529,16 @@ function CheckoutInner() {
                       </div>
                     </div>
 
-                    {hasStates ? (
+                    {addressCountry === "TN" ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                          <label className={labelCls}>Gouvernorat / Région *</label>
+                          <label className={labelCls}>Gouvernorat *</label>
                           <div className="relative">
                             <select value={selectedGov} onChange={e => setSelectedGov(e.target.value)}
-                              disabled={loadingStates}
                               className={inputCls + " appearance-none pr-10 cursor-pointer"}>
-                              <option value="" style={{ background: "#0f1f33" }}>
-                                {loadingStates ? "Chargement..." : "— Choisir —"}
-                              </option>
-                              {states.map(s => (
-                                <option key={s.code} value={s.code} style={{ background: "#0f1f33" }}>{s.name}</option>
+                              <option value="" style={{ background: "#0f1f33" }}>— Choisir —</option>
+                              {GOVERNORATES.map(g => (
+                                <option key={g} value={g} style={{ background: "#0f1f33" }}>{g}</option>
                               ))}
                             </select>
                             <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4a6a8a] pointer-events-none" />
@@ -569,12 +548,12 @@ function CheckoutInner() {
                           <label className={labelCls}>Ville *</label>
                           <div className="relative">
                             <select value={selectedCity} onChange={e => setSelectedCity(e.target.value)}
-                              disabled={!selectedGov || loadingCities}
+                              disabled={!selectedGov}
                               className={inputCls + " appearance-none pr-10 cursor-pointer"}>
                               <option value="" style={{ background: "#0f1f33" }}>
-                                {!selectedGov ? "Gouvernorat d'abord" : loadingCities ? "Chargement..." : "— Choisir —"}
+                                {selectedGov ? "— Choisir —" : "Gouvernorat d'abord"}
                               </option>
-                              {cities.map(city => (
+                              {selectedGov && TUNISIA_DATA[selectedGov]?.map(city => (
                                 <option key={city} value={city} style={{ background: "#0f1f33" }}>{city}</option>
                               ))}
                             </select>
@@ -711,7 +690,6 @@ function CheckoutInner() {
     </div>
   );
 }
-
 export default function CheckoutPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#0a1628] flex items-center justify-center">Chargement...</div>}>
