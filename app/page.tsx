@@ -24,9 +24,10 @@ import toast, { Toaster } from "react-hot-toast";
 
 // ─── Constantes ────────────────────────────────────────────────────
 // Vidéo héro hébergée en externe (Mixkit, licence libre, sans attribution requise)
-const HERO_VIDEO_URL = "https://assets.mixkit.co/e6qsae9iwqa3urzopku5p0rf99rt";
+// ─── Constantes ────────────────────────────────────────────────────
+// Vidéo héro hébergée en externe (Mixkit, licence libre, lien MP4 direct vérifié)
+const HERO_VIDEO_URL = "https://assets.mixkit.co/videos/52270/52270-720.mp4";
 const HERO_POSTER = "/hero-poster.jpg";
-
 type Product = {
   id: number;
   name: string;
@@ -335,11 +336,15 @@ export default function HomePage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* HERO — vidéo externe, ambiance sombre et cramoisie            */}
       {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* HERO — vidéo externe, étalonnage sobre et professionnel        */}
+      {/* ══════════════════════════════════════════════════════════════ */}
       <section className="relative h-screen min-h-[640px] w-full overflow-hidden">
         {!videoFailed ? (
           <video
             ref={videoRef}
             className="absolute inset-0 w-full h-full object-cover"
+            style={{ filter: "saturate(0.85) contrast(1.08) brightness(0.82)" }}
             src={HERO_VIDEO_URL}
             poster={HERO_POSTER}
             autoPlay
@@ -352,14 +357,22 @@ export default function HomePage() {
         ) : (
           <div
             className="absolute inset-0 w-full h-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${HERO_POSTER})` }}
+            style={{ backgroundImage: `url(${HERO_POSTER})`, filter: "saturate(0.85) contrast(1.08) brightness(0.82)" }}
           />
         )}
 
-        {/* Overlays sombres — vignette encre + lueur cramoisie */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0b0d] via-[#0e0b0d]/50 to-[#0e0b0d]/10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0e0b0d]/80 via-transparent to-[#0e0b0d]/40" />
-        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 25% 15%, rgba(200,38,79,0.22), rgba(14,11,13,0.55) 60%)" }} />
+        {/* Vignette sobre pour la lisibilité du texte — pas de teinte colorée dominante */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0b0d] via-[#0e0b0d]/55 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0e0b0d]/70 via-transparent to-[#0e0b0d]/50" />
+        <div className="absolute inset-0" style={{ boxShadow: "inset 0 0 180px 60px rgba(0,0,0,0.55)" }} />
+        {/* Léger grain pour une texture éditoriale, pas un filtre coloré */}
+        <div
+          className="absolute inset-0 opacity-[0.05] mix-blend-overlay pointer-events-none"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+          }}
+        />
 
         {/* Contrôles vidéo */}
         {!videoFailed && (
@@ -397,7 +410,7 @@ export default function HomePage() {
           <div className="hero-line mt-10 flex flex-wrap gap-4" style={{ animationDelay: "0.3s" }}>
             <Link
               href="/client/catalog?gender=women"
-              className="group flex items-center gap-3 px-8 py-4 bg-[#c8264f] text-[#f8ece f0] text-[#fbf3ee] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#a31d40] transition"
+              className="group flex items-center gap-3 px-8 py-4 bg-[#c8264f] text-[#fbf3ee] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#a31d40] transition"
             >
               Collection Femme
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
@@ -416,7 +429,6 @@ export default function HomePage() {
           <ChevronDown className="w-5 h-5 text-[#f3ece2]/40" />
         </div>
       </section>
-
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* MARQUEE                                                        */}
       {/* ══════════════════════════════════════════════════════════════ */}
