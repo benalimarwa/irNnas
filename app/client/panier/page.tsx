@@ -13,7 +13,7 @@ type Product = {
   price: number;
   images: string[];
   stock: number;
-  category: string;
+  category: { id: number; name: string }; // ✅ correspond à la relation Prisma Category
 };
 
 type CartItem = {
@@ -306,7 +306,7 @@ export default function CartPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 mt-3 mb-6">
-                        <span className="text-blue-400 font-medium capitalize">{item.product.category}</span>
+                        <span className="text-blue-400 font-medium capitalize">{item.product.category?.name ?? ""}</span>
                         {item.size && (
                           <span className="px-4 py-1 bg-slate-800 rounded-full text-sm text-blue-400">
                             Taille : {item.size}
