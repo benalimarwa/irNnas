@@ -97,28 +97,32 @@ async function resolveImage(
   imageUrl: string | null,
 ): Promise<string | undefined> {
   if (imageFile && imageFile.size > 0) {
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      // Erreur explicite plutôt qu'un échec silencieux de put()
-      throw new Error(
-        "BLOB_READ_WRITE_TOKEN manquant — connecte un Vercel Blob store au projet (Storage → Create Database → Blob)"
-      );
-    }
     try {
       const ext = getExtension(imageFile.type, imageFile.name);
       const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
       const blob = await put(filename, imageFile, {
         access: "public",
+        // Add this for better debugging
+        addRandomSuffix: true,
       });
 
+      console.log("✅ Image uploaded:", blob.url);
       return blob.url;
     } catch (err: any) {
       console.error("resolveImage — file error:", err);
-      throw new Error(`Impossible de sauvegarder l'image: ${err.message ?? err}`);
+      if (err.message?.includes("token") || err.message?.includes("access")) {
+        throw new Error("Token Vercel Blob invalide ou manquant. Vérifiez BLOB_READ_WRITE_TOKEN.");
+      }
+      throw new Error("Impossible de sauvegarder l'image sur Vercel Blob");
     }
   }
 
+  // ... rest of your existing logic for URL / data: URLs
   if (!imageUrl?.trim()) return undefined;
+
+
+
 
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
