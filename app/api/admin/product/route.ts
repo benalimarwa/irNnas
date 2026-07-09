@@ -4,8 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { Gender, StockStatus } from "@prisma/client";
 
 // ── helpers ───────────────────────────────────────────────────
+
+const VALID_GENDERS = Object.values(Gender); // ["men", "women", "unisex"]
 
 function parseCommon(formData: FormData) {
   const priceRaw = formData.get("price") as string;
@@ -18,7 +21,6 @@ function parseCommon(formData: FormData) {
     name:        (formData.get("name")        as string)?.trim() || "",
     description: (formData.get("description") as string)?.trim() || "",
     price:       isNaN(price) ? 0 : price,
-    // ⚠️ Le client envoie le NOM de la catégorie (ex: "pantalon"), pas un id.
     categoryName: (formData.get("category")   as string)?.trim() || "",
     gender:      (formData.get("gender")      as string)?.trim() || "unisex",
     color:       (formData.get("color")       as string)?.trim() || "",
@@ -37,17 +39,29 @@ function parseCommon(formData: FormData) {
 function validateCommon(data: ReturnType<typeof parseCommon>): string | null {
   if (!data.name)         return "Le nom est requis";
   if (!data.categoryName) return "La catégorie est requise";
-  if (!data.gender)       return "Le genre est requis";
+  if (!VALID_GENDERS.includes(data.gender as Gender)) {
+    return `Genre invalide (attendu: ${VALID_GENDERS.join(", ")})`;
+  }
   if (data.price < 0)     return "Le prix ne peut pas être négatif";
   if (data.stock < 0)     return "Le stock ne peut pas être négatif";
   return null;
 }
 
 /**
+ * Déduit le stockStatus à partir du stock, pour rester cohérent
+ * avec l'enum StockStatus défini dans le schéma Prisma.
+ * Seuils ajustables selon ta logique métier.
+ */
+function computeStockStatus(stock: number): StockStatus {
+  if (stock <= 0)  return StockStatus.OUT_OF_STOCK;
+  if (stock <= 5)  return StockStatus.CRITICAL;
+  if (stock <= 15) return StockStatus.LOW;
+  return StockStatus.NORMAL;
+}
+
+/**
  * Résout un nom de catégorie (ex: "pantalon") vers son id Prisma.
- * Si la catégorie n'existe pas encore (ex: catégorie créée à la volée
- * dans le formulaire admin via "Nouvelle catégorie"), elle est créée.
- * C'est ce lookup manquant qui provoquait le 500 (categoryId: 0 → FK violation).
+ * Crée la catégorie si elle n'existe pas (name est @unique dans le schéma).
  */
 async function resolveCategoryId(categoryName: string): Promise<number> {
   const category = await prisma.category.upsert({
@@ -83,6 +97,12 @@ async function resolveImage(
   imageUrl: string | null,
 ): Promise<string | undefined> {
   if (imageFile && imageFile.size > 0) {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      // Erreur explicite plutôt qu'un échec silencieux de put()
+      throw new Error(
+        "BLOB_READ_WRITE_TOKEN manquant — connecte un Vercel Blob store au projet (Storage → Create Database → Blob)"
+      );
+    }
     try {
       const ext = getExtension(imageFile.type, imageFile.name);
       const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2, 10)}.${ext}`;
@@ -92,9 +112,9 @@ async function resolveImage(
       });
 
       return blob.url;
-    } catch (err) {
+    } catch (err: any) {
       console.error("resolveImage — file error:", err);
-      throw new Error("Impossible de sauvegarder l'image");
+      throw new Error(`Impossible de sauvegarder l'image: ${err.message ?? err}`);
     }
   }
 
@@ -105,6 +125,11 @@ async function resolveImage(
   }
 
   if (imageUrl.startsWith("data:")) {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      throw new Error(
+        "BLOB_READ_WRITE_TOKEN manquant — connecte un Vercel Blob store au projet (Storage → Create Database → Blob)"
+      );
+    }
     try {
       const commaIdx = imageUrl.indexOf(",");
       if (commaIdx === -1) throw new Error("Data URL invalide");
@@ -124,9 +149,9 @@ async function resolveImage(
       });
 
       return blob.url;
-    } catch (err) {
+    } catch (err: any) {
       console.error("resolveImage — base64 error:", err);
-      throw new Error("Impossible de traiter l'image");
+      throw new Error(`Impossible de traiter l'image: ${err.message ?? err}`);
     }
   }
 
@@ -134,7 +159,6 @@ async function resolveImage(
 }
 
 // ── GET ───────────────────────────────────────────────────────
-// Retourne un produit unique (?id=) ou la liste complète, catégorie incluse.
 export async function GET(req: NextRequest) {
   try {
     const { userId: clerkId } = await auth();
@@ -202,10 +226,11 @@ export async function POST(req: NextRequest) {
         description: common.description,
         price: common.price,
         categoryId,
-        gender: common.gender as any,
+        gender: common.gender as Gender,
         color: common.color,
         colorHex: common.colorHex,
         stock: common.stock,
+        stockStatus: computeStockStatus(common.stock),
         sizes: common.sizes,
         material: common.material,
         fit: common.fit,
@@ -215,9 +240,6 @@ export async function POST(req: NextRequest) {
       include: { category: true },
     });
 
-    // ✅ FIX : il manquait ce return. Sans lui, Next.js plante avec
-    // "API resolved without sending a response", ce qui se traduisait
-    // côté client par un 500 avec un corps vide (JSON.parse crash).
     return NextResponse.json({ success: true, product }, { status: 201 });
 
   } catch (error: any) {
@@ -269,10 +291,11 @@ export async function PUT(req: NextRequest) {
         description: common.description,
         price: common.price,
         categoryId,
-        gender: common.gender as any,
+        gender: common.gender as Gender,
         color: common.color,
         colorHex: common.colorHex,
         stock: common.stock,
+        stockStatus: computeStockStatus(common.stock),
         sizes: common.sizes,
         material: common.material,
         fit: common.fit,
