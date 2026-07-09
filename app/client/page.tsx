@@ -430,25 +430,7 @@ export default function ClientDashboard() {
 
             </div>
 
-            {/* ── Footer ────────────────────────────────────────────────────── */}
-            <footer className="border-t border-[#1a2a44] py-12 px-6 mt-16 bg-[#080e1a]/50 backdrop-blur-sm">
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-4">
-                        <span className="text-xl font-light tracking-[0.2em] text-white/90">IRNAS</span>
-                        <span className="text-[9px] uppercase tracking-[0.4em] text-[#60a5fa]/40 font-light">Fashion</span>
-                        <span className="w-px h-5 bg-[#1a2a44]" />
-                        <span className="text-[9px] text-[#2a3f6a] tracking-widest font-light">© 2026</span>
-                    </div>
-                    <p className="text-[9px] text-[#2a3f6a] tracking-widest font-light">
-                        Tous droits réservés
-                    </p>
-                    <div className="flex items-center gap-6 text-[9px] text-[#2a3f6a] tracking-widest font-light uppercase">
-                        <Link href="#" className="hover:text-[#3b82f6] transition-colors duration-300">Mentions</Link>
-                        <Link href="#" className="hover:text-[#3b82f6] transition-colors duration-300">Confidentialité</Link>
-                        <Link href="#" className="hover:text-[#3b82f6] transition-colors duration-300">Contact</Link>
-                    </div>
-                </div>
-            </footer>
+           
         </div>
     );
 }
