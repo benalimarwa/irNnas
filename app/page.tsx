@@ -388,7 +388,7 @@ export default function HomePage() {
             Collection Automne — Hiver 2026
           </span>
           <h1 className="hero-line font-display uppercase leading-[0.85] text-[15vw] sm:text-[10vw] lg:text-[7.5vw] tracking-tight text-[#f3ece2]" style={{ animationDelay: "0.1s" }}>
-            Sculpter <span className="font-accent normal-case text-[#1e40af]">l&apos;allure</span>
+            Sculpter <span className="font-accent normal-case text-blue-700">l&apos;allure</span>
           </h1>
           <StitchLine className="hero-line mt-6" />
           <p className="hero-line mt-6 max-w-md text-sm text-[#c9beb4] font-light leading-relaxed font-body" style={{ animationDelay: "0.2s" }}>
@@ -736,9 +736,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-[10px] text-[#7d716a] tracking-widest font-light">© 2020 IRNAS — Tous droits réservés</p>
           <div className="flex items-center gap-6 text-[10px] text-[#7d716a] tracking-widest font-light uppercase">
-            <Link href="#" className="hover:text-[#d4af6a] transition">Mentions légales</Link>
-            <Link href="#" className="hover:text-[#d4af6a] transition">Confidentialité</Link>
-            <Link href="#" className="hover:text-[#d4af6a] transition">CGV</Link>
+            
           </div>
         </div>
       </footer>
