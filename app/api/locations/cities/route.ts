@@ -1,25 +1,19 @@
-// app/api/locations/cities/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { City } from "country-state-city";
+import { TUNISIA_GOVERNORATES } from "@/lib/tunisia-governorates";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const country = url.searchParams.get("country");
   const state = url.searchParams.get("state");
+  if (!country || !state) return NextResponse.json({ error: "country et state requis" }, { status: 400 });
 
-  if (!country) {
-    return NextResponse.json({ error: "country requis" }, { status: 400 });
+  // Pour la Tunisie, country-state-city est incomplet : on utilise nos données officielles.
+  if (country === "TN") {
+    const gov = TUNISIA_GOVERNORATES.find(g => g.code === state);
+    return NextResponse.json(gov ? gov.cities : []);
   }
 
-  // Si state est fourni, on filtre dessus.
-  // Sinon (pays sans gouvernorats répertoriés), on prend toutes les villes du pays.
-  const rawCities = state
-    ? City.getCitiesOfState(country, state)
-    : City.getCitiesOfCountry(country) ?? [];
-
-  const names = Array.from(new Set(rawCities.map((c) => c.name))).sort((a, b) =>
-    a.localeCompare(b)
-  );
-
-  return NextResponse.json(names);
+  const cities = City.getCitiesOfState(country, state).map(c => c.name);
+  return NextResponse.json(cities);
 }
