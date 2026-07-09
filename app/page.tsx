@@ -387,9 +387,9 @@ export default function HomePage() {
           <span className="hero-line text-[11px] uppercase tracking-[0.5em] text-[#d4af6a] font-light mb-6">
             Collection Automne — Hiver 2026
           </span>
-          <h1 className="hero-line font-display uppercase leading-[0.85] text-[15vw] sm:text-[10vw] lg:text-[7.5vw] tracking-tight text-[#f3ece2]" style={{ animationDelay: "0.1s" }}>
-            Sculpter <span className="font-accent normal-case text-blue-700">l&apos;allure</span>
-          </h1>
+         <h1 className="hero-line font-display uppercase leading-[0.85] text-[15vw] sm:text-[10vw] lg:text-[7.5vw] tracking-tight text-[#f3ece2]" style={{ animationDelay: "0.1s" }}>
+  Sculpter <span className="font-accent normal-case text-[#1a365d]">l&apos;allure</span>
+</h1>
           <StitchLine className="hero-line mt-6" />
           <p className="hero-line mt-6 max-w-md text-sm text-[#c9beb4] font-light leading-relaxed font-body" style={{ animationDelay: "0.2s" }}>
             Des pièces pensées comme une architecture du corps — coupe précise,
