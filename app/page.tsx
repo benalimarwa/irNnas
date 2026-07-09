@@ -23,11 +23,9 @@ import Navbar from "@/components/ClientNavbar";
 import toast, { Toaster } from "react-hot-toast";
 
 // ─── Constantes ────────────────────────────────────────────────────
-// Vidéo héro hébergée en externe (Mixkit, licence libre, sans attribution requise)
-// ─── Constantes ────────────────────────────────────────────────────
-// Vidéo héro hébergée en externe (Mixkit, licence libre, lien MP4 direct vérifié)
 const HERO_VIDEO_URL = "https://assets.mixkit.co/videos/52270/52270-720.mp4";
 const HERO_POSTER = "/hero-poster.jpg";
+
 type Product = {
   id: number;
   name: string;
@@ -110,9 +108,9 @@ const STATS = [
 
 // ─── Toast — thème sombre ────────────────────────────────────────
 const toastStyle = {
-  background: "#1c1418",
+  background: "#0f1a2e",
   color: "#f3ece2",
-  border: "1px solid #33262b",
+  border: "1px solid #2a405a",
   borderRadius: "16px",
   padding: "12px 20px",
   boxShadow: "0 12px 30px rgba(0,0,0,0.5)",
@@ -153,11 +151,10 @@ function Reveal({ children, className = "", delay = 0 }: { children: React.React
 }
 
 // ─── Signature : ligne "point de couture" ───────────────────────
-// Motif dashed inspiré du bâti couture, utilisé comme séparateur de section.
-function StitchLine({ className = "", color = "gold" }: { className?: string; color?: "gold" | "crimson" }) {
+function StitchLine({ className = "", color = "gold" }: { className?: string; color?: "gold" | "blue" }) {
   return (
     <div
-      className={`stitch-line ${color === "crimson" ? "stitch-line--crimson" : ""} ${className}`}
+      className={`stitch-line ${color === "blue" ? "stitch-line--blue" : ""} ${className}`}
       aria-hidden="true"
     />
   );
@@ -176,7 +173,6 @@ export default function HomePage() {
   const [addedIds, setAddedIds] = useState<number[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // ─── Chargement des produits ──────────────────────────────────────
   useEffect(() => {
     fetch("/api/products")
       .then(r => (r.ok ? r.json() : []))
@@ -221,7 +217,6 @@ export default function HomePage() {
 
   useEffect(() => { if (isSignedIn) syncGuestCart(); }, [isSignedIn, syncGuestCart]);
 
-  // ─── Actions ──────────────────────────────────────────────────────
   const quickAdd = async (productId: number) => {
     if (!isSignedIn) {
       guestCart.add(productId, 1);
@@ -270,7 +265,6 @@ export default function HomePage() {
     setVideoMuted(v.muted);
   };
 
-  // ─── Helpers images ──────────────────────────────────────────────
   const findImage = (predicate: (p: Product) => boolean) =>
     products.find(predicate)?.images?.[0] ?? "/placeholder-category.jpg";
 
@@ -281,10 +275,9 @@ export default function HomePage() {
   const fallbackArrivals = newArrivals.length ? newArrivals : products.slice(0, 8);
   const lookbookImg = products[3]?.images?.[0] ?? products[0]?.images?.[0] ?? "/placeholder-category.jpg";
 
-  // ─── Loader ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0e0b0d] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a1120] flex items-center justify-center">
         <div className="relative">
           <div className="w-16 h-16 border-2 border-[#d4af6a]/25 border-t-[#d4af6a] rounded-full animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center text-[#d4af6a] text-[10px] font-light tracking-[0.3em] animate-pulse">
@@ -295,11 +288,8 @@ export default function HomePage() {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────────
-  // RENDU PRINCIPAL — thème sombre, cramoisi & laiton
-  // ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen text-[#f3ece2] overflow-x-hidden bg-[#0e0b0d]">
+    <div className="min-h-screen text-[#f3ece2] overflow-x-hidden bg-[#0a1120]">
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@500;700;800&family=Fraunces:ital,wght@1,400;1,500&family=Inter:wght@300;400;500&display=swap');
         .font-display { font-family: 'Bodoni Moda', serif; }
@@ -317,15 +307,14 @@ export default function HomePage() {
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Signature : "point de couture" — motif de bâti utilisé comme séparateur */
         .stitch-line {
           height: 2px;
           width: 64px;
           background-image: repeating-linear-gradient(90deg, #d4af6a 0 7px, transparent 7px 14px);
           opacity: 0.75;
         }
-        .stitch-line--crimson {
-          background-image: repeating-linear-gradient(90deg, #c8264f 0 7px, transparent 7px 14px);
+        .stitch-line--blue {
+          background-image: repeating-linear-gradient(90deg, #3b82f6 0 7px, transparent 7px 14px);
         }
       `}</style>
 
@@ -333,9 +322,6 @@ export default function HomePage() {
 
       <Navbar />
 
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* HERO — vidéo externe, ambiance sombre et cramoisie            */}
-      {/* ══════════════════════════════════════════════════════════════ */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* HERO — vidéo externe, étalonnage sobre et professionnel        */}
       {/* ══════════════════════════════════════════════════════════════ */}
@@ -361,11 +347,11 @@ export default function HomePage() {
           />
         )}
 
-        {/* Vignette sobre pour la lisibilité du texte — pas de teinte colorée dominante */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0b0d] via-[#0e0b0d]/55 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0e0b0d]/70 via-transparent to-[#0e0b0d]/50" />
+        {/* Vignette sobre — pas de teinte colorée dominante */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a1120] via-[#0a1120]/55 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a1120]/70 via-transparent to-[#0a1120]/50" />
         <div className="absolute inset-0" style={{ boxShadow: "inset 0 0 180px 60px rgba(0,0,0,0.55)" }} />
-        {/* Léger grain pour une texture éditoriale, pas un filtre coloré */}
+        {/* Léger grain pour une texture éditoriale */}
         <div
           className="absolute inset-0 opacity-[0.05] mix-blend-overlay pointer-events-none"
           style={{
@@ -373,6 +359,9 @@ export default function HomePage() {
               "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
           }}
         />
+
+        {/* Lueur bleutée subtile en fond */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(circle at 70% 20%, rgba(59,130,246,0.12), transparent 60%)" }} />
 
         {/* Contrôles vidéo */}
         {!videoFailed && (
@@ -399,7 +388,7 @@ export default function HomePage() {
             Collection Automne — Hiver 2026
           </span>
           <h1 className="hero-line font-display uppercase leading-[0.85] text-[15vw] sm:text-[10vw] lg:text-[7.5vw] tracking-tight text-[#f3ece2]" style={{ animationDelay: "0.1s" }}>
-            Sculpter <span className="font-accent normal-case text-[#c8264f]">l&apos;allure</span>
+            Sculpter <span className="font-accent normal-case text-[#3b82f6]">l&apos;allure</span>
           </h1>
           <StitchLine className="hero-line mt-6" />
           <p className="hero-line mt-6 max-w-md text-sm text-[#c9beb4] font-light leading-relaxed font-body" style={{ animationDelay: "0.2s" }}>
@@ -410,7 +399,7 @@ export default function HomePage() {
           <div className="hero-line mt-10 flex flex-wrap gap-4" style={{ animationDelay: "0.3s" }}>
             <Link
               href="/client/catalog?gender=women"
-              className="group flex items-center gap-3 px-8 py-4 bg-[#c8264f] text-[#fbf3ee] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#a31d40] transition"
+              className="group flex items-center gap-3 px-8 py-4 bg-[#2563eb] text-[#fbf3ee] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#1d4ed8] transition"
             >
               Collection Femme
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
@@ -429,15 +418,16 @@ export default function HomePage() {
           <ChevronDown className="w-5 h-5 text-[#f3ece2]/40" />
         </div>
       </section>
+
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* MARQUEE                                                        */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <div className="border-y border-[#2a2226] bg-[#150f12] py-4 overflow-hidden">
+      <div className="border-y border-[#2a405a] bg-[#0f1a2e] py-4 overflow-hidden">
         <div className="flex whitespace-nowrap marquee-track w-max">
           {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
             <span key={i} className="flex items-center text-xs uppercase tracking-[0.3em] font-light text-[#a89a92] mx-8">
               {item}
-              <span className="ml-8 text-[#c8264f]">✦</span>
+              <span className="ml-8 text-[#3b82f6]">✦</span>
             </span>
           ))}
         </div>
@@ -469,7 +459,7 @@ export default function HomePage() {
           <h2 className="font-display uppercase text-4xl md:text-5xl leading-[0.95] mt-4 text-[#f3ece2]">
             La rigueur <br />
             au service <br />
-            du <span className="font-accent normal-case text-[#c8264f]">geste</span>
+            du <span className="font-accent normal-case text-[#3b82f6]">geste</span>
           </h2>
           <StitchLine className="mt-6" />
         </Reveal>
@@ -532,7 +522,7 @@ export default function HomePage() {
             </Reveal>
             <Link
               href="/client/catalog"
-              className="hidden sm:flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#a89a92] hover:text-[#c8264f] transition"
+              className="hidden sm:flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#a89a92] hover:text-[#3b82f6] transition"
             >
               Tout voir <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
@@ -547,7 +537,7 @@ export default function HomePage() {
               return (
                 <div
                   key={product.id}
-                  className="group relative flex-shrink-0 w-[260px] sm:w-[290px] snap-start bg-[#150f12] border border-[#2a2226] rounded-3xl overflow-hidden hover:border-[#d4af6a]/50 transition shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
+                  className="group relative flex-shrink-0 w-[260px] sm:w-[290px] snap-start bg-[#0f1a2e] border border-[#2a405a] rounded-3xl overflow-hidden hover:border-[#d4af6a]/50 transition shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
                 >
                   <button
                     onClick={() => toggleWishlist(product.id)}
@@ -555,11 +545,11 @@ export default function HomePage() {
                     className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition"
                   >
                     <Heart
-                      className={`w-3.5 h-3.5 transition ${isWishlisted ? "fill-[#c8264f] text-[#c8264f]" : "text-[#f3ece2]/70"}`}
+                      className={`w-3.5 h-3.5 transition ${isWishlisted ? "fill-[#3b82f6] text-[#3b82f6]" : "text-[#f3ece2]/70"}`}
                     />
                   </button>
 
-                  <Link href={`/client/catalog?category=${product.category}`} className="block relative h-[320px] bg-[#1c1418] overflow-hidden">
+                  <Link href={`/client/catalog?category=${product.category}`} className="block relative h-[320px] bg-[#111c30] overflow-hidden">
                     <Image
                       src={product.images[0] || "/placeholder-category.jpg"}
                       alt={product.name}
@@ -573,7 +563,7 @@ export default function HomePage() {
                       className="object-contain p-6 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                     />
                     {product.isNew && (
-                      <span className="absolute top-4 left-4 bg-[#d4af6a] text-[#160f13] text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full">
+                      <span className="absolute top-4 left-4 bg-[#d4af6a] text-[#0a1120] text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full">
                         Nouveau
                       </span>
                     )}
@@ -596,10 +586,10 @@ export default function HomePage() {
                       disabled={product.stock <= 0}
                       className={`mt-4 w-full py-2.5 rounded-xl text-[11px] uppercase tracking-[0.2em] font-medium transition ${
                         justAdded
-                          ? "bg-[#d4af6a] text-[#160f13]"
+                          ? "bg-[#d4af6a] text-[#0a1120]"
                           : product.stock > 0
-                          ? "bg-[#c8264f] text-[#fbf3ee] hover:bg-[#a31d40]"
-                          : "bg-[#2a2226] text-[#7d716a] cursor-not-allowed"
+                          ? "bg-[#2563eb] text-[#fbf3ee] hover:bg-[#1d4ed8]"
+                          : "bg-[#2a405a] text-[#7d716a] cursor-not-allowed"
                       }`}
                     >
                       {justAdded ? "Ajouté ✓" : product.stock > 0 ? "Ajouter au panier" : "Rupture de stock"}
@@ -622,8 +612,8 @@ export default function HomePage() {
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0b0d] via-[#0e0b0d]/20 to-transparent" />
-        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 80% 10%, rgba(200,38,79,0.18), transparent 55%)" }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a1120] via-[#0a1120]/20 to-transparent" />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 80% 10%, rgba(59,130,246,0.15), transparent 55%)" }} />
         <div className="relative z-10 h-full max-w-7xl mx-auto px-6 flex flex-col justify-end pb-20">
           <Reveal>
             <p className="font-accent normal-case text-2xl md:text-4xl max-w-xl leading-snug text-[#f3ece2]">
@@ -631,7 +621,7 @@ export default function HomePage() {
             </p>
             <Link
               href="/client/catalog"
-              className="mt-8 inline-flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-[#d4af6a] hover:text-[#c8264f] transition group"
+              className="mt-8 inline-flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-[#d4af6a] hover:text-[#3b82f6] transition group"
             >
               Voir le lookbook complet
               <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
@@ -643,12 +633,12 @@ export default function HomePage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* CHIFFRES                                                       */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <section className="bg-[#150f12] text-[#f3ece2]">
+      <section className="bg-[#0f1a2e] text-[#f3ece2]">
         <div className="max-w-7xl mx-auto px-6 py-24 grid sm:grid-cols-3 gap-12">
           {STATS.map((stat, i) => (
             <Reveal key={stat.label} delay={i * 100} className="text-center sm:text-left">
               <p className="font-display text-5xl md:text-6xl">
-                {stat.value}<span className="font-accent normal-case text-3xl md:text-4xl text-[#c8264f]">{stat.suffix}</span>
+                {stat.value}<span className="font-accent normal-case text-3xl md:text-4xl text-[#3b82f6]">{stat.suffix}</span>
               </p>
               <p className="mt-3 text-sm text-[#a89a92] font-light font-body max-w-[220px] mx-auto sm:mx-0">
                 {stat.label}
@@ -661,7 +651,7 @@ export default function HomePage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* FABRICATION                                                   */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <section className="border-t border-[#2a2226]">
+      <section className="border-t border-[#2a405a]">
         <div className="max-w-7xl mx-auto px-6 py-28">
           <Reveal>
             <span className="text-[11px] uppercase tracking-[0.4em] text-[#d4af6a] font-light">
@@ -675,8 +665,8 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8">
             {CRAFT_STEPS.map((step, i) => (
               <Reveal key={step.label} delay={i * 120} className="pt-6">
-                <StitchLine color={i === 1 ? "crimson" : "gold"} className="mb-5 w-full" />
-                <span className="font-accent text-4xl text-[#c8264f]">
+                <StitchLine color={i === 1 ? "blue" : "gold"} className="mb-5 w-full" />
+                <span className="font-accent text-4xl text-[#3b82f6]">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <h3 className="text-lg font-medium uppercase tracking-[0.15em] mt-4 mb-3 text-[#f3ece2]">
@@ -694,11 +684,11 @@ export default function HomePage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* NEWSLETTER                                                    */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <section className="border-t border-[#2a2226] bg-[#150f12]">
+      <section className="border-t border-[#2a405a] bg-[#0f1a2e]">
         <div className="max-w-3xl mx-auto px-6 py-24 text-center">
           <Reveal>
             <h2 className="font-display uppercase text-3xl md:text-4xl mb-4 text-[#f3ece2]">
-              Restez <span className="font-accent normal-case text-[#c8264f]">informé</span>
+              Restez <span className="font-accent normal-case text-[#3b82f6]">informé</span>
             </h2>
             <p className="text-sm text-[#a89a92] font-light mb-8 font-body">
               Accès prioritaire aux nouvelles collections et aux ventes privées.
@@ -715,11 +705,11 @@ export default function HomePage() {
                 type="email"
                 required
                 placeholder="Votre email"
-                className="flex-1 bg-[#1c1418] border border-[#2a2226] rounded-full py-3.5 px-6 text-sm text-[#f3ece2] placeholder:text-[#7d716a] focus:outline-none focus:border-[#d4af6a]/60 transition"
+                className="flex-1 bg-[#111c30] border border-[#2a405a] rounded-full py-3.5 px-6 text-sm text-[#f3ece2] placeholder:text-[#7d716a] focus:outline-none focus:border-[#3b82f6]/60 transition"
               />
               <button
                 type="submit"
-                className="px-8 py-3.5 bg-[#c8264f] text-[#fbf3ee] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#a31d40] transition"
+                className="px-8 py-3.5 bg-[#2563eb] text-[#fbf3ee] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#1d4ed8] transition"
               >
                 S&apos;inscrire
               </button>
@@ -731,8 +721,8 @@ export default function HomePage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* FOOTER                                                        */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-[#2a2226] pt-16 pb-10 px-6 bg-[#0e0b0d]">
-        <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-[#2a2226]">
+      <footer className="border-t border-[#2a405a] pt-16 pb-10 px-6 bg-[#0a1120]">
+        <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-[#2a405a]">
           <div>
             <span className="text-lg font-light tracking-[0.2em] text-[#f3ece2]">IRNAS</span>
             <p className="mt-4 text-xs text-[#a89a92] font-light leading-relaxed max-w-[220px] font-body">
@@ -781,7 +771,7 @@ function CategoryTile({
   return (
     <Link
       href={href}
-      className={`group relative overflow-hidden rounded-3xl border border-[#2a2226] hover:border-[#d4af6a]/60 transition bg-[#150f12] ${className}`}
+      className={`group relative overflow-hidden rounded-3xl border border-[#2a405a] hover:border-[#d4af6a]/60 transition bg-[#0f1a2e] ${className}`}
     >
       <Image
         src={image}
@@ -789,7 +779,7 @@ function CategoryTile({
         fill
         className="object-cover transition-transform duration-700 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0e0b0d] via-[#0e0b0d]/15 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0a1120] via-[#0a1120]/15 to-transparent" />
       <div className="absolute bottom-0 left-0 p-6 flex items-center gap-2">
         <span className={`font-display uppercase tracking-tight text-[#f3ece2] ${big ? "text-3xl md:text-4xl" : "text-xl md:text-2xl"}`}>
           {label}
