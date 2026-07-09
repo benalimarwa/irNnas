@@ -60,7 +60,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Vidéo
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
@@ -68,7 +67,6 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // Chargement des données
   useEffect(() => {
     const loadDashboard = async () => {
       try {
@@ -101,9 +99,45 @@ export default function AdminDashboard() {
           pendingOrders: Number(s.pendingOrders) || 0,
         });
 
-        setTopProducts(Array.isArray(tp) ? tp : []);
-        setRecentOrders(Array.isArray(ro) ? ro : []);
-        setLowStock(Array.isArray(ls) ? ls : []);
+        // Garde-fous : on force les types attendus pour éviter tout
+        // rendu accidentel d'un objet dans le JSX si l'API renvoie
+        // une forme inattendue (ex: category comme objet).
+        setTopProducts(
+          Array.isArray(tp)
+            ? tp.map((p: any) => ({
+                name: typeof p.name === "string" ? p.name : "Inconnu",
+                sales: Number(p.sales) || 0,
+                revenue: Number(p.revenue) || 0,
+              }))
+            : []
+        );
+
+        setRecentOrders(
+          Array.isArray(ro)
+            ? ro.map((o: any) => ({
+                id: o.id,
+                userName: typeof o.userName === "string" ? o.userName : "Client",
+                total: Number(o.total) || 0,
+                createdAt: o.createdAt,
+                confirmedBy:
+                  typeof o.confirmedBy === "string" ? o.confirmedBy : undefined,
+              }))
+            : []
+        );
+
+        setLowStock(
+          Array.isArray(ls)
+            ? ls.map((p: any) => ({
+                id: p.id,
+                name: typeof p.name === "string" ? p.name : "Inconnu",
+                stock: Number(p.stock) || 0,
+                category:
+                  typeof p.category === "string"
+                    ? p.category
+                    : p.category?.name ?? "Inconnu",
+              }))
+            : []
+        );
       } catch (e) {
         console.error("Erreur chargement dashboard:", e);
         setError("Impossible de charger les données du tableau de bord");
@@ -189,7 +223,6 @@ export default function AdminDashboard() {
       `}</style>
 
       <div className="admin-dashboard min-h-screen relative overflow-x-hidden">
-        {/* Vidéo d'arrière-plan */}
         <div className="video-background">
           <video
             ref={videoRef}
@@ -204,13 +237,10 @@ export default function AdminDashboard() {
           </video>
         </div>
         <div className="video-overlay" />
-        <div className="video-overlay" />
 
-        {/* Grille de points */}
         <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0 pointer-events-none" />
 
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-16 sm:pb-24 relative z-10">
-          {/* Header */}
           <div className="mb-8 sm:mb-12">
             <div className="inline-flex items-center gap-3 text-xs uppercase tracking-[3px] bg-white/5 border border-white/10 px-4 sm:px-6 py-2 rounded-full mb-4 sm:mb-6">
               <Award size={14} className="text-[#D4AF37]" />
@@ -219,7 +249,6 @@ export default function AdminDashboard() {
             <h1 className="hero-title gradient-text">Tableau de bord</h1>
           </div>
 
-          {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
             {[
               { label: "Chiffre d'affaires", value: stats.totalRevenue, unit: "TND", icon: TrendingUp },
@@ -252,7 +281,6 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          {/* Charts */}
           <div className="grid lg:grid-cols-2 gap-6 mb-8">
             <div className={`glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 transition-all ${expandedStock ? 'lg:col-span-2' : ''}`}>
               <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -285,7 +313,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Orders Chart */}
           <div className={`glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 mb-8 transition-all ${expandedOrders ? 'h-[80vh]' : ''}`}>
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="text-lg sm:text-xl font-semibold flex items-center justify-between w-full">
@@ -304,9 +331,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Bottom Sections */}
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Top Products */}
             <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8">
               <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Top 5 Produits</h3>
               <div className="space-y-4 sm:space-y-5">
@@ -334,7 +359,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Low Stock */}
             <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8">
               <div className="flex items-center gap-3 mb-4 sm:mb-6">
                 <AlertTriangle className="text-amber-400" size={20} />
@@ -360,7 +384,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Recent Orders */}
           <div className="glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 mt-6 sm:mt-8">
             <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 flex items-center gap-3">
               <Clock className="text-[#D4AF37]" size={20} /> 
