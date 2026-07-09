@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useClerk } from "@clerk/nextjs";
 import {
   User, Mail, Calendar, Shield, Package, ChevronRight,
   Edit3, Save, X, CheckCircle, AlertCircle, Camera,
-  ArrowLeft, Clock, ShoppingBag,
+  ArrowLeft, Clock, ShoppingBag, LogOut,
 } from "lucide-react";
 import Navbar from "@/components/ClientNavbar";
 
@@ -60,8 +61,11 @@ const STATUS_COLORS: Record<string, string> = {
 
 /* ─── Main Component ─────────────────────────────────────── */
 export default function ProfileClient({ clerkUser, dbUser }: Props) {
+  const { signOut } = useClerk();
+
   const [editing, setEditing]   = useState(false);
   const [saving,  setSaving]    = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [toast,   setToast]     = useState<{ type: "ok" | "err"; msg: string } | null>(null);
   const [form, setForm] = useState({
     firstName: dbUser.firstName ?? "",
@@ -98,6 +102,17 @@ export default function ProfileClient({ clerkUser, dbUser }: Props) {
     }
   }
 
+  async function handleSignOut() {
+    if (!confirm("Voulez-vous vraiment vous déconnecter ?")) return;
+    setSigningOut(true);
+    try {
+      await signOut({ redirectUrl: "/" });
+    } catch {
+      showToast("err", "Erreur lors de la déconnexion.");
+      setSigningOut(false);
+    }
+  }
+
   function showToast(type: "ok" | "err", msg: string) {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 3500);
@@ -105,7 +120,6 @@ export default function ProfileClient({ clerkUser, dbUser }: Props) {
 
   return (
     <div className="min-h-screen bg-[#0a1628] text-white">
-      
 
       {/* Dot grid */}
       <div
@@ -133,14 +147,25 @@ export default function ProfileClient({ clerkUser, dbUser }: Props) {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-28 pb-20 relative z-10">
 
-        {/* Back */}
-        <Link
-          href="/client/catalog"
-          className="inline-flex items-center gap-2 text-[#4a6a8a] hover:text-[#3b82f6] transition mb-10 group text-sm uppercase tracking-[0.15em] font-light"
-        >
-          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition" />
-          Catalogue
-        </Link>
+        {/* Back + Sign out */}
+        <div className="flex items-center justify-between mb-10">
+          <Link
+            href="/client/catalog"
+            className="inline-flex items-center gap-2 text-[#4a6a8a] hover:text-[#3b82f6] transition group text-sm uppercase tracking-[0.15em] font-light"
+          >
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition" />
+            Catalogue
+          </Link>
+
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="inline-flex items-center gap-2 text-[#4a6a8a] hover:text-red-400 transition text-sm uppercase tracking-[0.15em] font-light disabled:opacity-50"
+          >
+            <LogOut size={16} />
+            {signingOut ? "Déconnexion…" : "Déconnexion"}
+          </button>
+        </div>
 
         {/* ── Hero Card ───────────────────────────────────────── */}
         <div className="bg-[#0f1f33] border border-[#1a2a44] rounded-3xl p-6 sm:p-8 mb-6 hover:border-[#3b82f6]/30 transition relative overflow-hidden">
@@ -392,23 +417,6 @@ export default function ProfileClient({ clerkUser, dbUser }: Props) {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-[#1a2a44] py-10 px-6 mt-10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-light tracking-[0.2em] text-white">IRNAS</span>
-            <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/50 font-light">Fashion</span>
-          </div>
-          <p className="text-[10px] text-[#2a3f6a] tracking-widest font-light">
-            © 2026 IRNAS — Tous droits réservés
-          </p>
-          <div className="flex items-center gap-6 text-[10px] text-[#2a3f6a] tracking-widest font-light uppercase">
-            <Link href="#" className="hover:text-[#3b82f6] transition">Mentions</Link>
-            <Link href="#" className="hover:text-[#3b82f6] transition">Confidentialité</Link>
-            <Link href="#" className="hover:text-[#3b82f6] transition">Contact</Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
