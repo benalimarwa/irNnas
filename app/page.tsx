@@ -388,7 +388,7 @@ export default function HomePage() {
             Collection Automne — Hiver 2026
           </span>
           <h1 className="hero-line font-display uppercase leading-[0.85] text-[15vw] sm:text-[10vw] lg:text-[7.5vw] tracking-tight text-[#f3ece2]" style={{ animationDelay: "0.1s" }}>
-            Sculpter <span className="font-accent normal-case text-[#3b82f6]">l&apos;allure</span>
+            Sculpter <span className="font-accent normal-case text-[#1e40af]">l&apos;allure</span>
           </h1>
           <StitchLine className="hero-line mt-6" />
           <p className="hero-line mt-6 max-w-md text-sm text-[#c9beb4] font-light leading-relaxed font-body" style={{ animationDelay: "0.2s" }}>
@@ -399,14 +399,14 @@ export default function HomePage() {
           <div className="hero-line mt-10 flex flex-wrap gap-4" style={{ animationDelay: "0.3s" }}>
             <Link
               href="/client/catalog?gender=women"
-              className="group flex items-center gap-3 px-8 py-4 bg-[#2563eb] text-[#fbf3ee] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#1d4ed8] transition"
+              className="group flex items-center gap-3 px-8 py-4 bg-[#f3ece2] text-[#1e40af] text-xs uppercase tracking-[0.25em] font-medium rounded-full border border-[#1e40af] hover:bg-[#1e40af] hover:text-[#f3ece2] transition"
             >
               Collection Femme
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/client/catalog?gender=men"
-              className="group flex items-center gap-3 px-8 py-4 border border-[#f3ece2]/30 text-[#f3ece2] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:border-[#d4af6a] hover:text-[#d4af6a] transition"
+              className="group flex items-center gap-3 px-8 py-4 border border-[#f3ece2]/30 text-[#1e40af] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:border-[#1e40af] hover:text-[#1e40af] transition"
             >
               Collection Homme
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
@@ -459,7 +459,7 @@ export default function HomePage() {
           <h2 className="font-display uppercase text-4xl md:text-5xl leading-[0.95] mt-4 text-[#f3ece2]">
             La rigueur <br />
             au service <br />
-            du <span className="font-accent normal-case text-[#3b82f6]">geste</span>
+            du <span className="font-accent normal-case text-[#1e40af]">geste</span>
           </h2>
           <StitchLine className="mt-6" />
         </Reveal>
@@ -638,7 +638,7 @@ export default function HomePage() {
           {STATS.map((stat, i) => (
             <Reveal key={stat.label} delay={i * 100} className="text-center sm:text-left">
               <p className="font-display text-5xl md:text-6xl">
-                {stat.value}<span className="font-accent normal-case text-3xl md:text-4xl text-[#3b82f6]">{stat.suffix}</span>
+                {stat.value}<span className="font-accent normal-case text-3xl md:text-4xl text-[#1e40af]">{stat.suffix}</span>
               </p>
               <p className="mt-3 text-sm text-[#a89a92] font-light font-body max-w-[220px] mx-auto sm:mx-0">
                 {stat.label}
@@ -666,7 +666,7 @@ export default function HomePage() {
             {CRAFT_STEPS.map((step, i) => (
               <Reveal key={step.label} delay={i * 120} className="pt-6">
                 <StitchLine color={i === 1 ? "blue" : "gold"} className="mb-5 w-full" />
-                <span className="font-accent text-4xl text-[#3b82f6]">
+                <span className="font-accent text-4xl text-[#1e40af]">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <h3 className="text-lg font-medium uppercase tracking-[0.15em] mt-4 mb-3 text-[#f3ece2]">
@@ -688,7 +688,7 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto px-6 py-24 text-center">
           <Reveal>
             <h2 className="font-display uppercase text-3xl md:text-4xl mb-4 text-[#f3ece2]">
-              Restez <span className="font-accent normal-case text-[#3b82f6]">informé</span>
+              Restez <span className="font-accent normal-case text-[#1e40af]">informé</span>
             </h2>
             <p className="text-sm text-[#a89a92] font-light mb-8 font-body">
               Accès prioritaire aux nouvelles collections et aux ventes privées.
