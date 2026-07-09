@@ -39,7 +39,7 @@ export default function Footer() {
     📞 +216 27 888 827 
   </a>
   <span className="mx-2">·</span>
-  <a href="https://wa.me/21612345678" target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af6a] transition">
+  <a href="https://wa.me/21627888827" target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af6a] transition">
     💬 WhatsApp
   </a>
                 </div>
