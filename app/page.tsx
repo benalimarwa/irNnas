@@ -22,8 +22,9 @@ import {
 import Navbar from "@/components/ClientNavbar";
 import toast, { Toaster } from "react-hot-toast";
 
-// ─── Constantes (inchangées) ──────────────────────────────────────────
-const HERO_VIDEO_URL = "/video/pp.mp4";
+// ─── Constantes ────────────────────────────────────────────────────
+// Vidéo héro hébergée en externe (Mixkit, licence libre, sans attribution requise)
+const HERO_VIDEO_URL = "https://assets.mixkit.co/e6qsae9iwqa3urzopku5p0rf99rt";
 const HERO_POSTER = "/hero-poster.jpg";
 
 type Product = {
@@ -106,17 +107,17 @@ const STATS = [
   { value: "500", suffix: "+", label: "pièces façonnées à la main chaque saison" },
 ];
 
-// ─── Toast style adapté au thème clair ──────────────────────────────
+// ─── Toast — thème sombre ────────────────────────────────────────
 const toastStyle = {
-  background: "#ffffff",
-  color: "#1a1a1a",
-  border: "1px solid #e0dcd6",
+  background: "#1c1418",
+  color: "#f3ece2",
+  border: "1px solid #33262b",
   borderRadius: "16px",
   padding: "12px 20px",
-  boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+  boxShadow: "0 12px 30px rgba(0,0,0,0.5)",
 };
 
-// ─── Reveal (inchangé) ───────────────────────────────────────────────
+// ─── Reveal ──────────────────────────────────────────────────────
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -147,6 +148,17 @@ function Reveal({ children, className = "", delay = 0 }: { children: React.React
     >
       {children}
     </div>
+  );
+}
+
+// ─── Signature : ligne "point de couture" ───────────────────────
+// Motif dashed inspiré du bâti couture, utilisé comme séparateur de section.
+function StitchLine({ className = "", color = "gold" }: { className?: string; color?: "gold" | "crimson" }) {
+  return (
+    <div
+      className={`stitch-line ${color === "crimson" ? "stitch-line--crimson" : ""} ${className}`}
+      aria-hidden="true"
+    />
   );
 }
 
@@ -271,10 +283,10 @@ export default function HomePage() {
   // ─── Loader ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#faf8f6] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0e0b0d] flex items-center justify-center">
         <div className="relative">
-          <div className="w-16 h-16 border-2 border-[#b89a6b]/30 border-t-[#b89a6b] rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center text-[#b89a6b] text-[10px] font-light tracking-[0.3em] animate-pulse">
+          <div className="w-16 h-16 border-2 border-[#d4af6a]/25 border-t-[#d4af6a] rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center text-[#d4af6a] text-[10px] font-light tracking-[0.3em] animate-pulse">
             IRNAS
           </div>
         </div>
@@ -283,15 +295,16 @@ export default function HomePage() {
   }
 
   // ──────────────────────────────────────────────────────────────────
-  // RENDU PRINCIPAL – TOUTES LES COULEURS ONT ÉTÉ MODIFIÉES
+  // RENDU PRINCIPAL — thème sombre, cramoisi & laiton
   // ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen text-[#1a1a1a] overflow-x-hidden bg-[#faf8f6]">
+    <div className="min-h-screen text-[#f3ece2] overflow-x-hidden bg-[#0e0b0d]">
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Playfair+Display:ital@0;1&family=Inter:wght@300;400;500&display=swap');
-        .font-display { font-family: 'Anton', sans-serif; }
-        .font-accent { font-family: 'Playfair Display', serif; font-style: italic; }
+        @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@500;700;800&family=Fraunces:ital,wght@1,400;1,500&family=Inter:wght@300;400;500&display=swap');
+        .font-display { font-family: 'Bodoni Moda', serif; }
+        .font-accent { font-family: 'Fraunces', serif; font-style: italic; }
         .font-body { font-family: 'Inter', sans-serif; }
+
         @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         .marquee-track { animation: marquee 28s linear infinite; }
         @keyframes heroIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
@@ -302,6 +315,17 @@ export default function HomePage() {
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Signature : "point de couture" — motif de bâti utilisé comme séparateur */
+        .stitch-line {
+          height: 2px;
+          width: 64px;
+          background-image: repeating-linear-gradient(90deg, #d4af6a 0 7px, transparent 7px 14px);
+          opacity: 0.75;
+        }
+        .stitch-line--crimson {
+          background-image: repeating-linear-gradient(90deg, #c8264f 0 7px, transparent 7px 14px);
+        }
       `}</style>
 
       <Toaster position="bottom-right" toastOptions={{ style: toastStyle }} />
@@ -309,7 +333,7 @@ export default function HomePage() {
       <Navbar />
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* HERO — vidéo (fond clair, overlays adaptés)                   */}
+      {/* HERO — vidéo externe, ambiance sombre et cramoisie            */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <section className="relative h-screen min-h-[640px] w-full overflow-hidden">
         {!videoFailed ? (
@@ -332,25 +356,25 @@ export default function HomePage() {
           />
         )}
 
-        {/* Overlays clairs pour lisibilité sur fond clair */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#faf8f6] via-[#faf8f6]/30 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#faf8f6]/70 via-transparent to-[#faf8f6]/20" />
-        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 30% 20%, rgba(184,154,107,0.08), rgba(250,248,246,0.5))" }} />
+        {/* Overlays sombres — vignette encre + lueur cramoisie */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0b0d] via-[#0e0b0d]/50 to-[#0e0b0d]/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0e0b0d]/80 via-transparent to-[#0e0b0d]/40" />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 25% 15%, rgba(200,38,79,0.22), rgba(14,11,13,0.55) 60%)" }} />
 
-        {/* Contrôles vidéo (sur fond clair, bordures foncées) */}
+        {/* Contrôles vidéo */}
         {!videoFailed && (
           <div className="absolute top-28 right-6 z-10 flex gap-2">
             <button
               onClick={toggleVideoPlay}
               aria-label={videoPlaying ? "Mettre en pause" : "Lire la vidéo"}
-              className="w-9 h-9 rounded-full border border-[#1a1a1a]/20 bg-white/60 backdrop-blur-sm flex items-center justify-center hover:border-[#1a1a1a]/60 transition text-[#1a1a1a]"
+              className="w-9 h-9 rounded-full border border-[#f3ece2]/25 bg-black/40 backdrop-blur-sm flex items-center justify-center hover:border-[#d4af6a]/80 transition text-[#f3ece2]"
             >
               {videoPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             </button>
             <button
               onClick={toggleVideoMute}
               aria-label={videoMuted ? "Activer le son" : "Couper le son"}
-              className="w-9 h-9 rounded-full border border-[#1a1a1a]/20 bg-white/60 backdrop-blur-sm flex items-center justify-center hover:border-[#1a1a1a]/60 transition text-[#1a1a1a]"
+              className="w-9 h-9 rounded-full border border-[#f3ece2]/25 bg-black/40 backdrop-blur-sm flex items-center justify-center hover:border-[#d4af6a]/80 transition text-[#f3ece2]"
             >
               {videoMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
@@ -358,13 +382,14 @@ export default function HomePage() {
         )}
 
         <div className="relative z-10 h-full max-w-7xl mx-auto px-6 flex flex-col justify-end pb-28 pt-32">
-          <span className="hero-line text-[11px] uppercase tracking-[0.5em] text-[#b89a6b] font-light mb-6">
+          <span className="hero-line text-[11px] uppercase tracking-[0.5em] text-[#d4af6a] font-light mb-6">
             Collection Automne — Hiver 2026
           </span>
-          <h1 className="hero-line font-display uppercase leading-[0.85] text-[15vw] sm:text-[10vw] lg:text-[7.5vw] tracking-tight text-[#1a1a1a]" style={{ animationDelay: "0.1s" }}>
-            Sculpter <span className="font-accent normal-case text-[#b89a6b]">l&apos;allure</span>
+          <h1 className="hero-line font-display uppercase leading-[0.85] text-[15vw] sm:text-[10vw] lg:text-[7.5vw] tracking-tight text-[#f3ece2]" style={{ animationDelay: "0.1s" }}>
+            Sculpter <span className="font-accent normal-case text-[#c8264f]">l&apos;allure</span>
           </h1>
-          <p className="hero-line mt-8 max-w-md text-sm text-[#5a5a5a] font-light leading-relaxed font-body" style={{ animationDelay: "0.2s" }}>
+          <StitchLine className="hero-line mt-6" />
+          <p className="hero-line mt-6 max-w-md text-sm text-[#c9beb4] font-light leading-relaxed font-body" style={{ animationDelay: "0.2s" }}>
             Des pièces pensées comme une architecture du corps — coupe précise,
             matières nobles, fabrication soignée.
           </p>
@@ -372,14 +397,14 @@ export default function HomePage() {
           <div className="hero-line mt-10 flex flex-wrap gap-4" style={{ animationDelay: "0.3s" }}>
             <Link
               href="/client/catalog?gender=women"
-              className="group flex items-center gap-3 px-8 py-4 bg-[#1e3a5f] text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#162b47] transition"
+              className="group flex items-center gap-3 px-8 py-4 bg-[#c8264f] text-[#f8ece f0] text-[#fbf3ee] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#a31d40] transition"
             >
               Collection Femme
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/client/catalog?gender=men"
-              className="group flex items-center gap-3 px-8 py-4 border border-[#1a1a1a]/30 text-[#1a1a1a] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:border-[#b89a6b] hover:text-[#b89a6b] transition"
+              className="group flex items-center gap-3 px-8 py-4 border border-[#f3ece2]/30 text-[#f3ece2] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:border-[#d4af6a] hover:text-[#d4af6a] transition"
             >
               Collection Homme
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
@@ -388,34 +413,34 @@ export default function HomePage() {
         </div>
 
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-          <ChevronDown className="w-5 h-5 text-[#1a1a1a]/40" />
+          <ChevronDown className="w-5 h-5 text-[#f3ece2]/40" />
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* MARQUEE (fond clair)                                          */}
+      {/* MARQUEE                                                        */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <div className="border-y border-[#e0dcd6] bg-[#f0ede8] py-4 overflow-hidden">
+      <div className="border-y border-[#2a2226] bg-[#150f12] py-4 overflow-hidden">
         <div className="flex whitespace-nowrap marquee-track w-max">
           {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-            <span key={i} className="flex items-center text-xs uppercase tracking-[0.3em] font-light text-[#5a5a5a] mx-8">
+            <span key={i} className="flex items-center text-xs uppercase tracking-[0.3em] font-light text-[#a89a92] mx-8">
               {item}
-              <span className="ml-8 text-[#b89a6b]">✦</span>
+              <span className="ml-8 text-[#c8264f]">✦</span>
             </span>
           ))}
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* BARRE DE CONFIANCE (fond clair)                               */}
+      {/* BARRE DE CONFIANCE                                            */}
       {/* ══════════════════════════════════════════════════════════════ */}
       <section className="max-w-7xl mx-auto px-6 py-14 grid grid-cols-2 md:grid-cols-4 gap-8">
         {TRUST_ITEMS.map((item, i) => (
           <Reveal key={item.label} delay={i * 80} className="flex flex-col items-start gap-3">
-            <item.icon className="w-5 h-5 text-[#b89a6b]" strokeWidth={1.5} />
+            <item.icon className="w-5 h-5 text-[#d4af6a]" strokeWidth={1.5} />
             <div>
-              <p className="text-sm font-medium text-[#1a1a1a]">{item.label}</p>
-              <p className="text-xs text-[#5a5a5a] font-light mt-0.5">{item.sub}</p>
+              <p className="text-sm font-medium text-[#f3ece2]">{item.label}</p>
+              <p className="text-xs text-[#a89a92] font-light mt-0.5">{item.sub}</p>
             </div>
           </Reveal>
         ))}
@@ -426,17 +451,18 @@ export default function HomePage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       <section className="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12 items-center">
         <Reveal>
-          <span className="text-[11px] uppercase tracking-[0.4em] text-[#b89a6b] font-light">
+          <span className="text-[11px] uppercase tracking-[0.4em] text-[#d4af6a] font-light">
             Notre approche
           </span>
-          <h2 className="font-display uppercase text-4xl md:text-5xl leading-[0.95] mt-4 text-[#1a1a1a]">
+          <h2 className="font-display uppercase text-4xl md:text-5xl leading-[0.95] mt-4 text-[#f3ece2]">
             La rigueur <br />
             au service <br />
-            du <span className="font-accent normal-case text-[#b89a6b]">geste</span>
+            du <span className="font-accent normal-case text-[#c8264f]">geste</span>
           </h2>
+          <StitchLine className="mt-6" />
         </Reveal>
         <Reveal delay={150}>
-          <p className="text-[#5a5a5a] text-base md:text-lg font-light leading-relaxed font-body">
+          <p className="text-[#a89a92] text-base md:text-lg font-light leading-relaxed font-body">
             IRNAS naît d&apos;une conviction simple : le vêtement doit tenir sur le corps
             comme une phrase bien construite — sans mot de trop. Chaque collection est
             développée en petites séries, loin des cycles de la fast fashion, pour laisser
@@ -485,16 +511,16 @@ export default function HomePage() {
         <section className="pb-28">
           <div className="max-w-7xl mx-auto px-6 flex items-end justify-between mb-8">
             <Reveal>
-              <span className="text-[11px] uppercase tracking-[0.4em] text-[#b89a6b] font-light">
+              <span className="text-[11px] uppercase tracking-[0.4em] text-[#d4af6a] font-light">
                 Fraîchement arrivé
               </span>
-              <h2 className="font-display uppercase text-3xl md:text-4xl mt-2 text-[#1a1a1a]">
+              <h2 className="font-display uppercase text-3xl md:text-4xl mt-2 text-[#f3ece2]">
                 Nouveautés
               </h2>
             </Reveal>
             <Link
               href="/client/catalog"
-              className="hidden sm:flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#5a5a5a] hover:text-[#1e3a5f] transition"
+              className="hidden sm:flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#a89a92] hover:text-[#c8264f] transition"
             >
               Tout voir <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
@@ -509,19 +535,19 @@ export default function HomePage() {
               return (
                 <div
                   key={product.id}
-                  className="group relative flex-shrink-0 w-[260px] sm:w-[290px] snap-start bg-white border border-[#e0dcd6] rounded-3xl overflow-hidden hover:border-[#b89a6b]/60 transition shadow-sm hover:shadow-md"
+                  className="group relative flex-shrink-0 w-[260px] sm:w-[290px] snap-start bg-[#150f12] border border-[#2a2226] rounded-3xl overflow-hidden hover:border-[#d4af6a]/50 transition shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
                 >
                   <button
                     onClick={() => toggleWishlist(product.id)}
                     aria-label={isWishlisted ? "Retirer des favoris" : "Ajouter aux favoris"}
-                    className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white transition shadow-sm"
+                    className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition"
                   >
                     <Heart
-                      className={`w-3.5 h-3.5 transition ${isWishlisted ? "fill-[#b89a6b] text-[#b89a6b]" : "text-[#1a1a1a]/60"}`}
+                      className={`w-3.5 h-3.5 transition ${isWishlisted ? "fill-[#c8264f] text-[#c8264f]" : "text-[#f3ece2]/70"}`}
                     />
                   </button>
 
-                  <Link href={`/client/catalog?category=${product.category}`} className="block relative h-[320px] bg-[#f5f2ed] overflow-hidden">
+                  <Link href={`/client/catalog?category=${product.category}`} className="block relative h-[320px] bg-[#1c1418] overflow-hidden">
                     <Image
                       src={product.images[0] || "/placeholder-category.jpg"}
                       alt={product.name}
@@ -535,20 +561,20 @@ export default function HomePage() {
                       className="object-contain p-6 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                     />
                     {product.isNew && (
-                      <span className="absolute top-4 left-4 bg-[#b89a6b] text-white text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full">
+                      <span className="absolute top-4 left-4 bg-[#d4af6a] text-[#160f13] text-[9px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-full">
                         Nouveau
                       </span>
                     )}
                   </Link>
                   <div className="p-5">
-                    <h3 className="text-sm font-medium text-[#1a1a1a] truncate">{product.name}</h3>
-                    <p className="text-[11px] text-[#5a5a5a] mt-0.5 uppercase tracking-widest font-light">
+                    <h3 className="text-sm font-medium text-[#f3ece2] truncate">{product.name}</h3>
+                    <p className="text-[11px] text-[#a89a92] mt-0.5 uppercase tracking-widest font-light">
                       {product.color} · {CATEGORY_LABELS[product.category] ?? product.category}
                     </p>
                     <div className="mt-3 flex items-baseline gap-2">
-                      <span className="text-lg font-light text-[#1a1a1a]">{product.price.toFixed(2)} TND</span>
+                      <span className="text-lg font-light text-[#f3ece2]">{product.price.toFixed(2)} TND</span>
                       {isOnSale && (
-                        <span className="text-xs text-[#5a5a5a] line-through">
+                        <span className="text-xs text-[#7d716a] line-through">
                           {product.originalPrice?.toFixed(2)} TND
                         </span>
                       )}
@@ -558,10 +584,10 @@ export default function HomePage() {
                       disabled={product.stock <= 0}
                       className={`mt-4 w-full py-2.5 rounded-xl text-[11px] uppercase tracking-[0.2em] font-medium transition ${
                         justAdded
-                          ? "bg-[#b89a6b] text-white"
+                          ? "bg-[#d4af6a] text-[#160f13]"
                           : product.stock > 0
-                          ? "bg-[#1e3a5f] text-white hover:bg-[#162b47]"
-                          : "bg-[#e0dcd6] text-[#5a5a5a] cursor-not-allowed"
+                          ? "bg-[#c8264f] text-[#fbf3ee] hover:bg-[#a31d40]"
+                          : "bg-[#2a2226] text-[#7d716a] cursor-not-allowed"
                       }`}
                     >
                       {justAdded ? "Ajouté ✓" : product.stock > 0 ? "Ajouter au panier" : "Rupture de stock"}
@@ -584,15 +610,16 @@ export default function HomePage() {
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#faf8f6] via-[#faf8f6]/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0b0d] via-[#0e0b0d]/20 to-transparent" />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 80% 10%, rgba(200,38,79,0.18), transparent 55%)" }} />
         <div className="relative z-10 h-full max-w-7xl mx-auto px-6 flex flex-col justify-end pb-20">
           <Reveal>
-            <p className="font-accent normal-case text-2xl md:text-4xl max-w-xl leading-snug text-[#1a1a1a]">
+            <p className="font-accent normal-case text-2xl md:text-4xl max-w-xl leading-snug text-[#f3ece2]">
               « Une pièce bien coupée ne se remarque pas — elle se ressent. »
             </p>
             <Link
               href="/client/catalog"
-              className="mt-8 inline-flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-[#b89a6b] hover:text-[#1a1a1a] transition group"
+              className="mt-8 inline-flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-[#d4af6a] hover:text-[#c8264f] transition group"
             >
               Voir le lookbook complet
               <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
@@ -602,16 +629,16 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* CHIFFRES (fond clair, texte foncé)                            */}
+      {/* CHIFFRES                                                       */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <section className="bg-[#f0ede8] text-[#1a1a1a]">
+      <section className="bg-[#150f12] text-[#f3ece2]">
         <div className="max-w-7xl mx-auto px-6 py-24 grid sm:grid-cols-3 gap-12">
           {STATS.map((stat, i) => (
             <Reveal key={stat.label} delay={i * 100} className="text-center sm:text-left">
               <p className="font-display text-5xl md:text-6xl">
-                {stat.value}<span className="font-accent normal-case text-3xl md:text-4xl text-[#b89a6b]">{stat.suffix}</span>
+                {stat.value}<span className="font-accent normal-case text-3xl md:text-4xl text-[#c8264f]">{stat.suffix}</span>
               </p>
-              <p className="mt-3 text-sm text-[#5a5a5a] font-light font-body max-w-[220px] mx-auto sm:mx-0">
+              <p className="mt-3 text-sm text-[#a89a92] font-light font-body max-w-[220px] mx-auto sm:mx-0">
                 {stat.label}
               </p>
             </Reveal>
@@ -622,27 +649,28 @@ export default function HomePage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* FABRICATION                                                   */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <section className="border-t border-[#e0dcd6]">
+      <section className="border-t border-[#2a2226]">
         <div className="max-w-7xl mx-auto px-6 py-28">
           <Reveal>
-            <span className="text-[11px] uppercase tracking-[0.4em] text-[#b89a6b] font-light">
+            <span className="text-[11px] uppercase tracking-[0.4em] text-[#d4af6a] font-light">
               De l&apos;idée au vêtement
             </span>
-            <h2 className="font-display uppercase text-3xl md:text-4xl mt-2 mb-14 text-[#1a1a1a]">
+            <h2 className="font-display uppercase text-3xl md:text-4xl mt-2 mb-14 text-[#f3ece2]">
               Trois étapes, une pièce
             </h2>
           </Reveal>
 
           <div className="grid md:grid-cols-3 gap-8">
             {CRAFT_STEPS.map((step, i) => (
-              <Reveal key={step.label} delay={i * 120} className="border-t border-[#b89a6b]/30 pt-6">
-                <span className="font-accent text-4xl text-[#b89a6b]">
+              <Reveal key={step.label} delay={i * 120} className="pt-6">
+                <StitchLine color={i === 1 ? "crimson" : "gold"} className="mb-5 w-full" />
+                <span className="font-accent text-4xl text-[#c8264f]">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h3 className="text-lg font-medium uppercase tracking-[0.15em] mt-4 mb-3 text-[#1a1a1a]">
+                <h3 className="text-lg font-medium uppercase tracking-[0.15em] mt-4 mb-3 text-[#f3ece2]">
                   {step.label}
                 </h3>
-                <p className="text-sm text-[#5a5a5a] font-light leading-relaxed font-body">
+                <p className="text-sm text-[#a89a92] font-light leading-relaxed font-body">
                   {step.text}
                 </p>
               </Reveal>
@@ -652,15 +680,15 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* NEWSLETTER (fond clair)                                      */}
+      {/* NEWSLETTER                                                    */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <section className="border-t border-[#e0dcd6] bg-[#f0ede8]">
+      <section className="border-t border-[#2a2226] bg-[#150f12]">
         <div className="max-w-3xl mx-auto px-6 py-24 text-center">
           <Reveal>
-            <h2 className="font-display uppercase text-3xl md:text-4xl mb-4 text-[#1a1a1a]">
-              Restez <span className="font-accent normal-case text-[#b89a6b]">informé</span>
+            <h2 className="font-display uppercase text-3xl md:text-4xl mb-4 text-[#f3ece2]">
+              Restez <span className="font-accent normal-case text-[#c8264f]">informé</span>
             </h2>
-            <p className="text-sm text-[#5a5a5a] font-light mb-8 font-body">
+            <p className="text-sm text-[#a89a92] font-light mb-8 font-body">
               Accès prioritaire aux nouvelles collections et aux ventes privées.
             </p>
             <form
@@ -675,11 +703,11 @@ export default function HomePage() {
                 type="email"
                 required
                 placeholder="Votre email"
-                className="flex-1 bg-white border border-[#e0dcd6] rounded-full py-3.5 px-6 text-sm text-[#1a1a1a] placeholder:text-[#5a5a5a] focus:outline-none focus:border-[#b89a6b]/50 transition"
+                className="flex-1 bg-[#1c1418] border border-[#2a2226] rounded-full py-3.5 px-6 text-sm text-[#f3ece2] placeholder:text-[#7d716a] focus:outline-none focus:border-[#d4af6a]/60 transition"
               />
               <button
                 type="submit"
-                className="px-8 py-3.5 bg-[#1e3a5f] text-white text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#162b47] transition"
+                className="px-8 py-3.5 bg-[#c8264f] text-[#fbf3ee] text-xs uppercase tracking-[0.25em] font-medium rounded-full hover:bg-[#a31d40] transition"
               >
                 S&apos;inscrire
               </button>
@@ -689,13 +717,13 @@ export default function HomePage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* FOOTER (clair)                                                */}
+      {/* FOOTER                                                        */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-[#e0dcd6] pt-16 pb-10 px-6 bg-white">
-        <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-[#e0dcd6]">
+      <footer className="border-t border-[#2a2226] pt-16 pb-10 px-6 bg-[#0e0b0d]">
+        <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-[#2a2226]">
           <div>
-            <span className="text-lg font-light tracking-[0.2em] text-[#1a1a1a]">IRNAS</span>
-            <p className="mt-4 text-xs text-[#5a5a5a] font-light leading-relaxed max-w-[220px] font-body">
+            <span className="text-lg font-light tracking-[0.2em] text-[#f3ece2]">IRNAS</span>
+            <p className="mt-4 text-xs text-[#a89a92] font-light leading-relaxed max-w-[220px] font-body">
               Fabrication en petites séries, pensée pour durer bien au-delà d&apos;une saison.
             </p>
           </div>
@@ -704,11 +732,11 @@ export default function HomePage() {
           <FooterCol title="Maison" links={["Notre histoire", "Savoir-faire", "Presse", "Carrières"]} />
         </div>
         <div className="max-w-7xl mx-auto pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] text-[#5a5a5a] tracking-widest font-light">© 2020 IRNAS — Tous droits réservés</p>
-          <div className="flex items-center gap-6 text-[10px] text-[#5a5a5a] tracking-widest font-light uppercase">
-            <Link href="#" className="hover:text-[#b89a6b] transition">Mentions légales</Link>
-            <Link href="#" className="hover:text-[#b89a6b] transition">Confidentialité</Link>
-            <Link href="#" className="hover:text-[#b89a6b] transition">CGV</Link>
+          <p className="text-[10px] text-[#7d716a] tracking-widest font-light">© 2020 IRNAS — Tous droits réservés</p>
+          <div className="flex items-center gap-6 text-[10px] text-[#7d716a] tracking-widest font-light uppercase">
+            <Link href="#" className="hover:text-[#d4af6a] transition">Mentions légales</Link>
+            <Link href="#" className="hover:text-[#d4af6a] transition">Confidentialité</Link>
+            <Link href="#" className="hover:text-[#d4af6a] transition">CGV</Link>
           </div>
         </div>
       </footer>
@@ -716,15 +744,15 @@ export default function HomePage() {
   );
 }
 
-// ─── Footer column (adapté au clair) ────────────────────────────────
+// ─── Footer column ────────────────────────────────────────────────
 function FooterCol({ title, links }: { title: string; links: string[] }) {
   return (
     <div>
-      <h4 className="text-[11px] uppercase tracking-[0.3em] text-[#5a5a5a] font-light mb-4">{title}</h4>
+      <h4 className="text-[11px] uppercase tracking-[0.3em] text-[#7d716a] font-light mb-4">{title}</h4>
       <ul className="space-y-2.5">
         {links.map(link => (
           <li key={link}>
-            <Link href="#" className="text-sm text-[#5a5a5a] hover:text-[#1a1a1a] transition font-body">
+            <Link href="#" className="text-sm text-[#a89a92] hover:text-[#f3ece2] transition font-body">
               {link}
             </Link>
           </li>
@@ -734,14 +762,14 @@ function FooterCol({ title, links }: { title: string; links: string[] }) {
   );
 }
 
-// ─── Category tile (fond clair) ──────────────────────────────────────
+// ─── Category tile ──────────────────────────────────────────────
 function CategoryTile({
   href, label, image, className = "", big = false,
 }: { href: string; label: string; image: string; className?: string; big?: boolean }) {
   return (
     <Link
       href={href}
-      className={`group relative overflow-hidden rounded-3xl border border-[#e0dcd6] hover:border-[#b89a6b]/70 transition bg-[#f5f2ed] ${className}`}
+      className={`group relative overflow-hidden rounded-3xl border border-[#2a2226] hover:border-[#d4af6a]/60 transition bg-[#150f12] ${className}`}
     >
       <Image
         src={image}
@@ -749,12 +777,12 @@ function CategoryTile({
         fill
         className="object-cover transition-transform duration-700 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#faf8f6] via-[#faf8f6]/10 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0e0b0d] via-[#0e0b0d]/15 to-transparent" />
       <div className="absolute bottom-0 left-0 p-6 flex items-center gap-2">
-        <span className={`font-display uppercase tracking-tight text-[#1a1a1a] ${big ? "text-3xl md:text-4xl" : "text-xl md:text-2xl"}`}>
+        <span className={`font-display uppercase tracking-tight text-[#f3ece2] ${big ? "text-3xl md:text-4xl" : "text-xl md:text-2xl"}`}>
           {label}
         </span>
-        <ArrowUpRight className="w-5 h-5 text-[#1a1a1a] opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition" />
+        <ArrowUpRight className="w-5 h-5 text-[#d4af6a] opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition" />
       </div>
     </Link>
   );
