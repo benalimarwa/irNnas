@@ -11,6 +11,18 @@ async function getInternalUserId(clerkId: string) {
   return user?.id ?? null;
 }
 
+// Sélection produit réutilisée partout pour rester cohérente
+const productSelect = {
+  id: true,
+  name: true,
+  price: true,
+  images: true,
+  stock: true,
+  category: {
+    select: { name: true },
+  },
+} as const;
+
 // GET - Récupérer le panier
 export async function GET() {
   try {
@@ -31,14 +43,7 @@ export async function GET() {
         items: {
           include: {
             product: {
-              select: {
-                id: true,
-                name: true,
-                price: true,
-                images: true,
-                stock: true,
-                category: true,
-              },
+              select: productSelect,
             },
           },
         },
@@ -119,7 +124,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ success: true, message: "Ajouté au panier" });
+    // On renvoie le panier à jour pour éviter tout état désynchronisé côté client
+    const updatedCart = await prisma.cart.findUnique({
+      where: { userId: internalUserId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: productSelect,
+            },
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ success: true, message: "Ajouté au panier", cart: updatedCart });
   } catch (error) {
     console.error("[POST /api/cart]", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
@@ -187,14 +206,7 @@ export async function PATCH(req: NextRequest) {
         items: {
           include: {
             product: {
-              select: {
-                id: true,
-                name: true,
-                price: true,
-                images: true,
-                stock: true,
-                category: true,
-              },
+              select: productSelect,
             },
           },
         },
@@ -250,14 +262,7 @@ export async function DELETE(req: NextRequest) {
         items: {
           include: {
             product: {
-              select: {
-                id: true,
-                name: true,
-                price: true,
-                images: true,
-                stock: true,
-                category: true,
-              },
+              select: productSelect,
             },
           },
         },
