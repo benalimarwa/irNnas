@@ -23,22 +23,22 @@ type CategoryProductData = {
   category: string;
   products: number;
   fill: string;
-  [key: string]: any;
 };
 
 function generateUniqueColors(count: number): string[] {
   const baseColors = [
-    "#EA580C", // Orange vif
-    "#C2410C", // Orange foncé (marron)
-    "#F59E0B", // Jaune/Amber
-    "#B45309", // Marron doré
-    "#FB923C", // Orange clair
-    "#D97706", // Jaune foncé
-    "#F97316", // Orange intense
-    "#92400E", // Marron profond
+    "#EA580C", "#C2410C", "#F59E0B", "#B45309",
+    "#FB923C", "#D97706", "#F97316", "#92400E",
   ];
-
   return Array.from({ length: count }, (_, i) => baseColors[i % baseColors.length]);
+}
+
+// ⚠️ Normalise n'importe quelle forme de "category" (string OU objet Prisma)
+// en string sûre. C'est ce garde-fou qui manquait et qui causait le crash.
+function normalizeCategory(raw: any): string {
+  if (typeof raw === "string") return raw;
+  if (raw && typeof raw === "object" && typeof raw.name === "string") return raw.name;
+  return "Inconnu";
 }
 
 export function CategoryProductChart() {
@@ -46,39 +46,44 @@ export function CategoryProductChart() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // components/CategoryProductChart.tsx
-useEffect(() => {
-  async function fetchCategoryProducts() {
-    try {
-      const response = await fetch("/api/admin/dashboard/catparprod");
-      if (!response.ok) throw new Error("Erreur réseau");
+  useEffect(() => {
+    async function fetchCategoryProducts() {
+      try {
+        const response = await fetch("/api/admin/dashboard/catparprod");
+        if (!response.ok) throw new Error("Erreur réseau");
 
-      const data: { category: string; products: number }[] = await response.json();
-      
-      const colors = generateUniqueColors(data.length);
-      
-      const coloredData = data.map((item, index) => ({
-        ...item,
-        fill: colors[index],
-      }));
+        const data: any[] = await response.json();
 
-      setChartData(coloredData);
-    } catch (err) {
-      console.error(err);
-      setError("Impossible de charger les catégories");
-      // Fallback visuel
-      setChartData([
-        { category: "Homme", products: 45, fill: "#EA580C" },
-        { category: "Femme", products: 38, fill: "#C2410C" },
-        { category: "Unisexe", products: 27, fill: "#F59E0B" },
-      ]);
-    } finally {
-      setIsLoading(false);
+        // Normalisation défensive : quelle que soit la forme reçue,
+        // on garantit que "category" est toujours une string avant
+        // d'atteindre le composant Pie / Recharts.
+        const safeData = (Array.isArray(data) ? data : []).map((item) => ({
+          category: normalizeCategory(item.category),
+          products: Number(item.products) || 0,
+        }));
+
+        const colors = generateUniqueColors(safeData.length);
+        const coloredData = safeData.map((item, index) => ({
+          ...item,
+          fill: colors[index],
+        }));
+
+        setChartData(coloredData);
+      } catch (err) {
+        console.error(err);
+        setError("Impossible de charger les catégories");
+        setChartData([
+          { category: "Homme", products: 45, fill: "#EA580C" },
+          { category: "Femme", products: 38, fill: "#C2410C" },
+          { category: "Unisexe", products: 27, fill: "#F59E0B" },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }
 
-  fetchCategoryProducts();
-}, []);
+    fetchCategoryProducts();
+  }, []);
 
   if (isLoading) {
     return (
@@ -93,7 +98,7 @@ useEffect(() => {
     );
   }
 
-  if (error) {
+  if (error && chartData.length === 0) {
     return (
       <Card className="shadow-xl border-none bg-white dark:bg-gray-800">
         <CardContent className="text-center py-10 text-red-600">{error}</CardContent>
@@ -116,20 +121,25 @@ useEffect(() => {
       <CardContent className="flex-1 pb-0">
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
-            <Pie
-              data={chartData}
-              dataKey="products"
-              nameKey="category"
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              labelLine={true}
-            >
+           <Pie
+  data={chartData}
+  dataKey="products"
+  nameKey="category"
+  cx="50%"
+  cy="50%"
+  outerRadius={100}
+  label={(props: any) => {
+    const { category, percent } = props;
+    const pct = typeof percent === "number" ? percent : 0;
+    return `${category} ${(pct * 100).toFixed(0)}%`;
+  }}
+  labelLine={true}
+>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip formatter={(value: number, name: string) => [value, name]} />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>
@@ -140,8 +150,8 @@ useEffect(() => {
         </div>
 
         <div className="flex flex-wrap gap-4">
-          {chartData.map((item) => (
-            <div key={item.category} className="flex items-center gap-2">
+          {chartData.map((item, i) => (
+            <div key={`${item.category}-${i}`} className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.fill }} />
               <span>
                 {item.category}: <span className="font-bold">{item.products}</span>
