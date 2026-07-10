@@ -14,6 +14,9 @@ const isPublicRoute = createRouteMatcher([
   "/client/panier(.*)",
   "/client/checkout(.*)",
   "/client/orders/(.*)",
+  "/api/cart(.*)",                 // 👈 ajout : panier invité (chargement au checkout)
+  "/api/auth/check-guest-email",   // 👈 ajout : LE fix qui corrige l'erreur affichée
+  "/api/order-snapshot",  
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
