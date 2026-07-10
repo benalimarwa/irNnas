@@ -407,7 +407,7 @@ export default function Navbar() {
                   >
                     <span className="flex items-center gap-4">
                       <Tag className="w-5 h-5" />
-                      Genres
+                      Catégories
                     </span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${mobileCatOpen ? "rotate-180" : ""}`} />
                   </button>
