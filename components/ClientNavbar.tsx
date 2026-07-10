@@ -55,12 +55,12 @@ export default function Navbar() {
   const [searchQuery,  setSearchQuery]  = useState("");
   const [isDark,       setIsDark]       = useState(true);
 
-  // Catégories / Genres (navigation à deux niveaux)
+  // Genres / Catégories (navigation à deux niveaux, GENRE d'abord)
   const [products,      setProducts]      = useState<ProductLite[]>([]);
   const [catMenuOpen,   setCatMenuOpen]   = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null); // desktop: nom de catégorie en cours de survol/click
+  const [activeGender, setActiveGender]   = useState<string | null>(null); // desktop: genre en cours de survol/click
   const [mobileCatOpen, setMobileCatOpen] = useState(false);
-  const [mobileActiveCat, setMobileActiveCat] = useState<string | null>(null); // mobile: catégorie ouverte dans l'accordéon
+  const [mobileActiveGender, setMobileActiveGender] = useState<string | null>(null); // mobile: genre ouvert dans l'accordéon
 
   const catMenuRef = useRef<HTMLDivElement>(null);
 
@@ -74,7 +74,7 @@ export default function Navbar() {
       .catch(() => {});
   }, []);
 
-  // Charger les produits (pour dériver catégories + genres disponibles par catégorie)
+  // Charger les produits (pour dériver genres + catégories disponibles par genre)
   // NB: l'API /api/products doit inclure la relation category (ex: include: { category: true })
   useEffect(() => {
     fetch("/api/products")
@@ -83,39 +83,41 @@ export default function Navbar() {
       .catch(() => {});
   }, []);
 
-  // Catégories uniques dérivées du nom réel en DB (Category.name)
-  const categoryOptions: CategoryOption[] = useMemo(() => {
-    const names = Array.from(
-      new Set(products.map(p => p.category?.name).filter((n): n is string => Boolean(n)))
+  // Genres uniques dérivés des produits (enum Gender)
+  const genderOptions: CategoryOption[] = useMemo(() => {
+    const gens = Array.from(
+      new Set(products.map(p => p.gender).filter((g): g is string => Boolean(g)))
     );
-    return names.map(name => ({ value: name, label: CATEGORY_LABELS[name] ?? name }));
+    return gens.map(g => ({ value: g, label: GENDER_LABELS[g] ?? g }));
   }, [products]);
 
-  // Genres disponibles pour la catégorie actuellement ouverte (desktop)
-  const gendersForActiveCategory: CategoryOption[] = useMemo(() => {
-    if (!activeCategory) return [];
-    const gens = Array.from(
+  // Catégories disponibles pour le genre actuellement ouvert (desktop)
+  const categoriesForActiveGender: CategoryOption[] = useMemo(() => {
+    if (!activeGender) return [];
+    const names = Array.from(
       new Set(
         products
-          .filter(p => p.category?.name === activeCategory)
-          .map(p => p.gender)
+          .filter(p => p.gender === activeGender)
+          .map(p => p.category?.name)
+          .filter((n): n is string => Boolean(n))
       )
-    ).filter(Boolean);
-    return gens.map(g => ({ value: g, label: GENDER_LABELS[g] ?? g }));
-  }, [products, activeCategory]);
+    );
+    return names.map(name => ({ value: name, label: CATEGORY_LABELS[name] ?? name }));
+  }, [products, activeGender]);
 
-  // Genres disponibles pour la catégorie actuellement ouverte (mobile)
-  const gendersForMobileActiveCategory: CategoryOption[] = useMemo(() => {
-    if (!mobileActiveCat) return [];
-    const gens = Array.from(
+  // Catégories disponibles pour le genre actuellement ouvert (mobile)
+  const categoriesForMobileActiveGender: CategoryOption[] = useMemo(() => {
+    if (!mobileActiveGender) return [];
+    const names = Array.from(
       new Set(
         products
-          .filter(p => p.category?.name === mobileActiveCat)
-          .map(p => p.gender)
+          .filter(p => p.gender === mobileActiveGender)
+          .map(p => p.category?.name)
+          .filter((n): n is string => Boolean(n))
       )
-    ).filter(Boolean);
-    return gens.map(g => ({ value: g, label: GENDER_LABELS[g] ?? g }));
-  }, [products, mobileActiveCat]);
+    );
+    return names.map(name => ({ value: name, label: CATEGORY_LABELS[name] ?? name }));
+  }, [products, mobileActiveGender]);
 
   // Theme
   useEffect(() => {
@@ -137,7 +139,7 @@ export default function Navbar() {
     const handler = (e: MouseEvent) => {
       if (catMenuRef.current && !catMenuRef.current.contains(e.target as Node)) {
         setCatMenuOpen(false);
-        setActiveCategory(null);
+        setActiveGender(null);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -150,48 +152,46 @@ export default function Navbar() {
     router.push("/client/panier");
   };
 
-  // Étape 1 (desktop) : clic sur une catégorie → affiche les genres
-  const openCategoryGenders = (value: string) => {
-    setActiveCategory(value);
+  // Étape 1 (desktop) : clic sur un genre → affiche les catégories
+  const openGenderCategories = (value: string) => {
+    setActiveGender(value);
   };
 
-  const backToCategories = () => {
-    setActiveCategory(null);
+  const backToGenders = () => {
+    setActiveGender(null);
   };
 
-  // Étape 2 (desktop) : clic sur un genre → redirige avec les deux filtres
-  // NB: on continue d'envoyer le nom de catégorie (slug) dans l'URL, pas categoryId,
-  // pour rester compatible avec le parsing existant de la page catalogue.
-  const goToCategoryGender = (category: string, gender: string) => {
+  // Étape 2 (desktop) : clic sur une catégorie → redirige avec les deux filtres
+  const goToGenderCategory = (gender: string, category: string) => {
     setCatMenuOpen(false);
-    setActiveCategory(null);
+    setActiveGender(null);
     router.push(`/client/catalog?category=${encodeURIComponent(category)}&gender=${encodeURIComponent(gender)}`);
   };
 
-  // Voir toute la catégorie sans filtre de genre
-  const goToCategoryOnly = (category: string) => {
+  // Voir tout le genre sans filtre de catégorie
+  const goToGenderOnly = (gender: string) => {
     setCatMenuOpen(false);
-    setActiveCategory(null);
-    router.push(`/client/catalog?category=${encodeURIComponent(category)}`);
+    setActiveGender(null);
+    router.push(`/client/catalog?gender=${encodeURIComponent(gender)}`);
   };
 
   // Mobile : mêmes actions
-  const toggleMobileCategory = (value: string) => {
-    setMobileActiveCat(prev => (prev === value ? null : value));
+  const toggleMobileGender = (value: string) => {
+    setMobileActiveGender(prev => (prev === value ? null : value));
   };
 
-  const goToCategoryGenderMobile = (category: string, gender: string) => {
+  const goToGenderCategoryMobile = (gender: string, category: string) => {
     setMobileCatOpen(false);
-    setMobileActiveCat(null);
+    setMobileActiveGender(null);
     setMobileOpen(false);
     router.push(`/client/catalog?category=${encodeURIComponent(category)}&gender=${encodeURIComponent(gender)}`);
   };
 
-  const goToCategoryOnlyMobile = (category: string) => {
+  const goToGenderOnlyMobile = (gender: string) => {
     setMobileCatOpen(false);
-    setMobileActiveCat(null);
+    setMobileActiveGender(null);
     setMobileOpen(false);
-    router.push(`/client/catalog?category=${encodeURIComponent(category)}`);
+    router.push(`/client/catalog?gender=${encodeURIComponent(gender)}`);
   };
 
   return (
@@ -243,10 +243,10 @@ export default function Navbar() {
         </Link>
       ))}
 
-      {categoryOptions.length > 0 && (
+      {genderOptions.length > 0 && (
         <div className="relative" ref={catMenuRef}>
           <button
-            onClick={() => { setCatMenuOpen(v => !v); setActiveCategory(null); }}
+            onClick={() => { setCatMenuOpen(v => !v); setActiveGender(null); }}
             className={`flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-[0.2em] font-light border-b transition pb-0.5 whitespace-nowrap ${
               catMenuOpen
                 ? "text-[#3b82f6] border-[#3b82f6]/40"
@@ -254,21 +254,21 @@ export default function Navbar() {
             }`}
           >
             <Tag className="w-4 h-4" />
-            Catégories
+            Genres
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${catMenuOpen ? "rotate-180" : ""}`} />
           </button>
 
           {catMenuOpen && (
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 bg-[#0f1f33] border border-[#1e3a5f] rounded-xl shadow-2xl overflow-hidden">
-              {activeCategory === null ? (
+              {activeGender === null ? (
                 <ul className="py-2">
-                  {categoryOptions.map(cat => (
-                    <li key={cat.value}>
+                  {genderOptions.map(g => (
+                    <li key={g.value}>
                       <button
-                        onClick={() => openCategoryGenders(cat.value)}
+                        onClick={() => openGenderCategories(g.value)}
                         className="w-full flex items-center justify-between px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-light text-[#8aabca] hover:text-[#3b82f6] hover:bg-[#3b82f6]/5 transition"
                       >
-                        {cat.label}
+                        {g.label}
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </li>
@@ -277,25 +277,25 @@ export default function Navbar() {
               ) : (
                 <div className="py-2">
                   <button
-                    onClick={backToCategories}
+                    onClick={backToGenders}
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-light text-[#4a6a8a] hover:text-[#3b82f6] transition border-b border-[#1e3a5f] mb-1"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
                     Retour
                   </button>
                   <button
-                    onClick={() => goToCategoryOnly(activeCategory)}
+                    onClick={() => goToGenderOnly(activeGender)}
                     className="w-full text-left px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-light text-[#60a5fa] hover:text-[#3b82f6] transition"
                   >
-                    Tous ({CATEGORY_LABELS[activeCategory] ?? activeCategory})
+                    Tous ({GENDER_LABELS[activeGender] ?? activeGender})
                   </button>
-                  {gendersForActiveCategory.map(g => (
+                  {categoriesForActiveGender.map(cat => (
                     <button
-                      key={g.value}
-                      onClick={() => goToCategoryGender(activeCategory, g.value)}
+                      key={cat.value}
+                      onClick={() => goToGenderCategory(activeGender, cat.value)}
                       className="w-full text-left px-4 py-2.5 text-xs uppercase tracking-[0.15em] font-light text-[#8aabca] hover:text-[#3b82f6] hover:bg-[#3b82f6]/5 transition"
                     >
-                      {g.label}
+                      {cat.label}
                     </button>
                   ))}
                 </div>
@@ -379,7 +379,7 @@ export default function Navbar() {
               <ChevronRight className="w-4 h-4 text-[#4a6a8a] ml-auto" />
             </Link>
 
-            {/* Links + Catégories */}
+            {/* Links + Genres */}
             <ul className="flex-1 overflow-y-auto mt-4 divide-y divide-[#1e3a5f]">
               {MENU_LINKS.map(({ label, href, icon: Icon }) => (
                 <li key={href}>
@@ -398,8 +398,8 @@ export default function Navbar() {
                 </li>
               ))}
 
-              {/* Section catégories (accordéon à deux niveaux) */}
-              {categoryOptions.length > 0 && (
+              {/* Section genres (accordéon à deux niveaux) */}
+              {genderOptions.length > 0 && (
                 <li>
                   <button
                     onClick={() => setMobileCatOpen(v => !v)}
@@ -407,40 +407,40 @@ export default function Navbar() {
                   >
                     <span className="flex items-center gap-4">
                       <Tag className="w-5 h-5" />
-                      Catégories
+                      Genres
                     </span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${mobileCatOpen ? "rotate-180" : ""}`} />
                   </button>
 
                   {mobileCatOpen && (
                     <ul className="bg-[#0f1f33]">
-                      {categoryOptions.map(cat => (
-                        <li key={cat.value}>
+                      {genderOptions.map(g => (
+                        <li key={g.value}>
                           <button
-                            onClick={() => toggleMobileCategory(cat.value)}
+                            onClick={() => toggleMobileGender(g.value)}
                             className="w-full flex items-center justify-between pl-14 pr-6 py-3 text-xs uppercase tracking-[0.15em] font-light text-[#8aabca] hover:text-[#3b82f6] hover:bg-[#3b82f6]/5 transition"
                           >
-                            {cat.label}
-                            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${mobileActiveCat === cat.value ? "rotate-180" : ""}`} />
+                            {g.label}
+                            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${mobileActiveGender === g.value ? "rotate-180" : ""}`} />
                           </button>
 
-                          {mobileActiveCat === cat.value && (
+                          {mobileActiveGender === g.value && (
                             <ul className="bg-[#0a1628]">
                               <li>
                                 <button
-                                  onClick={() => goToCategoryOnlyMobile(cat.value)}
+                                  onClick={() => goToGenderOnlyMobile(g.value)}
                                   className="w-full text-left pl-20 pr-6 py-2.5 text-[11px] uppercase tracking-[0.15em] font-light text-[#60a5fa] hover:text-[#3b82f6] transition"
                                 >
-                                  Tous ({cat.label})
+                                  Tous ({g.label})
                                 </button>
                               </li>
-                              {gendersForMobileActiveCategory.map(g => (
-                                <li key={g.value}>
+                              {categoriesForMobileActiveGender.map(cat => (
+                                <li key={cat.value}>
                                   <button
-                                    onClick={() => goToCategoryGenderMobile(cat.value, g.value)}
+                                    onClick={() => goToGenderCategoryMobile(g.value, cat.value)}
                                     className="w-full text-left pl-20 pr-6 py-2.5 text-[11px] uppercase tracking-[0.15em] font-light text-[#8aabca] hover:text-[#3b82f6] transition"
                                   >
-                                    {g.label}
+                                    {cat.label}
                                   </button>
                                 </li>
                               ))}
