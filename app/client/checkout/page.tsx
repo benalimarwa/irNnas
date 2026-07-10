@@ -90,39 +90,166 @@ const COUNTRIES = [
 ];
 
 const TUNISIA_DATA: Record<string, string[]> = {
+  // ==============================================
+  // GOUVERNORATS DU NORD
+  // ==============================================
 
-  "Ariana":    ["Ariana Ville","Ettadhamen","Ghazela","Kalâat el-Andalous","Mnihla","Raoued","Sidi Thabet"],
+  "Tunis": [
+    "Bab Bhar", "Bab Souika", "Carthage", "El Kram",
+    "El Menzah", "La Goulette", "La Marsa", "Le Bardo",
+    "Sidi Bou Saïd", "El Omrane", "Ettahrir", "El Kabaria",
+    "Sidi Hassine", "El Ouardia", "Hammam Lif"
+  ],
 
-  "Ben Arous": ["Ben Arous","Bou Mhel el-Bassatine","El Mourouj","Ezzahra","Fouchana","Hammam Chott","Hammam Lif","Mégrine","Radès"],
+  "Ariana": [
+    "Ariana Ville", "Ettadhamen", "Ghazela", "Kalâat el-Andalous",
+    "Mnihla", "Raoued", "Sidi Thabet", "La Soukra", "Ennasr"
+  ],
 
-  "Bizerte":   ["Bizerte Nord","Bizerte Sud","El Alia","Mateur","Menzel Bourguiba","Ras Jebel"],
+  "Ben Arous": [
+    "Ben Arous", "Bou Mhel el-Bassatine", "El Mourouj", "Ezzahra",
+    "Fouchana", "Hammam Chott", "Hammam Lif", "Mégrine", "Radès",
+    "Mornag", "Nouvelle Médine", "Charguia"
+  ],
 
-  "Gabès":     ["El Hamma","Gabès Médina","Gabès Ouest","Gabès Sud","Ghannouch","Mareth"],
+  "Manouba": [
+    "Borj El Amri", "Djedeida", "Douar Hicher", "Manouba",
+    "Oued Ellil", "Tébourba", "El Battan", "Mornaguia", "Den Den"
+  ],
 
-  "Gafsa":     ["El Guettar","Gafsa Nord","Gafsa Sud","Mdhilla","Métlaoui","Redeyef"],
+  "Bizerte": [
+    "Bizerte Nord", "Bizerte Sud", "El Alia", "Mateur",
+    "Menzel Bourguiba", "Ras Jebel", "Sejnane", "Tinja",
+    "Ghar El Melh", "Joumine", "Raf Raf", "Sidi Ali Mekki"
+  ],
 
-  "Kairouan":  ["Bouhajla","El Alaa","Haffouz","Kairouan Nord","Kairouan Sud"],
+  "Béja": [
+    "Amdoun", "Béja Nord", "Béja Sud", "Medjez el-Bab",
+    "Nefza", "Téboursouk", "Goubellat", "Testour", "Sidi Naceur"
+  ],
 
-  "Kasserine": ["Fériana","Kasserine Nord","Kasserine Sud","Sbeitla","Thala"],
+  "Jendouba": [
+    "Jendouba", "Ain Draham", "Tabarka", "Bou Salem",
+    "Oued Melliz", "Ghardimaou", "Fernana", "Beni Mtir",
+    "Boussalem"
+  ],
 
-  "Manouba":   ["Borj El Amri","Djedeida","Douar Hicher","Manouba","Oued Ellil","Tébourba"],
+  "Le Kef": [
+    "Le Kef", "Nebeur", "Kalaat Khasba", "Sakiet Sidi Youssef",
+    "El Ksour", "Dahmani", "Tajerouine", "Sers", "Kalaât Sinane",
+    "Jérissa", "Touiref"
+  ],
 
-  "Médenine":  ["Ben Gardane","Djerba — Ajim","Djerba — Houmt Souk","Djerba — Midoun","Médenine Nord","Zarzis"],
+  "Siliana": [
+    "Siliana", "Bou Arada", "Gaâfour", "El Krib",
+    "Rouhia", "Sidi Bou Ali", "Kesra", "Bargou",
+    "Kalaat El Andalous", "Ksar Mezouar"
+  ],
 
-  "Monastir":  ["Bekalta","Jammel","Ksar Hellal","Moknine","Monastir","Zeramdine"],
+  "Zaghouan": [
+    "El Fahs", "Zaghouan", "Zriba", "Bir Mcherga",
+    "Nadhour", "Saouaf"
+  ],
 
-  "Nabeul":    ["El Haouaria","Grombalia","Hammamet","Kelibia","Korba","Nabeul","Soliman","El Mida","Menzel Temime","Menzel Bouzelfa"],
+  // ==============================================
+  // GOUVERNORATS DU CENTRE
+  // ==============================================
 
-  "Sfax":      ["Agareb","Kerkennah","Mahres","Sakiet Eddaier","Sfax Est","Sfax Médina","Sfax Ouest"],
+  "Nabeul": [
+    // 28 municipalités officielles
+    "Nabeul", "Dar Chaâbane El Fehri", "Béni Khiar",
+    "El Mâamoura", "Somâa", "Korba", "Tazarka",
+    "Menzel Temime", "Menzel Horr", "El Mida", "Kélibia",
+    "Azmour", "Hammam Ghezez", "Dar Allouche", "El Haouaria",
+    "Grombalia", "Bou Argoub", "Hammamet", "Soliman",
+    "Takelsa", "Béni Khalled", "Menzel Bouzelfa",
+    "Ksar El Khobzi", "Mrezga", "El Batrou", "El Ghedir",
+    "Sidi Moussa", "Menzel El Habib"
+  ],
 
-  "Sousse":    ["Akouda","Bouficha","Enfidha","Hammam Sousse","Kalâa Kebira","Msaken","Sousse Médina"],
+  "Sousse": [
+    "Akouda", "Bouficha", "Enfidha", "Hammam Sousse",
+    "Kalâa Kebira", "Msaken", "Sousse Médina", "Sidi Bou Ali",
+    "Sousse Erriadh", "Sousse Jawhara", "Kalaa Sghira",
+    "Mornag", "Ezzouhour", "El Kantoui"
+  ],
 
-  "Tunis":     ["Bab Bhar","Bab Souika","Carthage","El Kram","El Menzah","La Goulette","La Marsa","Le Bardo","Sidi Bou Saïd"],
+  "Monastir": [
+    "Bekalta", "Jammel", "Ksar Hellal", "Moknine",
+    "Monastir", "Zeramdine", "Beni Hassane", "Ouerdanine",
+    "Sahline", "Sayada", "Teboulba", "Lemta", "Khniss",
+    "Amiret", "El Masdour", "Touza"
+  ],
 
-  "Zaghouan":  ["El Fahs","Zaghouan","Zriba"],
+  "Mahdia": [
+    "Mahdia", "Rejiche", "Bou Merdes", "El Jem",
+    "Chorbane", "Sidi Alouane", "Kerker", "Chebba",
+    "Melloulech", "Essouassi", "El Bradâa", "Sidi Zid",
+    "Soualem", "Ksar Essghir"
+  ],
 
-  "Béja":      ["Amdoun","Béja Nord","Béja Sud","Medjez el-Bab","Nefza","Téboursouk"],
+  "Sfax": [
+    "Agareb", "Kerkennah", "Mahres", "Sakiet Eddaier",
+    "Sfax Est", "Sfax Médina", "Sfax Ouest", "Sakiet Ezzit",
+    "Chihia", "El Ain", "Gremda", "Thyna", "Bir Ali",
+    "El Hencha", "Jebeniana", "Menzel Chaker"
+  ],
 
+  "Kairouan": [
+    "Bouhajla", "El Alaa", "Haffouz", "Kairouan Nord",
+    "Kairouan Sud", "Chebika", "Sidi Bou Ali", "Oueslatia",
+    "Nasrallah", "El Khit", "Hajeb El Ayoun"
+  ],
+
+  "Kasserine": [
+    "Fériana", "Kasserine Nord", "Kasserine Sud",
+    "Sbeitla", "Thala", "Hajeb", "Ezzouhour", "Sidi Bou Baker",
+    "El Ayoun", "Zelfa", "Jedelienne"
+  ],
+
+  "Sidi Bouzid": [
+    "Sidi Bouzid", "Meknassy", "Menzel Bouzaiane",
+    "Ouled Haffouz", "Jilma", "Souk Jedid", "Regueb",
+    "Bir Lahfay", "El Assa", "Essghaier", "Bou Hsina"
+  ],
+
+  // ==============================================
+  // GOUVERNORATS DU SUD
+  // ==============================================
+
+  "Gabès": [
+    "El Hamma", "Gabès Médina", "Gabès Ouest",
+    "Gabès Sud", "Ghannouch", "Mareth", "Menzel Habib",
+    "Matmata", "Nouvelle Matmata", "Chenini Nahal"
+  ],
+
+  "Médenine": [
+    "Ben Gardane", "Djerba — Ajim", "Djerba — Houmt Souk",
+    "Djerba — Midoun", "Médenine Nord", "Zarzis",
+    "Sidi Makhlouf", "Beni Kheddache", "Koutine"
+  ],
+
+  "Tataouine": [
+    "Tataouine", "Ghomrassen", "Dehiba", "Bir Lahmar",
+    "Oued Esseder", "Beni Mhira", "Remada", "Ksar Ouled Soltane",
+    "Chenini", "Douiret"
+  ],
+
+  "Gafsa": [
+    "El Guettar", "Gafsa Nord", "Gafsa Sud", "Mdhilla",
+    "Métlaoui", "Redeyef", "Sened", "Belkhir", "Zannouch"
+  ],
+
+  "Tozeur": [
+    "Tozeur", "Nefta", "Degache", "Tamerza", "Hazoua",
+    "El Hamma du Jerid", "Chott El Gharsa"
+  ],
+
+  "Kebili": [
+    "Kebili", "Douz", "El Faouar", "El Golaa",
+    "Souk Lahad", "Jemna", "Rjim Maatoug", "Bazma",
+    "Souk Lahad", "Menia", "Nouail"
+  ]
 };
 
 const GOVERNORATES = Object.keys(TUNISIA_DATA).sort();
@@ -415,42 +542,28 @@ function CheckoutInner() {
 
     setProcessing(true);
 
-    try {
+   try {
+  const checkRes = await fetch("/api/auth/check-guest-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: form.email.trim().toLowerCase() }),
+  });
 
-      const checkRes = await fetch("/api/auth/check-guest-email", {
+  if (!checkRes.ok) {
+    throw new Error(`check-guest-email a répondu ${checkRes.status}`);
+  }
 
-        method: "POST",
-
-        headers: { "Content-Type": "application/json" },
-
-        body: JSON.stringify({ email: form.email.trim().toLowerCase() }),
-
-      });
-
-      const checkData = await checkRes.json();
-
-      if (checkData.exists) {
-
-        // Email connu → flux invité classique (auto-login par ticket)
-
-        await submitOrder();
-
-      } else {
-
-        // Nouvel email → vérification par code obligatoire avant toute création
-
-        await startEmailVerification();
-
-      }
-
-    } catch {
-
-      showAlert("error", "Erreur réseau");
-
-      setProcessing(false);
-
-    }
-
+  const checkData = await checkRes.json();
+  if (checkData.exists) {
+    await submitOrder();
+  } else {
+    await startEmailVerification();
+  }
+} catch (err) {
+  console.error("[handleSubmit] check-guest-email failed:", err);
+  showAlert("error", "Erreur réseau lors de la vérification de l'email");
+  setProcessing(false);
+}
   };
 
   /* ── Start Clerk sign-up + send verification code ───────── */
