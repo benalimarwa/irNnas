@@ -4,9 +4,12 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useUser, useClerk } from "@clerk/nextjs";
+// Core 3 : la ressource "future" de @clerk/nextjs n'expose plus prepareEmailAddressVerification /
+// attemptEmailAddressVerification. On utilise donc le hook legacy, comme pour le ticket de connexion.
+import { useSignUp } from "@clerk/nextjs/legacy";
 import {
   ArrowLeft, ShoppingBag, Truck, Store, CheckCircle,
-  XCircle, AlertCircle, X, User, CreditCard, ChevronDown, Mail,
+  XCircle, AlertCircle, X, User, CreditCard, ChevronDown, Mail, ShieldCheck,
 } from "lucide-react";
 import Navbar from "@/components/ClientNavbar";
 
@@ -75,6 +78,7 @@ function CheckoutInner() {
   const searchParams = useSearchParams();
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk(); // if needed elsewhere
+  const { signUp, isLoaded: signUpLoaded } = useSignUp();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Cart — DB for auth users, localStorage for guests
@@ -98,6 +102,13 @@ function CheckoutInner() {
     email: "", firstName: "", lastName: "", phone: "",
     streetAddress: "", postalCode: "", notes: "", freeCity: "",
   });
+
+  /* ── Vérification email invité (Clerk) ──────────────────── */
+  const [showVerifyModal,  setShowVerifyModal]  = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verifying,        setVerifying]        = useState(false);
+  const [verifyError,      setVerifyError]      = useState("");
+  const [resending,        setResending]        = useState(false);
 
   /* ── Alert helper ───────────────────────────────────────── */
   const showAlert = (type: "success" | "error" | "warning", message: string) => {
@@ -212,108 +223,215 @@ function CheckoutInner() {
     return null;
   }
 
-  /* ── Submit ─────────────────────────────────────────────── */
-  const handleSubmit = async () => {
-  const error = validate();
-  if (error) { showAlert("warning", error); return; }
-
-  setProcessing(true);
-  try {
-    const city = addressCountry === "TN" ? selectedCity : form.freeCity;
-
-    const payload: Record<string, unknown> = {
-      deliveryMethod,
-      deliveryFee:  deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
-      customerInfo: {
-        email:       form.email.trim().toLowerCase(),
-        firstName:   form.firstName.trim(),
-        lastName:    form.lastName.trim(),
-        phone:       `${phoneCountry.dial} ${form.phone.trim()}`,
-        address:     deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
-        city:        deliveryMethod === "DELIVERY" ? (city || null) : null,
-        governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
-        postalCode:  deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
-        country:     deliveryMethod === "DELIVERY" ? addressCountry : null,
-        notes:       form.notes.trim() || null,
-      },
-    };
-
-    if (isGuest) {
-      payload.items = guestItems;
+  /* ── Vérifie si l'email existe déjà en base ─────────────── */
+  async function checkGuestEmailExists(email: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/auth/check-guest-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) return true; // en cas de doute, on ne bloque pas la commande
+      const data = await res.json();
+      return !!data.exists;
+    } catch {
+      return true;
     }
-
-    const res  = await fetch("/api/orders", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(payload),
-    });
-    const data = await res.json();
-
-   if (res.ok) {
-  const orderId = data.orderId;
-
-  // Construire la liste des produits pour le snapshot
-  const productsSnapshot = isGuest
-    ? guestItems.map(i => ({
-        productId: i.productId,
-        quantity: i.quantity,
-        size: i.size ?? null,
-      }))
-    : authItems.map(i => ({
-        productId: i.product.id,
-        name: i.product.name,
-        price: i.product.price,
-        quantity: i.quantity,
-        size: i.size ?? null,
-      }));
-
-  // Sauvegarde dans la table OrderSnapshot (nouvelle table, indépendante)
-  fetch("/api/order-snapshot", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      orderId,
-      customerEmail: form.email.trim().toLowerCase(),
-      customerFirstName: form.firstName.trim(),
-      customerLastName: form.lastName.trim(),
-      customerPhone: `${phoneCountry.dial} ${form.phone.trim()}`,
-      deliveryMethod,
-      deliveryFee: deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
-      total: isGuest ? null : total,
-      address: deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
-      city: deliveryMethod === "DELIVERY" ? (addressCountry === "TN" ? selectedCity : form.freeCity) || null : null,
-      governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
-      postalCode: deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
-      country: deliveryMethod === "DELIVERY" ? addressCountry : null,
-      notes: form.notes.trim() || null,
-      products: productsSnapshot,
-    }),
-  }).catch(err => console.error("Erreur sauvegarde snapshot:", err));
-
-  if (isGuest) {
-    guestCart.clear();
-    const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
-    guestOrders.push(orderId);
-    localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
   }
 
-      // Auto-login pour guest : redirige avec le ticket, GuestAutoSignIn s'occupe du reste
-      if (isGuest && data.signInToken) {
-        router.push(`/client/orders/${orderId}?ticket=${data.signInToken}`);
-        return;
+  /* ── Démarre la vérification par code Clerk ─────────────── */
+  async function startEmailVerification(): Promise<true | "skip" | false> {
+    if (!signUpLoaded || !signUp) return false;
+    try {
+      await signUp.create({ emailAddress: form.email.trim().toLowerCase() });
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      return true;
+    } catch (err: any) {
+      const code = err?.errors?.[0]?.code;
+      if (code === "form_identifier_exists") {
+        // Un compte Clerk existe déjà pour cet email (cas limite) → pas besoin de vérifier
+        return "skip";
+      }
+      console.error("Erreur envoi code de vérification:", err);
+      return false;
+    }
+  }
+
+  /* ── Clic sur "Confirmer la commande" ───────────────────── */
+  const handleConfirmClick = async () => {
+    const error = validate();
+    if (error) { showAlert("warning", error); return; }
+
+    // Utilisateur connecté → email déjà vérifié par Clerk, pas de code nécessaire
+    if (!isGuest) {
+      await submitOrder();
+      return;
+    }
+
+    setProcessing(true);
+    const email = form.email.trim().toLowerCase();
+    const alreadyExists = await checkGuestEmailExists(email);
+
+    if (alreadyExists) {
+      // Email déjà connu (compte existant) → pas de re-vérification
+      await submitOrder();
+      return;
+    }
+
+    // Nouvel email invité → vérification par code obligatoire
+    const started = await startEmailVerification();
+    setProcessing(false);
+
+    if (started === "skip") {
+      await submitOrder();
+      return;
+    }
+    if (started === true) {
+      setVerifyError("");
+      setVerificationCode("");
+      setShowVerifyModal(true);
+    } else {
+      showAlert("error", "Impossible d'envoyer le code de vérification. Réessayez.");
+    }
+  };
+
+  /* ── Vérifie le code saisi ───────────────────────────────── */
+  const handleVerifyCode = async () => {
+    if (!signUpLoaded || !signUp) return;
+    if (!verificationCode.trim()) {
+      setVerifyError("Veuillez saisir le code reçu par email");
+      return;
+    }
+    setVerifying(true);
+    setVerifyError("");
+    try {
+      const result = await signUp.attemptEmailAddressVerification({ code: verificationCode.trim() });
+      if (result.verifications.emailAddress?.status === "verified") {
+        setShowVerifyModal(false);
+        await submitOrder();
+      } else {
+        setVerifyError("Code incorrect. Veuillez réessayer.");
+      }
+    } catch (err: any) {
+      setVerifyError(err?.errors?.[0]?.message || "Code incorrect. Veuillez réessayer.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  /* ── Renvoie un nouveau code ─────────────────────────────── */
+  const handleResendCode = async () => {
+    if (!signUpLoaded || !signUp) return;
+    setResending(true);
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      showAlert("success", "Un nouveau code a été envoyé.");
+    } catch {
+      showAlert("error", "Impossible de renvoyer le code.");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  /* ── Soumission réelle de la commande ───────────────────── */
+  const submitOrder = async () => {
+    setProcessing(true);
+    try {
+      const city = addressCountry === "TN" ? selectedCity : form.freeCity;
+
+      const payload: Record<string, unknown> = {
+        deliveryMethod,
+        deliveryFee:  deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
+        customerInfo: {
+          email:       form.email.trim().toLowerCase(),
+          firstName:   form.firstName.trim(),
+          lastName:    form.lastName.trim(),
+          phone:       `${phoneCountry.dial} ${form.phone.trim()}`,
+          address:     deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
+          city:        deliveryMethod === "DELIVERY" ? (city || null) : null,
+          governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
+          postalCode:  deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
+          country:     deliveryMethod === "DELIVERY" ? addressCountry : null,
+          notes:       form.notes.trim() || null,
+        },
+      };
+
+      if (isGuest) {
+        payload.items = guestItems;
       }
 
-      showAlert("success", "Commande confirmée avec succès !");
-      setTimeout(() => router.push(`/client/orders/${orderId}`), 1200);
-    } else {
-      showAlert("error", data.error || "Erreur lors de la commande");
+      const res  = await fetch("/api/orders", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        const orderId = data.orderId;
+
+        // Construire la liste des produits pour le snapshot
+        const productsSnapshot = isGuest
+          ? guestItems.map(i => ({
+              productId: i.productId,
+              quantity: i.quantity,
+              size: i.size ?? null,
+            }))
+          : authItems.map(i => ({
+              productId: i.product.id,
+              name: i.product.name,
+              price: i.product.price,
+              quantity: i.quantity,
+              size: i.size ?? null,
+            }));
+
+        // Sauvegarde dans la table OrderSnapshot (nouvelle table, indépendante)
+        fetch("/api/order-snapshot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId,
+            customerEmail: form.email.trim().toLowerCase(),
+            customerFirstName: form.firstName.trim(),
+            customerLastName: form.lastName.trim(),
+            customerPhone: `${phoneCountry.dial} ${form.phone.trim()}`,
+            deliveryMethod,
+            deliveryFee: deliveryMethod === "DELIVERY" ? DELIVERY_FEE : 0,
+            total: isGuest ? null : total,
+            address: deliveryMethod === "DELIVERY" ? (form.streetAddress.trim() || null) : null,
+            city: deliveryMethod === "DELIVERY" ? (addressCountry === "TN" ? selectedCity : form.freeCity) || null : null,
+            governorate: deliveryMethod === "DELIVERY" && addressCountry === "TN" ? (selectedGov || null) : null,
+            postalCode: deliveryMethod === "DELIVERY" ? (form.postalCode.trim() || null) : null,
+            country: deliveryMethod === "DELIVERY" ? addressCountry : null,
+            notes: form.notes.trim() || null,
+            products: productsSnapshot,
+          }),
+        }).catch(err => console.error("Erreur sauvegarde snapshot:", err));
+
+        if (isGuest) {
+          guestCart.clear();
+          const guestOrders = JSON.parse(localStorage.getItem("irnas_guest_orders") || "[]");
+          guestOrders.push(orderId);
+          localStorage.setItem("irnas_guest_orders", JSON.stringify(guestOrders));
+        }
+
+        // Auto-login pour guest : redirige avec le ticket, GuestAutoSignIn s'occupe du reste
+        if (isGuest && data.signInToken) {
+          router.push(`/client/orders/${orderId}?ticket=${data.signInToken}`);
+          return;
+        }
+
+        showAlert("success", "Commande confirmée avec succès !");
+        setTimeout(() => router.push(`/client/orders/${orderId}`), 1200);
+      } else {
+        showAlert("error", data.error || "Erreur lors de la commande");
+      }
+    } catch {
+      showAlert("error", "Erreur réseau");
+    } finally {
+      setProcessing(false);
     }
-  } catch {
-    showAlert("error", "Erreur réseau");
-  } finally {
-    setProcessing(false);
-  }
-};
+  };
 
   /* ── Shared styles ──────────────────────────────────────── */
   const inputCls = `w-full bg-[#0a1628] border border-[#1e3a5f] rounded-2xl px-4 py-3 text-sm text-white placeholder:text-[#4a6a8a] focus:outline-none focus:border-[#3b82f6]/50 focus:ring-1 focus:ring-[#3b82f6]/20 transition disabled:opacity-40 disabled:cursor-not-allowed`;
@@ -357,6 +475,61 @@ function CheckoutInner() {
           <button onClick={() => setAlert(a => ({ ...a, show: false }))} className="ml-2 opacity-60 hover:opacity-100">
             <X size={14} />
           </button>
+        </div>
+      )}
+
+      {/* Modale de vérification email (invité) */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="bg-[#0f1f33] border border-[#1e3a5f] rounded-3xl p-8 max-w-md w-full">
+            <div className="flex items-center gap-3 mb-4">
+              <ShieldCheck className="w-6 h-6 text-[#3b82f6]" />
+              <h3 className="text-lg font-light uppercase tracking-[0.15em] text-white">Vérification email</h3>
+            </div>
+            <p className="text-sm text-[#8aabca] font-light mb-6">
+              Un code à 6 chiffres a été envoyé à <span className="text-white">{form.email}</span>. Saisissez-le
+              ci-dessous pour confirmer votre commande.
+            </p>
+
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={verificationCode}
+              onChange={e => setVerificationCode(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={e => { if (e.key === "Enter") handleVerifyCode(); }}
+              className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-2xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-white placeholder:text-[#4a6a8a] focus:outline-none focus:border-[#3b82f6]/50 mb-3"
+              placeholder="------"
+              autoFocus
+            />
+
+            {verifyError && (
+              <p className="text-red-400 text-xs font-light mb-3">{verifyError}</p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleVerifyCode}
+              disabled={verifying}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-[#3b82f6] text-[#3b82f6] text-xs uppercase tracking-[0.15em] font-light hover:bg-[#3b82f6]/10 disabled:opacity-50 disabled:cursor-not-allowed transition mb-3"
+            >
+              {verifying
+                ? <><div className="w-4 h-4 border border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" /> Vérification...</>
+                : "Vérifier et confirmer"
+              }
+            </button>
+
+            <div className="flex items-center justify-between text-[11px] font-light">
+              <button type="button" onClick={handleResendCode} disabled={resending}
+                className="text-[#4a6a8a] hover:text-[#3b82f6] transition disabled:opacity-50">
+                {resending ? "Envoi..." : "Renvoyer le code"}
+              </button>
+              <button type="button" onClick={() => setShowVerifyModal(false)}
+                className="text-[#4a6a8a] hover:text-white transition">
+                Annuler
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -446,7 +619,8 @@ function CheckoutInner() {
                   </div>
                   {isGuest && (
                     <p className="text-[10px] text-[#3a5a7a] font-light mt-1.5 pl-1">
-                      Si vous avez déjà commandé, votre historique sera retrouvé automatiquement.
+                      Si vous avez déjà commandé, votre historique sera retrouvé automatiquement. Sinon, un code de
+                      vérification vous sera envoyé par email.
                     </p>
                   )}
                 </div>
@@ -670,7 +844,7 @@ function CheckoutInner() {
                 </div>
               )}
 
-              <button type="button" onClick={handleSubmit} disabled={processing}
+              <button type="button" onClick={handleConfirmClick} disabled={processing}
                 className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border border-[#3b82f6] text-[#3b82f6] text-xs uppercase tracking-[0.15em] font-light hover:bg-[#3b82f6]/10 disabled:opacity-50 disabled:cursor-not-allowed transition">
                 {processing
                   ? <><div className="w-4 h-4 border border-[#3b82f6]/30 border-t-[#3b82f6] rounded-full animate-spin" /> Traitement...</>
