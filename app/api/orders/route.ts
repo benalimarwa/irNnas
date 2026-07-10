@@ -1,14 +1,20 @@
 // app/api/orders/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 /* ─────────────────────────────────────────────────────────────
    POST /api/orders
+
    Supports:
    - Authenticated Clerk user  → resolves user by clerkId
    - Guest with email          → finds existing user by email
-                                 OR creates a new guest user in DB + Clerk
+                                 OR, si `afterVerification` est vrai,
+                                 crée un nouveau user en DB (le compte
+                                 Clerk a déjà été créé côté client via
+                                 le flux de vérification par code)
                                  → returns a signInToken for auto-login
 
    Résolution des items de commande :
@@ -18,29 +24,60 @@ import { prisma } from "@/lib/prisma";
    - Sinon, pour un utilisateur connecté, on retombe sur son panier
      en base de données.
    - Sinon (invité sans items fournis), 400 "Panier vide".
+
+   IMPORTANT : un email invité totalement inconnu (ni en DB) ne peut
+   PAS créer de commande directement ici. Le client doit d'abord
+   passer par le flux de vérification Clerk (code par email) et
+   appeler /api/sync-user, puis renvoyer la requête avec
+   `afterVerification: true` une fois connecté. Ceci empêche de
+   contourner la vérification obligatoire par email.
 ───────────────────────────────────────────────────────────── */
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { deliveryMethod, deliveryFee = 0, customerInfo, items: bodyItems } = body;
+    const {
+      deliveryMethod,
+      deliveryFee = 0,
+      customerInfo,
+      items: bodyItems,
+      afterVerification = false,
+    } = body;
 
     /* ── 1. Resolve user ─────────────────────────────────── */
     let dbUser = null;
     let signInToken: string | null = null;
 
     const { userId: clerkId } = await auth();
-
     const client = await clerkClient(); // ← Important: now async in recent Clerk versions
 
     if (clerkId) {
-      // ── Authenticated user ──────────────────────────────
+      // ── Authenticated user (couvre aussi "juste après vérification") ──
       dbUser = await prisma.user.findUnique({ where: { clerkId } });
+
+      if (!dbUser) {
+        // Peut arriver juste après la vérification par code, si
+        // /api/sync-user n'a pas encore terminé de créer le user.
+        // On tente une résolution de secours par email avant d'échouer.
+        const email = customerInfo?.email?.trim().toLowerCase();
+        if (email) {
+          dbUser = await prisma.user.findUnique({ where: { email } });
+          if (dbUser && !dbUser.clerkId) {
+            dbUser = await prisma.user.update({
+              where: { id: dbUser.id },
+              data: { clerkId },
+            });
+          }
+        }
+      }
+
       if (!dbUser) {
         return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
       }
     } else {
-      // ── Guest user ──────────────────────────────────────
+      // ── Guest user (pas de session Clerk active) ────────
       const email = customerInfo?.email?.trim().toLowerCase();
+
       if (!email) {
         return NextResponse.json(
           { error: "L'adresse email est obligatoire pour les commandes invité" },
@@ -52,52 +89,37 @@ export async function POST(req: NextRequest) {
       dbUser = await prisma.user.findUnique({ where: { email } });
 
       if (!dbUser) {
-        // ── New guest: create in Clerk first, then in DB ──
-        let clerkUserId: string | null = null;
-
-        try {
-          const clerkUser = await client.users.createUser({
-            emailAddress: [email],
-            firstName: customerInfo?.firstName?.trim() || undefined,
-            lastName: customerInfo?.lastName?.trim() || undefined,
-            password: `${crypto.randomUUID()}!Aa1`,
-            skipPasswordChecks: true,
-          });
-          clerkUserId = clerkUser.id;
-        } catch (clerkErr: any) {
-          // User might already exist in Clerk
-          try {
-            const existing = await client.users.getUserList({
-              emailAddress: [email],
-            });
-            clerkUserId = existing.data[0]?.id ?? null;
-          } catch {
-            clerkUserId = null; // degraded mode
-          }
+        // ── Email totalement inconnu, pas de session Clerk ──
+        // Ce cas ne doit normalement jamais arriver depuis le
+        // checkout : /api/auth/check-guest-email doit avoir déjà
+        // redirigé le client vers le flux de vérification par code
+        // (voir startEmailVerification côté front). On refuse donc
+        // explicitement de créer un compte ici, pour ne pas
+        // contourner la vérification obligatoire.
+        if (!afterVerification) {
+          return NextResponse.json(
+            {
+              error:
+                "Cet email n'est associé à aucun compte. Une vérification par code est requise.",
+              code: "EMAIL_VERIFICATION_REQUIRED",
+            },
+            { status: 400 }
+          );
         }
 
+        // afterVerification=true mais pas de session Clerk active :
+        // situation anormale (setActive a peut-être échoué côté client).
+        // On crée quand même le user en DB en dernier recours, sans
+        // compte Clerk lié, pour ne pas perdre la commande.
         dbUser = await prisma.user.create({
           data: {
             email,
-            clerkId: clerkUserId,
+            clerkId: null,
             firstName: customerInfo?.firstName?.trim() || null,
             lastName: customerInfo?.lastName?.trim() || null,
             role: "CLIENT",
           },
         });
-
-        // Generate sign-in token
-        if (clerkUserId) {
-          try {
-            const tokenRes = await client.signInTokens.createSignInToken({
-              userId: clerkUserId,
-              expiresInSeconds: 120,
-            });
-            signInToken = tokenRes.token;
-          } catch {
-            signInToken = null;
-          }
-        }
       } else if (dbUser.clerkId) {
         // Existing user with Clerk account → auto-login token
         try {
@@ -128,9 +150,11 @@ export async function POST(req: NextRequest) {
         where: { userId: dbUser!.id },
         include: { items: true },
       });
+
       if (!cart?.items?.length) {
         return NextResponse.json({ error: "Panier vide" }, { status: 400 });
       }
+
       cartItems = cart.items.map((i) => ({
         productId: i.productId,
         quantity: i.quantity,
@@ -146,7 +170,6 @@ export async function POST(req: NextRequest) {
       where: { id: { in: productIds } },
       select: { id: true, price: true, stock: true },
     });
-
     const productMap = new Map(products.map((p) => [p.id, p]));
 
     for (const item of cartItems) {
@@ -170,7 +193,6 @@ export async function POST(req: NextRequest) {
       const price = productMap.get(item.productId)?.price ?? 0;
       return sum + price * item.quantity;
     }, 0);
-
     const total = subtotal + (deliveryFee ?? 0);
 
     /* ── 5. Create order in transaction ─────────────────── */
@@ -181,7 +203,6 @@ export async function POST(req: NextRequest) {
           status: "pending",
           total,
           deliveryMethod: deliveryMethod ?? "PICKUP",
-
           customerPhone: customerInfo?.phone ?? null,
           customerAddress: customerInfo?.address ?? null,
           customerCity: customerInfo?.city ?? null,
@@ -189,7 +210,6 @@ export async function POST(req: NextRequest) {
           customerPostal: customerInfo?.postalCode ?? null,
           customerCountry: customerInfo?.country ?? null,
           customerNotes: customerInfo?.notes ?? null,
-
           items: {
             create: cartItems.map((item) => ({
               productId: item.productId,
