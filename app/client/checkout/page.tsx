@@ -231,28 +231,40 @@ function CheckoutInner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      if (!res.ok) return true; // en cas de doute, on ne bloque pas la commande
+      if (!res.ok) {
+        console.error("[checkGuestEmailExists] réponse non-ok:", res.status, await res.text().catch(() => ""));
+        // En cas de doute, on considère l'email comme NOUVEAU : mieux vaut demander
+        // une vérification en trop que sauter silencieusement une commande non vérifiée.
+        return false;
+      }
       const data = await res.json();
       return !!data.exists;
-    } catch {
-      return true;
+    } catch (err) {
+      console.error("[checkGuestEmailExists] erreur réseau:", err);
+      return false;
     }
   }
 
   /* ── Démarre la vérification par code Clerk ─────────────── */
   async function startEmailVerification(): Promise<true | "skip" | false> {
-    if (!signUpLoaded || !signUp) return false;
+    if (!signUpLoaded || !signUp) {
+      console.error("[startEmailVerification] signUp non chargé (signUpLoaded=", signUpLoaded, ")");
+      showAlert("error", "Le module de vérification n'est pas encore prêt. Réessayez dans un instant.");
+      return false;
+    }
     try {
       await signUp.create({ emailAddress: form.email.trim().toLowerCase() });
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       return true;
     } catch (err: any) {
       const code = err?.errors?.[0]?.code;
+      console.error("[startEmailVerification] erreur Clerk complète:", JSON.stringify(err, null, 2));
       if (code === "form_identifier_exists") {
         // Un compte Clerk existe déjà pour cet email (cas limite) → pas besoin de vérifier
         return "skip";
       }
-      console.error("Erreur envoi code de vérification:", err);
+      const message = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || "Erreur inconnue lors de l'envoi du code";
+      showAlert("error", `Vérification impossible : ${message}`);
       return false;
     }
   }
