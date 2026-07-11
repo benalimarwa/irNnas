@@ -58,12 +58,10 @@ export async function GET() {
 }
 
 // POST - Ajouter un article
+// POST - Ajouter un article
 export async function POST(req: NextRequest) {
   try {
     const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-    }
 
     const body = await req.json();
     const { productId, quantity = 1, size = null } = body;
@@ -79,6 +77,17 @@ export async function POST(req: NextRequest) {
 
     if (product.stock === 0 || product.stockStatus === "OUT_OF_STOCK") {
       return NextResponse.json({ error: "Produit épuisé" }, { status: 400 });
+    }
+
+    // ── Visiteur non connecté : pas de panier DB, le frontend gère
+    //    le panier invité en localStorage. On confirme juste que le
+    //    produit est valide et disponible.
+    if (!clerkId) {
+      return NextResponse.json({
+        success: true,
+        message: "Produit vérifié (panier invité géré côté client)",
+        guest: true,
+      });
     }
 
     const internalUserId = await getInternalUserId(clerkId);
@@ -124,15 +133,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // On renvoie le panier à jour pour éviter tout état désynchronisé côté client
     const updatedCart = await prisma.cart.findUnique({
       where: { userId: internalUserId },
       include: {
         items: {
           include: {
-            product: {
-              select: productSelect,
-            },
+            product: { select: productSelect },
           },
         },
       },
@@ -144,7 +150,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
-
 // PATCH - Modifier la quantité
 export async function PATCH(req: NextRequest) {
   try {

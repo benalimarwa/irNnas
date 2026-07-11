@@ -112,32 +112,47 @@ export default function DetailsProduitPage() {
   const sizeRequiredButMissing = hasSizes && !selectedSize;
   const actionsDisabled = isOutOfStock || sizeRequiredButMissing || adding;
 
-  const addToCart = async () => {
-    if (!product) return;
-    if (sizeRequiredButMissing) {
-      showAlert("warning", "Veuillez choisir une taille");
-      return;
-    }
-    setAdding(true);
-    try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: product.id, quantity: 1, size: selectedSize }),
-      });
-      if (res.ok) {
-        showAlert("success", "Produit ajouté au panier !");
-      } else {
-        const data = await res.json().catch(() => ({}));
-        showAlert("error", data.error || "Erreur lors de l'ajout");
-      }
-    } catch {
-      showAlert("error", "Erreur réseau");
-    } finally {
-      setAdding(false);
-    }
-  };
+ const addToCart = async () => {
+  if (!product) return;
+  if (sizeRequiredButMissing) {
+    showAlert("warning", "Veuillez choisir une taille");
+    return;
+  }
+  setAdding(true);
+  try {
+    const res = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: product.id, quantity: 1, size: selectedSize }),
+    });
 
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok) {
+      if (data.guest) {
+        // Invité : on stocke réellement l'item en localStorage
+        const GUEST_KEY = "irnas_guest_cart";
+        const current = JSON.parse(localStorage.getItem(GUEST_KEY) || "[]");
+        const idx = current.findIndex(
+          (i: any) => i.productId === product.id && (i.size ?? null) === (selectedSize ?? null)
+        );
+        if (idx >= 0) {
+          current[idx].quantity += 1;
+        } else {
+          current.push({ productId: product.id, quantity: 1, size: selectedSize ?? null });
+        }
+        localStorage.setItem(GUEST_KEY, JSON.stringify(current));
+      }
+      showAlert("success", "Produit ajouté au panier !");
+    } else {
+      showAlert("error", data.error || "Erreur lors de l'ajout");
+    }
+  } catch {
+    showAlert("error", "Erreur réseau");
+  } finally {
+    setAdding(false);
+  }
+};
   const buyNow = () => {
     if (!product) return;
     if (sizeRequiredButMissing) {
