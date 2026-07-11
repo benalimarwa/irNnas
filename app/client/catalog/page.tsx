@@ -327,6 +327,7 @@ function CatalogueInner() {
               const hasMultipleImages = images.length > 1;
 
               return (
+                <Link href={`/client/details-produit/${product.id}`}>
                 <div
                   key={product.id}
                   className="group bg-[#0f1f33] border border-[#1a2a44] rounded-3xl overflow-hidden hover:border-[#3b82f6]/50 transition-all duration-300"
@@ -474,7 +475,7 @@ function CatalogueInner() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </div></Link>
               );
             })}
           </div>
