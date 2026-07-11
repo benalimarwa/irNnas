@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Heart, ChevronDown, X } from "lucide-react";
+import { Heart, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 type Product = {
   id: number;
@@ -50,6 +50,9 @@ function CatalogueInner() {
   const [favorites, setFavorites] = useState<number[]>([]);
 
   const [selectedSizes, setSelectedSizes] = useState<Record<number, string>>({});
+
+  // Index de l'image actuellement affichée, par produit (carrousel)
+  const [activeImageIndex, setActiveImageIndex] = useState<Record<number, number>>({});
 
   // Filtres
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -170,19 +173,19 @@ function CatalogueInner() {
   };
 
   const handleBuyNow = (product: Product, size?: string) => {
-  sessionStorage.setItem(
-    "irnas_buynow",
-    JSON.stringify({
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images[0] || null,
-      quantity: 1,
-      size: size ?? null,
-    })
-  );
-  router.push("/client/checkout?mode=buynow");
-};
+    sessionStorage.setItem(
+      "irnas_buynow",
+      JSON.stringify({
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.images[0] || null,
+        quantity: 1,
+        size: size ?? null,
+      })
+    );
+    router.push("/client/checkout?mode=buynow");
+  };
 
   const toggleFavorite = async (productId: number) => {
     if (!isSignedIn) {
@@ -195,6 +198,28 @@ function CatalogueInner() {
 
   const selectSize = (productId: number, size: string) => {
     setSelectedSizes((prev) => ({ ...prev, [productId]: size }));
+  };
+
+  /* ── Carrousel d'images par produit ─────────────────────── */
+
+  const getActiveIndex = (productId: number) => activeImageIndex[productId] ?? 0;
+
+  const goToImage = (productId: number, index: number) => {
+    setActiveImageIndex((prev) => ({ ...prev, [productId]: index }));
+  };
+
+  const nextImage = (product: Product) => {
+    const total = product.images.length;
+    if (total <= 1) return;
+    const current = getActiveIndex(product.id);
+    goToImage(product.id, (current + 1) % total);
+  };
+
+  const prevImage = (product: Product) => {
+    const total = product.images.length;
+    if (total <= 1) return;
+    const current = getActiveIndex(product.id);
+    goToImage(product.id, (current - 1 + total) % total);
   };
 
   const resetFilters = () => {
@@ -296,6 +321,10 @@ function CatalogueInner() {
               const isOutOfStock = product.stock <= 0;
               const actionsDisabled = isOutOfStock || sizeRequiredButMissing;
 
+              const images = product.images?.length ? product.images : ["/placeholder.jpg"];
+              const activeIndex = getActiveIndex(product.id);
+              const hasMultipleImages = images.length > 1;
+
               return (
                 <div
                   key={product.id}
@@ -303,7 +332,7 @@ function CatalogueInner() {
                 >
                   <div className="relative h-[320px] bg-[#0a1628] flex items-center justify-center overflow-hidden">
                     <Image
-                      src={product.images[0] || "/placeholder.jpg"}
+                      src={images[activeIndex] || "/placeholder.jpg"}
                       alt={product.name}
                       width={400}
                       height={400}
@@ -314,6 +343,48 @@ function CatalogueInner() {
                       <span className="absolute top-4 left-4 bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full">
                         NOUVEAU
                       </span>
+                    )}
+
+                    {/* Flèches de navigation du carrousel (visibles au survol) */}
+                    {hasMultipleImages && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); prevImage(product); }}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition hover:bg-black/70"
+                          aria-label="Image précédente"
+                        >
+                          <ChevronLeft size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); nextImage(product); }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition hover:bg-black/70"
+                          aria-label="Image suivante"
+                        >
+                          <ChevronRight size={18} />
+                        </button>
+
+                        {/* Points de navigation */}
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                          {images.map((_, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); goToImage(product.id, i); }}
+                              className={`w-1.5 h-1.5 rounded-full transition-all ${
+                                i === activeIndex ? "bg-[#3b82f6] w-4" : "bg-white/40 hover:bg-white/70"
+                              }`}
+                              aria-label={`Image ${i + 1}`}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Compteur d'images */}
+                        <span className="absolute top-4 right-4 bg-black/50 text-white text-[10px] font-medium px-2.5 py-1 rounded-full">
+                          {activeIndex + 1}/{images.length}
+                        </span>
+                      </>
                     )}
                   </div>
 
@@ -330,6 +401,24 @@ function CatalogueInner() {
                         <Heart className="w-5 h-5" />
                       </button>
                     </div>
+
+                    {/* Miniatures (si plusieurs images) */}
+                    {hasMultipleImages && (
+                      <div className="mt-4 flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "thin", scrollbarColor: "#1e3a5f transparent" }}>
+                        {images.map((img, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => goToImage(product.id, i)}
+                            className={`relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border transition ${
+                              i === activeIndex ? "border-[#3b82f6]" : "border-[#1e3a5f] opacity-60 hover:opacity-100"
+                            }`}
+                          >
+                            <Image src={img} alt="" fill className="object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Tailles */}
                     {hasSizes && (
@@ -350,15 +439,15 @@ function CatalogueInner() {
                       </div>
                     )}
 
-                   <div className="mt-5 flex items-baseline gap-2">
-  <span className="text-2xl font-light">{product.price.toFixed(2)} TND</span>
-  <span className="text-sm line-through text-[#4a6a8a]">
-    {(product.price * 1.2).toFixed(2)} TND
-  </span>
-  <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-    -20%
-  </span>
-</div>
+                    <div className="mt-5 flex items-baseline gap-2">
+                      <span className="text-2xl font-light">{product.price.toFixed(2)} TND</span>
+                      <span className="text-sm line-through text-[#4a6a8a]">
+                        {(product.price * 1.2).toFixed(2)} TND
+                      </span>
+                      <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                        -20%
+                      </span>
+                    </div>
 
                     {sizeRequiredButMissing && (
                       <p className="text-amber-500 text-xs mt-2">Veuillez choisir une taille</p>
@@ -373,11 +462,11 @@ function CatalogueInner() {
                         Ajouter
                       </button>
                       <button
-  onClick={() => handleBuyNow(product, currentSize)}
-  className="py-3 border border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10 rounded-2xl text-sm font-medium transition"
->
-  Acheter
-</button>
+                        onClick={() => handleBuyNow(product, currentSize)}
+                        className="py-3 border border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6]/10 rounded-2xl text-sm font-medium transition"
+                      >
+                        Acheter
+                      </button>
                     </div>
                   </div>
                 </div>

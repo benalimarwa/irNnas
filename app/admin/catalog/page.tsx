@@ -31,6 +31,14 @@ type AlertType = {
   title?: string;
 };
 
+type ImageItem = {
+  key: string;                 // identifiant stable pour React
+  kind: "url" | "file";        // url déjà hébergée / nouveau fichier local
+  preview: string;             // ce qu'on affiche (url réelle ou data: pour preview)
+  url?: string;                // valeur envoyée si kind === "url"
+  file?: File;                 // valeur envoyée si kind === "file"
+};
+
 const GENDERS = [
   { value: "men", label: "Homme" },
   { value: "women", label: "Femme" },
@@ -53,7 +61,6 @@ const EMPTY_PRODUCT = {
   material: "",
   fit: "",
   isNew: false,
-  imageUrl: "",
 };
 
 // Helper : parse une Response en JSON sans jamais planter si le corps
@@ -69,6 +76,8 @@ async function safeJson(res: Response): Promise<any> {
   }
 }
 
+const genKey = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 export default function AdminProductsPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -82,10 +91,12 @@ export default function AdminProductsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_PRODUCT });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState("");
-  const [imgMode, setImgMode] = useState<"url" | "file">("url");
   const [newCategory, setNewCategory] = useState("");
+
+  // Images (galerie multi-images)
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [addMode, setAddMode] = useState<"url" | "file">("url");
+  const [urlInput, setUrlInput] = useState("");
 
   // Alert
   const [alert, setAlert] = useState<AlertType>({ show: false, type: "success", message: "" });
@@ -128,38 +139,80 @@ export default function AdminProductsPage() {
     if (videoRef.current) videoRef.current.play().catch(() => {});
   }, []);
 
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  /* ── Gestion de la galerie d'images ──────────────────────── */
 
-    if (!file.type.startsWith("image/") && !file.name.match(/\.(jpg|jpeg|png|gif|webp|heic|heif|avif|bmp|tiff)$/i)) {
-      showAlert("error", "Veuillez sélectionner un fichier image valide");
-      return;
-    }
+  const addImageByUrl = () => {
+    const url = urlInput.trim();
+    if (!url) return;
+    setImages(prev => [...prev, { key: genKey(), kind: "url", preview: url, url }]);
+    setUrlInput("");
+  };
+
+  const addImagesByFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
 
     // Vercel serverless functions plafonnent le corps de requête à ~4.5MB.
     // Un fichier trop lourd déclenche un 500 vide côté plateforme, avant
     // même que la route ne s'exécute. On bloque donc ici en amont.
     const MAX_SIZE = 4 * 1024 * 1024; // 4MB de marge de sécurité
-    if (file.size > MAX_SIZE) {
-      showAlert("error", "Image trop volumineuse (max 4MB). Compressez-la avant l'upload.");
-      return;
+
+    const valid: File[] = [];
+    for (const file of files) {
+      const isImage =
+        file.type.startsWith("image/") ||
+        file.name.match(/\.(jpg|jpeg|png|gif|webp|heic|heif|avif|bmp|tiff)$/i);
+
+      if (!isImage) {
+        showAlert("error", `"${file.name}" n'est pas une image valide`);
+        continue;
+      }
+      if (file.size > MAX_SIZE) {
+        showAlert("error", `"${file.name}" dépasse 4MB`);
+        continue;
+      }
+      valid.push(file);
     }
 
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setImagePreview(result);
-      setForm(f => ({ ...f, imageUrl: result }));
-    };
-    reader.readAsDataURL(file);
+    valid.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImages(prev => [
+          ...prev,
+          { key: genKey(), kind: "file", preview: reader.result as string, file },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = ""; // permet de resélectionner le même fichier plus tard
   };
+
+  const removeImage = (key: string) => {
+    setImages(prev => prev.filter(img => img.key !== key));
+  };
+
+  const moveImage = (index: number, direction: -1 | 1) => {
+    setImages(prev => {
+      const next = [...prev];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  /* ── Soumission du formulaire ────────────────────────────── */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const fd = new FormData();
 
+    if (images.length === 0) {
+      showAlert("error", "Ajoutez au moins une image");
+      return;
+    }
+
+    const fd = new FormData();
     if (editMode) fd.append("id", form.id.toString());
 
     ["name", "description", "price", "category", "gender", "color", "colorHex", "stock", "sizes", "material", "fit"]
@@ -167,11 +220,18 @@ export default function AdminProductsPage() {
 
     fd.append("isNew", form.isNew.toString());
 
-    if (imgMode === "file" && imageFile) {
-      fd.append("image", imageFile);
-    } else if (form.imageUrl && !form.imageUrl.startsWith("data:")) {
-      fd.append("imageUrl", form.imageUrl);
-    }
+    // On envoie l'ordre exact + le type de chaque image pour que le backend
+    // puisse reconstruire le tableau `images` dans le bon ordre après upload.
+    const order = images.map(img => img.kind);
+    fd.append("imageOrder", JSON.stringify(order));
+
+    images.forEach(img => {
+      if (img.kind === "file" && img.file) {
+        fd.append("images", img.file);      // plusieurs entrées possibles avec la même clé
+      } else if (img.kind === "url" && img.url) {
+        fd.append("imageUrls", img.url);    // idem, plusieurs entrées possibles
+      }
+    });
 
     try {
       const res = await fetch("/api/admin/product", {
@@ -231,9 +291,9 @@ export default function AdminProductsPage() {
   const openAdd = () => {
     setEditMode(false);
     setForm({ ...EMPTY_PRODUCT });
-    setImageFile(null);
-    setImagePreview("");
-    setImgMode("url");
+    setImages([]);
+    setAddMode("url");
+    setUrlInput("");
     setShowModal(true);
   };
 
@@ -253,17 +313,18 @@ export default function AdminProductsPage() {
       material: p.material || "",
       fit: p.fit || "",
       isNew: p.isNew,
-      imageUrl: p.images[0] || "",
     });
-    setImagePreview(p.images[0] || "");
-    setImgMode("url");
+    // Toutes les images existantes deviennent des entrées "url"
+    setImages(p.images.map(url => ({ key: genKey(), kind: "url", preview: url, url })));
+    setAddMode("url");
+    setUrlInput("");
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setImageFile(null);
-    setImagePreview("");
+    setImages([]);
+    setUrlInput("");
     setNewCategory("");
   };
 
@@ -362,6 +423,11 @@ export default function AdminProductsPage() {
                         <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-6xl opacity-30">👕</div>
+                      )}
+                      {p.images?.length > 1 && (
+                        <div className="absolute bottom-4 right-4 bg-black/70 text-white text-xs font-medium px-3 py-1 rounded-full">
+                          +{p.images.length - 1} photo{p.images.length - 1 > 1 ? "s" : ""}
+                        </div>
                       )}
                       {p.isNew && (
                         <div className="absolute top-4 left-4 bg-[#D4AF37] text-black text-xs font-bold px-4 py-1 rounded-full">NOUVEAUTÉ</div>
@@ -572,47 +638,111 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
 
-                {/* Image */}
+                {/* Images (galerie multi-images) */}
                 <div>
-                  <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Image principale</p>
+                  <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">
+                    Images du produit {images.length > 0 && <span className="text-white/40 normal-case">({images.length})</span>}
+                  </p>
+
                   <div className="flex gap-4 mb-4">
-                    <button type="button" onClick={() => setImgMode("url")} className={`flex-1 py-3 rounded-2xl font-medium transition ${imgMode === "url" ? "bg-[#D4AF37] text-black" : "bg-white/5 border border-white/10"}`}>URL</button>
-                    <button type="button" onClick={() => setImgMode("file")} className={`flex-1 py-3 rounded-2xl font-medium transition ${imgMode === "file" ? "bg-[#D4AF37] text-black" : "bg-white/5 border border-white/10"}`}>Fichier</button>
+                    <button
+                      type="button"
+                      onClick={() => setAddMode("url")}
+                      className={`flex-1 py-3 rounded-2xl font-medium transition ${addMode === "url" ? "bg-[#D4AF37] text-black" : "bg-white/5 border border-white/10"}`}
+                    >
+                      Ajouter par URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAddMode("file")}
+                      className={`flex-1 py-3 rounded-2xl font-medium transition ${addMode === "file" ? "bg-[#D4AF37] text-black" : "bg-white/5 border border-white/10"}`}
+                    >
+                      Ajouter des fichiers
+                    </button>
                   </div>
 
-                  {imgMode === "url" ? (
-                    <input 
-                      type="url" 
-                      placeholder="https://" 
-                      value={form.imageUrl} 
-                      onChange={e => { 
-                        setForm(f => ({ ...f, imageUrl: e.target.value })); 
-                        setImagePreview(""); 
-                      }} 
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                    />
+                  {addMode === "url" ? (
+                    <div className="flex gap-3">
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={urlInput}
+                        onChange={e => setUrlInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addImageByUrl(); } }}
+                        className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]"
+                      />
+                      <button
+                        type="button"
+                        onClick={addImageByUrl}
+                        className="bg-[#D4AF37] hover:bg-[#F5E6A3] text-black px-6 rounded-2xl font-medium"
+                      >
+                        Ajouter
+                      </button>
+                    </div>
                   ) : (
                     <label className="block border-2 border-dashed border-white/20 rounded-3xl p-12 text-center cursor-pointer hover:border-[#D4AF37]">
                       <Upload className="mx-auto mb-4 text-white/50" size={48} />
-                      <span className="text-white/70">{imageFile ? imageFile.name : "Cliquez ou glissez une image"}</span>
-                      <p className="text-xs text-white/40 mt-2">JPG, PNG, WEBP, HEIC, etc. (max 4MB)</p>
+                      <span className="text-white/70">Cliquez ou glissez une ou plusieurs images</span>
+                      <p className="text-xs text-white/40 mt-2">JPG, PNG, WEBP, HEIC, etc. (max 4MB chacune)</p>
                       <input
                         type="file"
                         accept="image/*,.heic,.heif,.avif"
+                        multiple
                         className="hidden"
-                        onChange={onFile}
+                        onChange={addImagesByFiles}
                       />
                     </label>
                   )}
 
-                  {(imagePreview || form.imageUrl) && (
-                    <div className="mt-6 rounded-2xl overflow-hidden border border-white/10">
-                      <img
-                        src={imagePreview || form.imageUrl}
-                        alt="Preview"
-                        className="w-full h-64 object-contain"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
+                  {images.length > 0 && (
+                    <div className="mt-6 grid grid-cols-3 sm:grid-cols-4 gap-4">
+                      {images.map((img, i) => (
+                        <div
+                          key={img.key}
+                          className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black aspect-square"
+                        >
+                          <img
+                            src={img.preview}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
+                          />
+
+                          {i === 0 && (
+                            <div className="absolute top-2 left-2 bg-[#D4AF37] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              PRINCIPALE
+                            </div>
+                          )}
+
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => moveImage(i, -1)}
+                                disabled={i === 0}
+                                className="bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs px-2 py-1 rounded-lg"
+                              >
+                                ←
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveImage(i, 1)}
+                                disabled={i === images.length - 1}
+                                className="bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs px-2 py-1 rounded-lg"
+                              >
+                                →
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeImage(img.key)}
+                              className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg flex items-center gap-1"
+                            >
+                              <Trash2 size={12} /> Retirer
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
