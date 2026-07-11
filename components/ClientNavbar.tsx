@@ -210,7 +210,7 @@ export default function Navbar() {
         <Menu className="w-6 h-6" />
       </button>
 
-      <Link href="/client" className="group flex items-center gap-2 flex-shrink-0">
+      <Link href="/" className="group flex items-center gap-2 flex-shrink-0">
         <Image
           src="/llogo.png"
           alt="IRNAS"
