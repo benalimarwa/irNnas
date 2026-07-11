@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Heart, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -391,7 +392,11 @@ function CatalogueInner() {
                   <div className="p-6">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-medium text-lg leading-tight">{product.name}</h3>
+                        <Link href={`/client/details-produit/${product.id}`}>
+                          <h3 className="font-medium text-lg leading-tight hover:text-[#3b82f6] transition cursor-pointer">
+                            {product.name}
+                          </h3>
+                        </Link>
                         <p className="text-sm text-[#4a6a8a] mt-1">
                           {product.color} • {CATEGORY_LABELS[product.category] ?? product.category}
                         </p>
