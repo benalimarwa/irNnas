@@ -92,54 +92,55 @@ function getExtension(mimeType: string, fallbackName?: string): string {
   return "jpg";
 }
 
-async function resolveImage(
-  imageFile: File | null,
-  imageUrl: string | null,
-): Promise<string | undefined> {
-  if (imageFile && imageFile.size > 0) {
-    try {
-      const ext = getExtension(imageFile.type, imageFile.name);
-      const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2, 10)}.${ext}`;
+/**
+ * Upload un seul File vers Vercel Blob et retourne son URL publique.
+ */
+async function uploadFileToBlob(imageFile: File): Promise<string> {
+  try {
+    const ext = getExtension(imageFile.type, imageFile.name);
+    const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2, 10)}.${ext}`;
 
-      const blob = await put(filename, imageFile, {
-        access: "public",
-        // Add this for better debugging
-        addRandomSuffix: true,
-      });
+    const blob = await put(filename, imageFile, {
+      access: "public",
+      addRandomSuffix: true,
+    });
 
-      console.log("✅ Image uploaded:", blob.url);
-      return blob.url;
-    } catch (err: any) {
-      console.error("resolveImage — file error:", err);
-      if (err.message?.includes("token") || err.message?.includes("access")) {
-        throw new Error("Token Vercel Blob invalide ou manquant. Vérifiez BLOB_READ_WRITE_TOKEN.");
-      }
-      throw new Error("Impossible de sauvegarder l'image sur Vercel Blob");
+    console.log("✅ Image uploaded:", blob.url);
+    return blob.url;
+  } catch (err: any) {
+    console.error("uploadFileToBlob — error:", err);
+    if (err.message?.includes("token") || err.message?.includes("access")) {
+      throw new Error("Token Vercel Blob invalide ou manquant. Vérifiez BLOB_READ_WRITE_TOKEN.");
     }
+    throw new Error("Impossible de sauvegarder l'image sur Vercel Blob");
+  }
+}
+
+/**
+ * Résout une URL d'image : passe telle quelle si http(s), ou upload vers
+ * Vercel Blob si c'est une data: URL (cas résiduel, normalement plus utilisé
+ * côté front puisque le mode "fichier" envoie directement des File).
+ */
+async function resolveUrlImage(imageUrl: string): Promise<string | undefined> {
+  const trimmed = imageUrl?.trim();
+  if (!trimmed) return undefined;
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
   }
 
-  // ... rest of your existing logic for URL / data: URLs
-  if (!imageUrl?.trim()) return undefined;
-
-
-
-
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
-    return imageUrl;
-  }
-
-  if (imageUrl.startsWith("data:")) {
+  if (trimmed.startsWith("data:")) {
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       throw new Error(
         "BLOB_READ_WRITE_TOKEN manquant — connecte un Vercel Blob store au projet (Storage → Create Database → Blob)"
       );
     }
     try {
-      const commaIdx = imageUrl.indexOf(",");
+      const commaIdx = trimmed.indexOf(",");
       if (commaIdx === -1) throw new Error("Data URL invalide");
 
-      const header = imageUrl.slice(0, commaIdx);
-      const base64Data = imageUrl.slice(commaIdx + 1);
+      const header = trimmed.slice(0, commaIdx);
+      const base64Data = trimmed.slice(commaIdx + 1);
       const mimeMatch = header.match(/data:([^;]+)/);
       const mimeType = mimeMatch?.[1] ?? "image/jpeg";
 
@@ -154,12 +155,57 @@ async function resolveImage(
 
       return blob.url;
     } catch (err: any) {
-      console.error("resolveImage — base64 error:", err);
+      console.error("resolveUrlImage — base64 error:", err);
       throw new Error(`Impossible de traiter l'image: ${err.message ?? err}`);
     }
   }
 
   return undefined;
+}
+
+/**
+ * Lit et résout TOUTES les images envoyées par le formulaire admin :
+ * - "images"     → plusieurs File (mode "Ajouter des fichiers")
+ * - "imageUrls"  → plusieurs string (mode "Ajouter par URL")
+ * - "imageOrder" → JSON.stringify(["url","file","url",...]) qui décrit
+ *   l'ordre exact choisi dans la galerie côté admin.
+ *
+ * Retourne le tableau final d'URLs, dans le bon ordre, prêt à être
+ * sauvegardé dans Product.images (String[]).
+ */
+async function resolveImages(formData: FormData): Promise<string[]> {
+  const imageFiles = formData.getAll("images") as File[];
+  const imageUrls = (formData.getAll("imageUrls") as string[]).filter(Boolean);
+  const orderRaw = formData.get("imageOrder") as string | null;
+  const order: ("url" | "file")[] = orderRaw ? JSON.parse(orderRaw) : [];
+
+  // Upload de tous les fichiers en parallèle
+  const uploadedFileUrls = await Promise.all(
+    imageFiles.filter(f => f && f.size > 0).map(f => uploadFileToBlob(f))
+  );
+
+  // Résolution de toutes les urls (passthrough http(s), ou upload si data:)
+  const resolvedUrls = (
+    await Promise.all(imageUrls.map(u => resolveUrlImage(u)))
+  ).filter((u): u is string => Boolean(u));
+
+  // Reconstruction dans l'ordre exact envoyé par le front
+  if (order.length > 0) {
+    let fileIdx = 0;
+    let urlIdx = 0;
+    const final: string[] = [];
+    for (const kind of order) {
+      if (kind === "file" && uploadedFileUrls[fileIdx] !== undefined) {
+        final.push(uploadedFileUrls[fileIdx++]);
+      } else if (kind === "url" && resolvedUrls[urlIdx] !== undefined) {
+        final.push(resolvedUrls[urlIdx++]);
+      }
+    }
+    if (final.length > 0) return final;
+  }
+
+  // Fallback si "imageOrder" absent ou vide (compat anciens appels)
+  return [...resolvedUrls, ...uploadedFileUrls];
 }
 
 // ── GET ───────────────────────────────────────────────────────
@@ -218,11 +264,7 @@ export async function POST(req: NextRequest) {
     }
 
     const categoryId = await resolveCategoryId(common.categoryName);
-
-    const imageFile = formData.get("image") as File | null;
-    const imageUrl = formData.get("imageUrl") as string | null;
-
-    const resolvedImage = await resolveImage(imageFile, imageUrl);
+    const images = await resolveImages(formData);
 
     const product = await prisma.product.create({
       data: {
@@ -239,7 +281,7 @@ export async function POST(req: NextRequest) {
         material: common.material,
         fit: common.fit,
         isNew: common.isNew,
-        images: resolvedImage ? [resolvedImage] : [],
+        images,
       },
       include: { category: true },
     });
@@ -283,10 +325,7 @@ export async function PUT(req: NextRequest) {
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
     const categoryId = await resolveCategoryId(common.categoryName);
-
-    const imageFile = formData.get("image") as File | null;
-    const imageUrl = formData.get("imageUrl") as string | null;
-    const resolvedImage = await resolveImage(imageFile, imageUrl);
+    const images = await resolveImages(formData);
 
     const product = await prisma.product.update({
       where: { id },
@@ -304,7 +343,11 @@ export async function PUT(req: NextRequest) {
         material: common.material,
         fit: common.fit,
         isNew: common.isNew,
-        ...(resolvedImage !== undefined && { images: [resolvedImage] }),
+        // Le front envoie déjà la galerie complète et ordonnée (anciennes
+        // images conservées + nouvelles), donc on remplace entièrement —
+        // pas de merge implicite ici. On ne remplace que si au moins une
+        // image a été résolue, pour ne jamais vider par erreur.
+        ...(images.length > 0 && { images }),
       },
       include: { category: true },
     });
