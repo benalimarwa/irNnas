@@ -23,7 +23,7 @@ import Navbar from "@/components/ClientNavbar";
 import toast, { Toaster } from "react-hot-toast";
 
 // ─── Constantes ────────────────────────────────────────────────────
-const HERO_VIDEO_URL = "https://assets.mixkit.co/videos/52270/52270-720.mp4";
+const HERO_VIDEO_URL = "httpsgithubcombenalimarwairnasblobmainpublicppmp4";
 const HERO_POSTER = "/hero-poster.jpg";
 
 type Product = {
