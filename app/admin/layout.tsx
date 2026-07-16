@@ -144,7 +144,13 @@ export default function ClientLayout({
       `}</style>
 
       {/* Vidéo fixe — visible derrière TOUTES les pages (children) */}
-      <div className="client-video-bg">
+      
+
+      {/* Overlays */}
+      <div className="client-video-overlay" />
+      
+      <div className="client-dot-grid" />
+<div className="client-video-bg">
         {!videoFailed ? (
           <video
             ref={videoRef}
@@ -160,12 +166,7 @@ export default function ClientLayout({
         ) : (
           <div className="video-fallback" />
         )}
-      </div>
-
-      {/* Overlays */}
-      <div className="client-video-overlay" />
-      <div className="client-dot-grid" />
-
+     
       {/* App shell */}
       <div className="client-shell">
         <AdminNavbar />
@@ -173,7 +174,7 @@ export default function ClientLayout({
         <main className="client-main">
           {children}
         </main>
-
+ 
         <footer className="client-footer">
           <p>© IRNAS</p>
           <div className="client-footer-links">
@@ -181,7 +182,7 @@ export default function ClientLayout({
             <a href="/confidentialite">Confidentialité</a>
             <a href="/contact">Contact</a>
           </div>
-        </footer>
+        </footer> </div>
       </div>
     </ClerkProvider>
   );
