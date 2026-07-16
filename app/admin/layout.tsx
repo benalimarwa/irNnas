@@ -146,7 +146,7 @@ export default function AdminLayout({
 >
   {/* 👇 Mets ici le lien direct vers ta vidéo (n'importe quelle URL publique) */}
   <source
-    src="https://videos.pexels.com/video-files/3129957/3129957-hd_1920_1080_24fps.mp4"
+    src="https://assets.mixkit.co/videos/52270/52270-720.mp4"
     type="video/mp4"
   />
 </video>
