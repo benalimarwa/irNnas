@@ -2,16 +2,21 @@
 
 import ClientNavbar from "@/components/ClientNavbar";
 import { ClerkProvider } from "@clerk/nextjs";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSyncGuestCart } from "@/hooks/useSyncGuestCart";
 import AdminNavbar from "@/components/AdminNavbar";
-export default function AdminLayout({
+
+// 👇 Mets ici ton lien vidéo en ligne
+const BG_VIDEO_URL = "https://assets.mixkit.co/videos/52270/52270-720.mp4";
+
+export default function ClientLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-    useSyncGuestCart();
+  useSyncGuestCart();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -43,7 +48,7 @@ export default function AdminLayout({
           font-family: 'Instrument Sans', system-ui, sans-serif;
         }
 
-        /* ── Video layer ── */
+        /* ── Vidéo fixe en arrière-plan de toutes les pages ── */
         .client-video-bg {
           position: fixed;
           inset: 0;
@@ -51,15 +56,19 @@ export default function AdminLayout({
           pointer-events: none;
           overflow: hidden;
         }
-        .client-video-bg video {
+        .client-video-bg video,
+        .client-video-bg .video-fallback {
           width: 100%;
           height: 100%;
           object-fit: cover;
           opacity: 0.35;
           filter: brightness(0.7) contrast(1.1) saturate(1.2);
         }
+        .client-video-bg .video-fallback {
+          background: linear-gradient(135deg, #111, #1a1a2e);
+        }
 
-        /* ── Colour overlay ── */
+        /* ── Overlay couleur ── */
         .client-video-overlay {
           position: fixed;
           inset: 0;
@@ -73,7 +82,7 @@ export default function AdminLayout({
           );
         }
 
-        /* ── Dot grid ── */
+        /* ── Grille de points ── */
         .client-dot-grid {
           position: fixed;
           inset: 0;
@@ -84,7 +93,7 @@ export default function AdminLayout({
           opacity: 0.08;
         }
 
-        /* ── Everything above the background ── */
+        /* ── Contenu au-dessus de la vidéo ── */
         .client-shell {
           position: relative;
           z-index: 10;
@@ -97,7 +106,7 @@ export default function AdminLayout({
           flex: 1;
         }
 
-        /* ── Shared glass utility ── */
+        /* ── Glass utility partagé ── */
         .glass-card {
           background: var(--glass-bg);
           backdrop-filter: blur(24px);
@@ -134,22 +143,23 @@ export default function AdminLayout({
         }
       `}</style>
 
-      {/* Fixed video background */}
+      {/* Vidéo fixe — visible derrière TOUTES les pages (children) */}
       <div className="client-video-bg">
-       <video
-  ref={videoRef}
-  autoPlay
-  muted
-  loop
-  playsInline
-  preload="auto"
->
-  {/* 👇 Mets ici le lien direct vers ta vidéo (n'importe quelle URL publique) */}
-  <source
-    src="https://assets.mixkit.co/videos/52270/52270-720.mp4"
-    type="video/mp4"
-  />
-</video>
+        {!videoFailed ? (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            onError={() => setVideoFailed(true)}
+          >
+            <source src={BG_VIDEO_URL} type="video/mp4" />
+          </video>
+        ) : (
+          <div className="video-fallback" />
+        )}
       </div>
 
       {/* Overlays */}
@@ -157,14 +167,14 @@ export default function AdminLayout({
       <div className="client-dot-grid" />
 
       {/* App shell */}
-      <div>
+      <div className="client-shell">
         <AdminNavbar />
 
-        <main>
+        <main className="client-main">
           {children}
         </main>
 
-        <footer>
+        <footer className="client-footer">
           <p>© IRNAS</p>
           <div className="client-footer-links">
             <a href="/mentions-legales">Mentions légales</a>
