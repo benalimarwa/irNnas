@@ -1,5 +1,6 @@
 // app/api/admin/orders/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
@@ -150,7 +151,55 @@ export async function PUT(req: NextRequest) {
     const updatedOrder = await prisma.order.update({
       where: { id: parseInt(orderId) },
       data: { status },
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        items: {
+          include: {
+            product: { select: { id: true, name: true } },
+          },
+        },
+      },
     });
+
+    // ─── Envoi de l'email de confirmation au client ────────────────────────
+    if (status === "confirmed") {
+      try {
+        // Le snapshot n'a pas de relation stricte -> on le récupère à part
+        const snapshot = await prisma.orderSnapshot.findFirst({
+          where: { orderId: updatedOrder.id },
+          orderBy: { createdAt: "desc" },
+        });
+
+        const toEmail = snapshot?.customerEmail ?? updatedOrder.user.email;
+        const toName = snapshot
+          ? `${snapshot.customerFirstName} ${snapshot.customerLastName}`.trim()
+          : `${updatedOrder.user.firstName ?? ""} ${updatedOrder.user.lastName ?? ""}`.trim() ||
+            updatedOrder.user.email;
+
+        const delivery = parseDeliveryMethod(updatedOrder.deliveryMethod ?? "PICKUP");
+
+        await sendOrderConfirmationEmail({
+          toEmail,
+          toName,
+          orderId: updatedOrder.id,
+          items: updatedOrder.items.map((item) => ({
+            productName: item.product.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          total: updatedOrder.total,
+          deliveryMethod: snapshot?.deliveryMethod ?? delivery.method,
+          address:
+            snapshot?.address ??
+            (delivery.method === "DELIVERY" ? delivery.address ?? null : null),
+        });
+      } catch (emailError) {
+        // On ne bloque jamais la mise à jour de statut si l'email échoue
+        console.error("Erreur lors de l'envoi de l'email de confirmation:", emailError);
+      }
+    }
 
     return NextResponse.json({ message: "Statut mis à jour avec succès", order: updatedOrder });
   } catch (error) {
