@@ -5,12 +5,15 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
 import { useSyncGuestCart } from "@/hooks/useSyncGuestCart";
 import AdminNavbar from "@/components/AdminNavbar";
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-    useSyncGuestCart();
+  // ⚠️ Optionnel : à supprimer si ce n'est pas un layout admin
+  useSyncGuestCart();
+
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -134,7 +137,7 @@ export default function AdminLayout({
         }
       `}</style>
 
-      {/* Fixed video background */}
+      {/* Fixed video background - VIDÉO EN LIGNE */}
       <div className="client-video-bg">
         <video
           ref={videoRef}
@@ -144,9 +147,17 @@ export default function AdminLayout({
           playsInline
           preload="auto"
         >
-          {/* 👇 Remplace par le chemin réel dans /public */}
-          <source src="/public/video/pp.mp4" type="video/mp4" />
-          <source src="/videos/background.webm" type="video/webm" />
+          {/* Remplace par TON lien vidéo direct (MP4 de préférence) */}
+          <source 
+            src="https://assets.mixkit.co/videos/preview/12345/12345-large.mp4" 
+            type="video/mp4" 
+          />
+          {/* Optionnel : fallback webm */}
+          <source 
+            src="https://assets.mixkit.co/videos/preview/12345/12345-large.webm" 
+            type="video/webm" 
+          />
+          Votre navigateur ne supporte pas la vidéo.
         </video>
       </div>
 
@@ -155,14 +166,14 @@ export default function AdminLayout({
       <div className="client-dot-grid" />
 
       {/* App shell */}
-      <div>
+      <div className="client-shell">
         <AdminNavbar />
 
-        <main>
+        <main className="client-main">
           {children}
         </main>
 
-        <footer>
+        <footer className="client-footer">
           <p>© IRNAS</p>
           <div className="client-footer-links">
             <a href="/mentions-legales">Mentions légales</a>
