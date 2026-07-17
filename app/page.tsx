@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { CldVideoPlayer } from 'next-cloudinary';
+import 'next-cloudinary/dist/cld-video-player.css';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -23,7 +25,7 @@ import Navbar from "@/components/ClientNavbar";
 import toast, { Toaster } from "react-hot-toast";
 
 // ─── Constantes ────────────────────────────────────────────────────
-const HERO_VIDEO_URL = "httpsgithubcombenalimarwairnasblobmainpublicppmp4";
+const HERO_VIDEO_URL = "https://assets.mixkit.co/videos/52270/52270-720.mp4";
 const HERO_POSTER = "/hero-poster.jpg";
 
 type Product = {
