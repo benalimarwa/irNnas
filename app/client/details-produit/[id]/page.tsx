@@ -7,9 +7,11 @@ import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import {
   ArrowLeft, Heart, ChevronLeft, ChevronRight,
-  ShoppingCart, CreditCard, CheckCircle, AlertCircle,
+  ShoppingCart, CreditCard, CheckCircle, AlertCircle, Check,
 } from "lucide-react";
 import Navbar from "@/components/ClientNavbar";
+
+type ColorOption = { name: string; hex: string };
 
 type Product = {
   id: number;
@@ -21,6 +23,7 @@ type Product = {
   gender: string;
   color: string;
   colorHex?: string;
+  colors?: ColorOption[]; // ← si l'API renvoie plusieurs couleurs disponibles
   stock: number;
   material?: string;
   fit?: string;
@@ -64,7 +67,16 @@ export default function DetailsProduitPage() {
   const [alert, setAlert] = useState<{ show: boolean; type: "success" | "error" | "warning"; message: string }>({
     show: false, type: "success", message: "",
   });
+const [selectedColor, setSelectedColor] = useState<string | null>(null);
 
+// Liste des couleurs disponibles : utilise `colors` si présent,
+// sinon fallback sur la couleur unique du produit
+const colorOptions: ColorOption[] =
+  product?.colors?.length
+    ? product.colors
+    : product?.color
+    ? [{ name: product.color, hex: product.colorHex || "#999999" }]
+    : [];
   const showAlert = (type: "success" | "error" | "warning", message: string) => {
     setAlert({ show: true, type, message });
     setTimeout(() => setAlert(a => ({ ...a, show: false })), 3500);
@@ -86,12 +98,15 @@ export default function DetailsProduitPage() {
         return res.json();
       })
       .then(data => {
-        if (data) {
-          setProduct(data);
-          setActiveIndex(0);
-          setSelectedSize(null);
-        }
-      })
+  if (data) {
+    setProduct(data);
+    setActiveIndex(0);
+    setSelectedSize(null);
+    setSelectedColor(
+      data.colors?.[0]?.name ?? data.color ?? null
+    );
+  }
+})
       .catch(() => showAlert("error", "Impossible de charger le produit"))
       .finally(() => setLoading(false));
   }, [productId]);
@@ -314,24 +329,49 @@ export default function DetailsProduitPage() {
               <p className="mt-4 text-[#8aabca] font-light leading-relaxed">{product.description}</p>
             )}
 
-            <div className="mt-6 flex items-baseline gap-3">
-              <span className="text-3xl font-light">{product.price.toFixed(2)} TND</span>
-              <span className="text-base line-through text-[#4a6a8a]">
-                {(product.price * 1.2).toFixed(2)} TND
-              </span>
-              <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">
-                -20%
-              </span>
-            </div>
+           <div className="mt-5 flex items-baseline gap-2">
+  <span className="text-2xl font-light">{product.price.toFixed(2)} TND</span>
+  <span className="text-sm line-through text-[#4a6a8a]">
+    {(product.price / 0.8).toFixed(2)} TND
+  </span>
+  <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+    -20%
+  </span>
+</div>
 
-            {/* Couleur */}
-            <div className="mt-8 flex items-center gap-3">
-              <span className="text-[10px] uppercase tracking-[0.15em] text-[#4a6a8a] font-light">Couleur</span>
-              {product.colorHex && (
-                <span className="w-5 h-5 rounded-full border border-[#1e3a5f]" style={{ backgroundColor: product.colorHex }} />
-              )}
-              <span className="text-sm font-light">{product.color}</span>
-            </div>
+           {/* Couleur */}
+{colorOptions.length > 0 && (
+  <div className="mt-8">
+    <span className="text-[10px] uppercase tracking-[0.15em] text-[#4a6a8a] font-light block mb-3">
+      Couleur {selectedColor && <span className="text-white">— {selectedColor}</span>}
+    </span>
+    <div className="flex flex-wrap gap-3">
+      {colorOptions.map((c) => (
+        <button
+          key={c.name}
+          type="button"
+          onClick={() => setSelectedColor(c.name)}
+          title={c.name}
+          aria-label={c.name}
+          className={`relative w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center ${
+            selectedColor === c.name
+              ? "border-[#3b82f6] scale-110 ring-2 ring-[#3b82f6]/30"
+              : "border-[#1e3a5f] hover:border-[#3b82f6]/60"
+          }`}
+          style={{ backgroundColor: c.hex }}
+        >
+          {selectedColor === c.name && (
+            <Check
+              size={16}
+              strokeWidth={3}
+              className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+            />
+          )}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
 
             {/* Matière / Coupe */}
             {(product.material || product.fit) && (
