@@ -446,15 +446,14 @@ function CatalogueInner() {
                     )}
 
                     <div className="mt-5 flex items-baseline gap-2">
-                      <span className="text-2xl font-light">{product.price.toFixed(2)} TND</span>
-                      <span className="text-sm line-through text-[#4a6a8a]">
-                        {(product.price * 1.2).toFixed(2)} TND
-                      </span>
-                      <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                        -20%
-                      </span>
-                    </div>
-
+  <span className="text-2xl font-light">{product.price.toFixed(2)} TND</span>
+  <span className="text-sm line-through text-[#4a6a8a]">
+    {(product.price / 0.8).toFixed(2)} TND
+  </span>
+  <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+    -20%
+  </span>
+</div>
                     {sizeRequiredButMissing && (
                       <p className="text-amber-500 text-xs mt-2">Veuillez choisir une taille</p>
                     )}
