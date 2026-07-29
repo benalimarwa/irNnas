@@ -21,9 +21,8 @@ type Product = {
   images: string[];
   category: { id: number; name: string } | string;
   gender: string;
-  color: string;
+  color: string;       // ← contient soit du JSON `[{name,hex}]`, soit un ancien texte libre
   colorHex?: string;
-  colors?: ColorOption[]; // ← si l'API renvoie plusieurs couleurs disponibles
   stock: number;
   material?: string;
   fit?: string;
@@ -50,6 +49,26 @@ const GENDER_LABELS: Record<string, string> = {
   unisex: "Unisexe",
 };
 
+// Convertit le champ `color` en liste de couleurs sélectionnables.
+// Format attendu : JSON `[{"name":"Noir","hex":"#111111"}, ...]`.
+// Fallback : ancien format texte libre → une seule couleur.
+function parseColorOptions(colorStr?: string, fallbackHex?: string): ColorOption[] {
+  if (!colorStr) return [];
+
+  try {
+    const parsed = JSON.parse(colorStr);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((c) => c && typeof c.name === "string" && c.name.trim())
+        .map((c) => ({ name: c.name, hex: c.hex || fallbackHex || "#999999" }));
+    }
+  } catch {
+    // Pas du JSON → produit pas encore migré, on retombe sur le texte brut
+  }
+
+  return [{ name: colorStr, hex: fallbackHex || "#999999" }];
+}
+
 export default function DetailsProduitPage() {
   const params = useParams();
   const router = useRouter();
@@ -62,21 +81,13 @@ export default function DetailsProduitPage() {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
   const [alert, setAlert] = useState<{ show: boolean; type: "success" | "error" | "warning"; message: string }>({
     show: false, type: "success", message: "",
   });
-const [selectedColor, setSelectedColor] = useState<string | null>(null);
 
-// Liste des couleurs disponibles : utilise `colors` si présent,
-// sinon fallback sur la couleur unique du produit
-const colorOptions: ColorOption[] =
-  product?.colors?.length
-    ? product.colors
-    : product?.color
-    ? [{ name: product.color, hex: product.colorHex || "#999999" }]
-    : [];
   const showAlert = (type: "success" | "error" | "warning", message: string) => {
     setAlert({ show: true, type, message });
     setTimeout(() => setAlert(a => ({ ...a, show: false })), 3500);
@@ -98,15 +109,14 @@ const colorOptions: ColorOption[] =
         return res.json();
       })
       .then(data => {
-  if (data) {
-    setProduct(data);
-    setActiveIndex(0);
-    setSelectedSize(null);
-    setSelectedColor(
-      data.colors?.[0]?.name ?? data.color ?? null
-    );
-  }
-})
+        if (data) {
+          setProduct(data);
+          setActiveIndex(0);
+          setSelectedSize(null);
+          const opts = parseColorOptions(data.color, data.colorHex);
+          setSelectedColor(opts[0]?.name ?? null);
+        }
+      })
       .catch(() => showAlert("error", "Impossible de charger le produit"))
       .finally(() => setLoading(false));
   }, [productId]);
@@ -122,52 +132,53 @@ const colorOptions: ColorOption[] =
   const nextImage = () => setActiveIndex(i => (i + 1) % images.length);
   const prevImage = () => setActiveIndex(i => (i - 1 + images.length) % images.length);
 
+  const colorOptions = parseColorOptions(product?.color, product?.colorHex);
   const hasSizes = (product?.sizes?.length ?? 0) > 0;
   const isOutOfStock = (product?.stock ?? 0) <= 0;
   const sizeRequiredButMissing = hasSizes && !selectedSize;
   const actionsDisabled = isOutOfStock || sizeRequiredButMissing || adding;
 
- const addToCart = async () => {
-  if (!product) return;
-  if (sizeRequiredButMissing) {
-    showAlert("warning", "Veuillez choisir une taille");
-    return;
-  }
-  setAdding(true);
-  try {
-    const res = await fetch("/api/cart", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: product.id, quantity: 1, size: selectedSize }),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (res.ok) {
-      if (data.guest) {
-        // Invité : on stocke réellement l'item en localStorage
-        const GUEST_KEY = "irnas_guest_cart";
-        const current = JSON.parse(localStorage.getItem(GUEST_KEY) || "[]");
-        const idx = current.findIndex(
-          (i: any) => i.productId === product.id && (i.size ?? null) === (selectedSize ?? null)
-        );
-        if (idx >= 0) {
-          current[idx].quantity += 1;
-        } else {
-          current.push({ productId: product.id, quantity: 1, size: selectedSize ?? null });
-        }
-        localStorage.setItem(GUEST_KEY, JSON.stringify(current));
-      }
-      showAlert("success", "Produit ajouté au panier !");
-    } else {
-      showAlert("error", data.error || "Erreur lors de l'ajout");
+  const addToCart = async () => {
+    if (!product) return;
+    if (sizeRequiredButMissing) {
+      showAlert("warning", "Veuillez choisir une taille");
+      return;
     }
-  } catch {
-    showAlert("error", "Erreur réseau");
-  } finally {
-    setAdding(false);
-  }
-};
+    setAdding(true);
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id, quantity: 1, size: selectedSize }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        if (data.guest) {
+          const GUEST_KEY = "irnas_guest_cart";
+          const current = JSON.parse(localStorage.getItem(GUEST_KEY) || "[]");
+          const idx = current.findIndex(
+            (i: any) => i.productId === product.id && (i.size ?? null) === (selectedSize ?? null)
+          );
+          if (idx >= 0) {
+            current[idx].quantity += 1;
+          } else {
+            current.push({ productId: product.id, quantity: 1, size: selectedSize ?? null });
+          }
+          localStorage.setItem(GUEST_KEY, JSON.stringify(current));
+        }
+        showAlert("success", "Produit ajouté au panier !");
+      } else {
+        showAlert("error", data.error || "Erreur lors de l'ajout");
+      }
+    } catch {
+      showAlert("error", "Erreur réseau");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const buyNow = () => {
     if (!product) return;
     if (sizeRequiredButMissing) {
@@ -193,7 +204,6 @@ const colorOptions: ColorOption[] =
       showAlert("warning", "Connectez-vous pour utiliser les favoris");
       return;
     }
-    // Ajoute ici ton appel API favoris si tu veux
   };
 
   if (loading) {
@@ -224,11 +234,9 @@ const colorOptions: ColorOption[] =
     <div className="min-h-screen bg-[#0a1628] text-white">
       <Navbar />
 
-      {/* Dot grid */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.07]"
         style={{ backgroundImage: "radial-gradient(#3b82f6 0.8px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-      {/* Alert */}
       {alert.show && (
         <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-light border shadow-2xl ${
           alert.type === "success" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" :
@@ -249,7 +257,6 @@ const colorOptions: ColorOption[] =
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
-          {/* ── Galerie d'images ────────────────────────────── */}
           <div>
             <div className="relative h-[420px] md:h-[520px] bg-[#0f1f33] border border-[#1a2a44] rounded-3xl flex items-center justify-center overflow-hidden">
               <Image
@@ -269,23 +276,16 @@ const colorOptions: ColorOption[] =
 
               {hasMultipleImages && (
                 <>
-                  <button
-                    type="button"
-                    onClick={prevImage}
+                  <button type="button" onClick={prevImage}
                     className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition"
-                    aria-label="Image précédente"
-                  >
+                    aria-label="Image précédente">
                     <ChevronLeft size={20} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={nextImage}
+                  <button type="button" onClick={nextImage}
                     className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition"
-                    aria-label="Image suivante"
-                  >
+                    aria-label="Image suivante">
                     <ChevronRight size={20} />
                   </button>
-
                   <span className="absolute top-5 right-5 bg-black/50 text-white text-xs font-medium px-3 py-1 rounded-full">
                     {activeIndex + 1}/{images.length}
                   </span>
@@ -293,18 +293,13 @@ const colorOptions: ColorOption[] =
               )}
             </div>
 
-            {/* Miniatures */}
             {hasMultipleImages && (
               <div className="mt-4 flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "thin", scrollbarColor: "#1e3a5f transparent" }}>
                 {images.map((img, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setActiveIndex(i)}
+                  <button key={i} type="button" onClick={() => setActiveIndex(i)}
                     className={`relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition ${
                       i === activeIndex ? "border-[#3b82f6]" : "border-[#1e3a5f] opacity-60 hover:opacity-100"
-                    }`}
-                  >
+                    }`}>
                     <Image src={img} alt="" fill className="object-cover" />
                   </button>
                 ))}
@@ -312,7 +307,6 @@ const colorOptions: ColorOption[] =
             )}
           </div>
 
-          {/* ── Infos produit ───────────────────────────────── */}
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#3b82f6] font-light mb-3">
               {CATEGORY_LABELS[categoryName] ?? categoryName} • {GENDER_LABELS[product.gender] ?? product.gender}
@@ -329,51 +323,55 @@ const colorOptions: ColorOption[] =
               <p className="mt-4 text-[#8aabca] font-light leading-relaxed">{product.description}</p>
             )}
 
-           <div className="mt-5 flex items-baseline gap-2">
-  <span className="text-2xl font-light">{product.price.toFixed(2)} TND</span>
-  <span className="text-sm line-through text-[#4a6a8a]">
-    {(product.price / 0.8).toFixed(2)} TND
-  </span>
-  <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-    -20%
-  </span>
-</div>
+            <div className="mt-5 flex items-baseline gap-2">
+              <span className="text-2xl font-light">{product.price.toFixed(2)} TND</span>
+              <span className="text-sm line-through text-[#4a6a8a]">
+                {(product.price / 0.8).toFixed(2)} TND
+              </span>
+              <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                -20%
+              </span>
+            </div>
 
-           {/* Couleur */}
-{colorOptions.length > 0 && (
-  <div className="mt-8">
-    <span className="text-[10px] uppercase tracking-[0.15em] text-[#4a6a8a] font-light block mb-3">
-      Couleur {selectedColor && <span className="text-white">— {selectedColor}</span>}
-    </span>
-    <div className="flex flex-wrap gap-3">
-      {colorOptions.map((c) => (
-        <button
-          key={c.name}
-          type="button"
-          onClick={() => setSelectedColor(c.name)}
-          title={c.name}
-          aria-label={c.name}
-          className={`relative w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center ${
-            selectedColor === c.name
-              ? "border-[#3b82f6] scale-110 ring-2 ring-[#3b82f6]/30"
-              : "border-[#1e3a5f] hover:border-[#3b82f6]/60"
-          }`}
-          style={{ backgroundColor: c.hex }}
-        >
-          {selectedColor === c.name && (
-            <Check
-              size={16}
-              strokeWidth={3}
-              className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
-            />
-          )}
-        </button>
-      ))}
-    </div>
-  </div>
-)}
+            {/* Couleur — checkboxes rondes, une par couleur définie dans la liste JSON */}
+            {colorOptions.length > 0 && (
+              <div className="mt-8">
+                <span className="text-[10px] uppercase tracking-[0.15em] text-[#4a6a8a] font-light block mb-3">
+                  Couleur {selectedColor && <span className="text-white normal-case">— {selectedColor}</span>}
+                </span>
+                <div className="flex flex-wrap gap-3">
+                  {colorOptions.map((c) => {
+                    const isSelected = selectedColor === c.name;
+                    const isLight = c.hex.toLowerCase() === "#ffffff";
+                    return (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => setSelectedColor(c.name)}
+                        title={c.name}
+                        aria-label={c.name}
+                        aria-pressed={isSelected}
+                        className={`relative w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center ${
+                          isSelected
+                            ? "border-[#3b82f6] scale-110 ring-2 ring-[#3b82f6]/30"
+                            : `border-[#1e3a5f] hover:border-[#3b82f6]/60 ${isLight ? "border-[#3a4a5f]" : ""}`
+                        }`}
+                        style={{ backgroundColor: c.hex }}
+                      >
+                        {isSelected && (
+                          <Check
+                            size={16}
+                            strokeWidth={3}
+                            className={isLight ? "text-black" : "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-            {/* Matière / Coupe */}
             {(product.material || product.fit) && (
               <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm font-light text-[#8aabca]">
                 {product.material && <span>Matière : <span className="text-white">{product.material}</span></span>}
@@ -381,7 +379,6 @@ const colorOptions: ColorOption[] =
               </div>
             )}
 
-            {/* Tailles */}
             {hasSizes && (
               <div className="mt-8">
                 <span className="text-[10px] uppercase tracking-[0.15em] text-[#4a6a8a] font-light block mb-3">
@@ -405,12 +402,10 @@ const colorOptions: ColorOption[] =
               </div>
             )}
 
-            {/* Stock */}
             <p className={`mt-6 text-sm font-light ${isOutOfStock ? "text-red-400" : "text-emerald-400"}`}>
               {isOutOfStock ? "Rupture de stock" : `${product.stock} en stock`}
             </p>
 
-            {/* Actions */}
             <div className="mt-8 grid grid-cols-2 gap-4">
               <button
                 onClick={addToCart}

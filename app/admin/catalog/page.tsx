@@ -3,8 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import {
   Plus, Search, X, Edit, Trash2, Package, Upload,
-  CheckCircle, XCircle, AlertTriangle, LayoutGrid, List,
+  CheckCircle, XCircle, AlertTriangle, LayoutGrid, List, Palette,
 } from "lucide-react";
+
+type ColorOption = { name: string; hex: string };
 
 type Product = {
   id: number;
@@ -13,7 +15,7 @@ type Product = {
   price: number;
   category: string;
   gender: string;
-  color: string;
+  color: string;       // ← JSON `[{name,hex}]` (ou ancien texte libre pour les vieux produits)
   colorHex: string;
   stock: number;
   images: string[];
@@ -32,11 +34,11 @@ type AlertType = {
 };
 
 type ImageItem = {
-  key: string;                 // identifiant stable pour React
-  kind: "url" | "file";        // url déjà hébergée / nouveau fichier local
-  preview: string;             // ce qu'on affiche (url réelle ou data: pour preview)
-  url?: string;                // valeur envoyée si kind === "url"
-  file?: File;                 // valeur envoyée si kind === "file"
+  key: string;
+  kind: "url" | "file";
+  preview: string;
+  url?: string;
+  file?: File;
 };
 
 const GENDERS = [
@@ -54,8 +56,6 @@ const EMPTY_PRODUCT = {
   price: "",
   category: "pantalon",
   gender: "unisex",
-  color: "",
-  colorHex: "#3b82f6",
   stock: "100",
   sizes: "S,M,L,XL",
   material: "",
@@ -63,9 +63,27 @@ const EMPTY_PRODUCT = {
   isNew: false,
 };
 
-// Helper : parse une Response en JSON sans jamais planter si le corps
-// est vide (ex: 500 renvoyé par la plateforme avant que le handler ne
-// s'exécute — c'est ce qui causait "Unexpected end of JSON input").
+const EMPTY_COLOR: ColorOption = { name: "", hex: "#3b82f6" };
+
+// Lit le champ `color` d'un produit existant (JSON ou ancien texte libre)
+// et le convertit en liste éditable pour le formulaire.
+function parseProductColors(colorStr?: string, fallbackHex?: string): ColorOption[] {
+  if (!colorStr) return [{ ...EMPTY_COLOR }];
+
+  try {
+    const parsed = JSON.parse(colorStr);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed
+        .filter((c) => c && typeof c.name === "string")
+        .map((c) => ({ name: c.name, hex: c.hex || "#999999" }));
+    }
+  } catch {
+    // Ancien format texte libre → une seule couleur
+  }
+
+  return [{ name: colorStr, hex: fallbackHex || "#999999" }];
+}
+
 async function safeJson(res: Response): Promise<any> {
   const text = await res.text();
   if (!text) return {};
@@ -87,21 +105,20 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
 
-  // Modal
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_PRODUCT });
   const [newCategory, setNewCategory] = useState("");
 
-  // Images (galerie multi-images)
+  // Liste de couleurs éditable
+  const [colors, setColors] = useState<ColorOption[]>([{ ...EMPTY_COLOR }]);
+
   const [images, setImages] = useState<ImageItem[]>([]);
   const [addMode, setAddMode] = useState<"url" | "file">("url");
   const [urlInput, setUrlInput] = useState("");
 
-  // Alert
   const [alert, setAlert] = useState<AlertType>({ show: false, type: "success", message: "" });
 
-  // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [productToDelete, setProductToDelete] = useState<number | null>(null);
 
@@ -134,10 +151,21 @@ export default function AdminProductsPage() {
     fetchProducts();
   }, [search]);
 
-  // Vidéo background
   useEffect(() => {
     if (videoRef.current) videoRef.current.play().catch(() => {});
   }, []);
+
+  /* ── Gestion de la liste de couleurs ─────────────────────── */
+
+  const addColorRow = () => setColors(prev => [...prev, { ...EMPTY_COLOR, hex: "#999999" }]);
+
+  const removeColorRow = (index: number) => {
+    setColors(prev => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
+  };
+
+  const updateColorRow = (index: number, patch: Partial<ColorOption>) => {
+    setColors(prev => prev.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+  };
 
   /* ── Gestion de la galerie d'images ──────────────────────── */
 
@@ -152,10 +180,7 @@ export default function AdminProductsPage() {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
 
-    // Vercel serverless functions plafonnent le corps de requête à ~4.5MB.
-    // Un fichier trop lourd déclenche un 500 vide côté plateforme, avant
-    // même que la route ne s'exécute. On bloque donc ici en amont.
-    const MAX_SIZE = 4 * 1024 * 1024; // 4MB de marge de sécurité
+    const MAX_SIZE = 4 * 1024 * 1024;
 
     const valid: File[] = [];
     for (const file of files) {
@@ -185,7 +210,7 @@ export default function AdminProductsPage() {
       reader.readAsDataURL(file);
     });
 
-    e.target.value = ""; // permet de resélectionner le même fichier plus tard
+    e.target.value = "";
   };
 
   const removeImage = (key: string) => {
@@ -212,24 +237,33 @@ export default function AdminProductsPage() {
       return;
     }
 
+    const validColors = colors.filter(c => c.name.trim());
+    if (validColors.length === 0) {
+      showAlert("error", "Ajoutez au moins une couleur");
+      return;
+    }
+
     const fd = new FormData();
     if (editMode) fd.append("id", form.id.toString());
 
-    ["name", "description", "price", "category", "gender", "color", "colorHex", "stock", "sizes", "material", "fit"]
+    ["name", "description", "price", "category", "gender", "stock", "sizes", "material", "fit"]
       .forEach(k => fd.append(k, String((form as any)[k])));
+
+    // Couleurs envoyées sous forme de JSON dans le champ `color`
+    fd.append("color", JSON.stringify(validColors));
+    // colorHex conservé pour compat rétro (couleur principale = la première)
+    fd.append("colorHex", validColors[0].hex);
 
     fd.append("isNew", form.isNew.toString());
 
-    // On envoie l'ordre exact + le type de chaque image pour que le backend
-    // puisse reconstruire le tableau `images` dans le bon ordre après upload.
     const order = images.map(img => img.kind);
     fd.append("imageOrder", JSON.stringify(order));
 
     images.forEach(img => {
       if (img.kind === "file" && img.file) {
-        fd.append("images", img.file);      // plusieurs entrées possibles avec la même clé
+        fd.append("images", img.file);
       } else if (img.kind === "url" && img.url) {
-        fd.append("imageUrls", img.url);    // idem, plusieurs entrées possibles
+        fd.append("imageUrls", img.url);
       }
     });
 
@@ -291,6 +325,7 @@ export default function AdminProductsPage() {
   const openAdd = () => {
     setEditMode(false);
     setForm({ ...EMPTY_PRODUCT });
+    setColors([{ ...EMPTY_COLOR }]);
     setImages([]);
     setAddMode("url");
     setUrlInput("");
@@ -306,15 +341,13 @@ export default function AdminProductsPage() {
       price: p.price.toString(),
       category: p.category,
       gender: p.gender,
-      color: p.color,
-      colorHex: p.colorHex,
       stock: p.stock.toString(),
       sizes: p.sizes.join(","),
       material: p.material || "",
       fit: p.fit || "",
       isNew: p.isNew,
     });
-    // Toutes les images existantes deviennent des entrées "url"
+    setColors(parseProductColors(p.color, p.colorHex));
     setImages(p.images.map(url => ({ key: genKey(), kind: "url", preview: url, url })));
     setAddMode("url");
     setUrlInput("");
@@ -350,7 +383,6 @@ export default function AdminProductsPage() {
       `}</style>
 
       <div className="admin-products min-h-screen relative overflow-hidden bg-[#0A0A0A] text-[#F8F6F2]">
-        {/* Video Background */}
         <div className="video-background fixed inset-0 z-0">
           <video ref={videoRef} autoPlay muted loop playsInline className="w-full h-full object-cover opacity-20">
             <source src="/video/pp.mp4" type="video/mp4" />
@@ -360,7 +392,6 @@ export default function AdminProductsPage() {
         <div className="fixed inset-0 bg-[radial-gradient(#D4AF37_0.8px,transparent_1px)] [background-size:60px_60px] opacity-10 z-0 pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-20">
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div>
               <div className="inline-flex items-center gap-3 text-xs uppercase tracking-[3px] bg-white/5 border border-white/10 px-6 py-2.5 rounded-full mb-6">
@@ -377,7 +408,6 @@ export default function AdminProductsPage() {
             </button>
           </div>
 
-          {/* Toolbar */}
           <div className="flex flex-col md:flex-row gap-4 mb-8">
             <div className="relative flex-1">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/50" size={20} />
@@ -400,7 +430,6 @@ export default function AdminProductsPage() {
             </div>
           </div>
 
-          {/* Products */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -416,6 +445,7 @@ export default function AdminProductsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((p) => {
                 const status = stockStatus(p.stock);
+                const pColors = parseProductColors(p.color, p.colorHex);
                 return (
                   <div key={p.id} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden group hover:-translate-y-2 transition-all">
                     <div className="relative h-64 bg-black">
@@ -435,8 +465,23 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div className="p-6">
-                      <h3 className="font-semibold text-lg line-clamp-2 mb-3">{p.name}</h3>
-                      <p className="text-white/60 text-sm mb-4">{p.category} • {p.gender}</p>
+                      <h3 className="font-semibold text-lg line-clamp-2 mb-2">{p.name}</h3>
+                      <p className="text-white/60 text-sm mb-3">{p.category} • {p.gender}</p>
+
+                      {/* Aperçu des couleurs disponibles */}
+                      <div className="flex items-center gap-1.5 mb-4">
+                        {pColors.slice(0, 5).map((c, i) => (
+                          <span
+                            key={i}
+                            title={c.name}
+                            className="w-4 h-4 rounded-full border border-white/20"
+                            style={{ backgroundColor: c.hex }}
+                          />
+                        ))}
+                        {pColors.length > 5 && (
+                          <span className="text-white/40 text-xs">+{pColors.length - 5}</span>
+                        )}
+                      </div>
 
                       <div className="flex justify-between items-end">
                         <div>
@@ -475,7 +520,6 @@ export default function AdminProductsPage() {
           )}
         </div>
 
-        {/* === MODAL FORMULAIRE === */}
         {showModal && (
           <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-6">
             <div className="bg-[#111] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[95vh] overflow-auto">
@@ -485,57 +529,54 @@ export default function AdminProductsPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="p-8 space-y-8">
-                {/* Identité */}
                 <div>
                   <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Identité</p>
-                  <input 
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                    type="text" 
-                    placeholder="Nom du produit" 
-                    required 
-                    value={form.name} 
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} 
+                  <input
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]"
+                    type="text"
+                    placeholder="Nom du produit"
+                    required
+                    value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   />
-                  <textarea 
-                    className="w-full mt-4 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 h-28 focus:outline-none focus:border-[#D4AF37] resize-none" 
-                    placeholder="Description" 
-                    value={form.description} 
-                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))} 
+                  <textarea
+                    className="w-full mt-4 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 h-28 focus:outline-none focus:border-[#D4AF37] resize-none"
+                    placeholder="Description"
+                    value={form.description}
+                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   />
                 </div>
 
-                {/* Catégorie */}
                 <div>
                   <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Catégorie</p>
                   <div className="flex gap-2 flex-wrap">
-                    <select 
-                      className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                      value={form.category} 
+                    <select
+                      className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]"
+                      value={form.category}
                       onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                     >
                       {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                     <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        placeholder="Nouvelle catégorie" 
-                        value={newCategory} 
-                        onChange={e => setNewCategory(e.target.value)} 
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addNewCategory(); } }} 
-                        className="w-40 bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-[#D4AF37]" 
+                      <input
+                        type="text"
+                        placeholder="Nouvelle catégorie"
+                        value={newCategory}
+                        onChange={e => setNewCategory(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addNewCategory(); } }}
+                        className="w-40 bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-[#D4AF37]"
                       />
                       <button type="button" onClick={addNewCategory} className="bg-[#D4AF37] hover:bg-[#F5E6A3] text-black px-4 rounded-2xl text-sm font-medium">Ajouter</button>
                     </div>
                   </div>
                 </div>
 
-                {/* Genre + Prix */}
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Genre</p>
-                    <select 
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                      value={form.gender} 
+                    <select
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]"
+                      value={form.gender}
                       onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
                     >
                       {GENDERS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
@@ -543,102 +584,137 @@ export default function AdminProductsPage() {
                   </div>
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Prix (TND)</p>
-                    <input 
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                      type="number" 
-                      step="0.01" 
-                      min="0" 
-                      required 
-                      value={form.price} 
-                      onChange={e => setForm(f => ({ ...f, price: e.target.value }))} 
+                    <input
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      required
+                      value={form.price}
+                      onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
                     />
                   </div>
                 </div>
 
-                {/* Stock + Tailles */}
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Stock</p>
-                    <input 
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                      type="number" 
-                      min="0" 
-                      required 
-                      value={form.stock} 
-                      onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} 
+                    <input
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]"
+                      type="number"
+                      min="0"
+                      required
+                      value={form.stock}
+                      onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
                     />
                   </div>
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Tailles</p>
-                    <input 
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                      type="text" 
-                      placeholder="S,M,L,XL" 
-                      value={form.sizes} 
-                      onChange={e => setForm(f => ({ ...f, sizes: e.target.value }))} 
+                    <input
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]"
+                      type="text"
+                      placeholder="S,M,L,XL"
+                      value={form.sizes}
+                      onChange={e => setForm(f => ({ ...f, sizes: e.target.value }))}
                     />
                   </div>
                 </div>
 
-                {/* Couleur + Matière */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Couleur</p>
-                    <div className="flex gap-3">
-                      <input 
-                        className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                        type="text" 
-                        placeholder="ex: Bleu marine" 
-                        value={form.color} 
-                        onChange={e => setForm(f => ({ ...f, color: e.target.value }))} 
-                      />
-                      <input 
-                        type="color" 
-                        value={form.colorHex} 
-                        onChange={e => setForm(f => ({ ...f, colorHex: e.target.value }))} 
-                        className="w-14 h-14 rounded-2xl border border-white/10 cursor-pointer" 
-                      />
+                {/* ── Couleurs (liste dynamique) ─────────────────── */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-[#D4AF37] text-sm tracking-widest uppercase flex items-center gap-2">
+                      <Palette size={16} /> Couleurs disponibles
+                    </p>
+                    <button
+                      type="button"
+                      onClick={addColorRow}
+                      className="flex items-center gap-1 text-sm bg-white/5 border border-white/10 hover:border-[#D4AF37] px-3 py-1.5 rounded-xl transition"
+                    >
+                      <Plus size={14} /> Ajouter une couleur
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {colors.map((c, i) => (
+                      <div key={i} className="flex gap-3 items-center">
+                        <input
+                          type="color"
+                          value={c.hex}
+                          onChange={e => updateColorRow(i, { hex: e.target.value })}
+                          className="w-12 h-12 rounded-xl border border-white/10 cursor-pointer flex-shrink-0"
+                        />
+                        <input
+                          className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus:outline-none focus:border-[#D4AF37]"
+                          type="text"
+                          placeholder="ex: Bleu marine"
+                          value={c.name}
+                          onChange={e => updateColorRow(i, { name: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeColorRow(i)}
+                          disabled={colors.length <= 1}
+                          className="p-3 rounded-xl hover:bg-red-500/10 text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition flex-shrink-0"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Aperçu live des swatches tels qu'ils apparaîtront côté client */}
+                  {colors.some(c => c.name.trim()) && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {colors.filter(c => c.name.trim()).map((c, i) => (
+                        <span
+                          key={i}
+                          className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-1 pr-3 py-1 text-xs"
+                        >
+                          <span className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: c.hex }} />
+                          {c.name}
+                        </span>
+                      ))}
                     </div>
-                  </div>
-                  <div>
-                    <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Matière</p>
-                    <input 
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                      type="text" 
-                      placeholder="ex: 100% Coton" 
-                      value={form.material} 
-                      onChange={e => setForm(f => ({ ...f, material: e.target.value }))} 
-                    />
-                  </div>
+                  )}
                 </div>
 
-                {/* Fit + Badge */}
+                <div>
+                  <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Matière</p>
+                  <input
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]"
+                    type="text"
+                    placeholder="ex: 100% Coton"
+                    value={form.material}
+                    onChange={e => setForm(f => ({ ...f, material: e.target.value }))}
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Coupe (Fit)</p>
-                    <input 
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]" 
-                      type="text" 
-                      placeholder="Slim, Regular..." 
-                      value={form.fit} 
-                      onChange={e => setForm(f => ({ ...f, fit: e.target.value }))} 
+                    <input
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#D4AF37]"
+                      type="text"
+                      placeholder="Slim, Regular..."
+                      value={form.fit}
+                      onChange={e => setForm(f => ({ ...f, fit: e.target.value }))}
                     />
                   </div>
                   <div>
                     <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">Badge</p>
                     <label className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 cursor-pointer hover:border-[#D4AF37]">
-                      <input 
-                        type="checkbox" 
-                        checked={form.isNew} 
-                        onChange={e => setForm(f => ({ ...f, isNew: e.target.checked }))} 
-                        className="w-5 h-5 accent-[#D4AF37]" 
+                      <input
+                        type="checkbox"
+                        checked={form.isNew}
+                        onChange={e => setForm(f => ({ ...f, isNew: e.target.checked }))}
+                        className="w-5 h-5 accent-[#D4AF37]"
                       />
                       <span>Marquer comme Nouveau</span>
                     </label>
                   </div>
                 </div>
 
-                {/* Images (galerie multi-images) */}
                 <div>
                   <p className="text-[#D4AF37] text-sm tracking-widest uppercase mb-4">
                     Images du produit {images.length > 0 && <span className="text-white/40 normal-case">({images.length})</span>}
@@ -758,14 +834,13 @@ export default function AdminProductsPage() {
           </div>
         )}
 
-        {/* === MODAL SUPPRESSION === */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/90 z-[110] flex items-center justify-center p-6">
             <div className="bg-[#111] border border-red-500/30 rounded-3xl max-w-md w-full p-8 text-center">
               <AlertTriangle className="mx-auto text-red-500 mb-6" size={48} />
               <h3 className="text-2xl font-semibold mb-3">Supprimer ce produit ?</h3>
               <p className="text-white/70 mb-8">Cette action est irréversible.</p>
-              
+
               <div className="flex gap-4">
                 <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-4 border border-white/30 rounded-2xl font-medium hover:bg-white/10">Annuler</button>
                 <button onClick={executeDelete} className="flex-1 py-4 bg-red-600 hover:bg-red-700 rounded-2xl font-semibold">Confirmer la suppression</button>
@@ -774,7 +849,6 @@ export default function AdminProductsPage() {
           </div>
         )}
 
-        {/* === ALERT GLOBAL === */}
         {alert.show && (
           <div className={`fixed top-6 right-6 z-[200] flex items-start gap-3 border rounded-2xl px-5 py-4 max-w-sm shadow-2xl 
             ${alert.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10' : 
