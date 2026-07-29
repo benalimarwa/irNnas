@@ -41,7 +41,15 @@ export async function GET(req: NextRequest) {
         items: {
           include: {
             product: {
-              select: { id: true, name: true, price: true },
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                color: true,
+                colorHex: true,
+                images: true,
+                category: { select: { name: true } },
+              },
             },
           },
         },
@@ -97,6 +105,11 @@ export async function GET(req: NextRequest) {
           productName: item.product.name,
           quantity:    item.quantity,
           price:       item.price,
+          size:        item.size ?? null,
+          color:       item.product.color,
+          colorHex:    item.product.colorHex,
+          category:    item.product.category?.name ?? null,
+          image:       item.product.images?.[0] ?? null,
         })),
 
         // ─── Détails enregistrés dans OrderSnapshot (nouvelle table) ───────
@@ -131,7 +144,6 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
 export async function PUT(req: NextRequest) {
   try {
     const { userId } = await auth();

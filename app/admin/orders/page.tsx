@@ -11,6 +11,11 @@ interface OrderItem {
   productName: string;
   quantity: number;
   price: number;
+  size: string | null;
+  color: string;
+  colorHex: string;
+  category: string | null;
+  image: string | null;
 }
 
 interface OrderSnapshot {
@@ -278,23 +283,41 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
-                    {/* Articles */}
-                    <div>
-                      <p className="text-white/60 text-xs sm:text-sm mb-2 sm:mb-4">ARTICLES ({order.items.length})</p>
-                      <div className="space-y-3 sm:space-y-4">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="flex justify-between items-center bg-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-5">
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-sm sm:text-base truncate">{item.productName}</p>
-                              <p className="text-xs sm:text-sm text-white/60">Quantité : {item.quantity}</p>
-                            </div>
-                            <p className="font-semibold text-[#D4AF37] text-sm sm:text-base ml-2 flex-shrink-0">
-                              {(item.price * item.quantity).toFixed(2)} TND
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                   {/* Articles */}
+<div>
+  <p className="text-white/60 text-xs sm:text-sm mb-2 sm:mb-4">ARTICLES ({order.items.length})</p>
+  <div className="space-y-3 sm:space-y-4">
+    {order.items.map((item) => (
+      <div key={item.id} className="flex items-center gap-3 sm:gap-4 bg-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-5">
+        {item.image && (
+          <img
+            src={item.image}
+            alt={item.productName}
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl object-cover flex-shrink-0"
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-sm sm:text-base truncate">{item.productName}</p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs sm:text-sm text-white/60">
+            {item.category && <span>{item.category}</span>}
+            <span className="flex items-center gap-1.5">
+              <span
+                className="w-3 h-3 rounded-full border border-white/20 inline-block"
+                style={{ backgroundColor: item.colorHex }}
+              />
+              {item.color}
+            </span>
+            {item.size && <span>Taille : {item.size}</span>}
+            <span>Quantité : {item.quantity}</span>
+          </div>
+        </div>
+        <p className="font-semibold text-[#D4AF37] text-sm sm:text-base ml-2 flex-shrink-0">
+          {(item.price * item.quantity).toFixed(2)} TND
+        </p>
+      </div>
+    ))}
+  </div>
+</div>
                         {/* Détails enregistrés (nouvelle table OrderSnapshot) */}
 {order.snapshot && (
   <div className="mt-6 sm:mt-8 border-t border-white/10 pt-6 sm:pt-8">
