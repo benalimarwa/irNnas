@@ -1,8 +1,8 @@
 // app/api/admin/orders/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { sendOrderConfirmationEmail } from "@/lib/email";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 // ─── Helper pour parser le deliveryMethod ────────────────────────────────────
 function parseDeliveryMethod(raw: string) {
@@ -27,6 +27,7 @@ function parseDeliveryMethod(raw: string) {
   }
   return { method: "PICKUP" as const };
 }
+
 
 export async function GET(req: NextRequest) {
   try {
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
         createdAt:    order.createdAt.toISOString(),
 
         // ─── Infos livraison parsées (ancien système) ──────────────────────
-        deliveryMethod: delivery.method,          // "PICKUP" | "DELIVERY"
+        deliveryMethod: delivery.method, // "PICKUP" | "DELIVERY"
         deliveryInfo: delivery.method === "DELIVERY"
           ? {
               phone:       delivery.phone       ?? null,
@@ -100,6 +101,7 @@ export async function GET(req: NextRequest) {
             }
           : null,
 
+        // ─── Couleur affichée directement depuis le produit (fix) ──────────
         items: order.items.map((item) => ({
           id:          item.id,
           productName: item.product.name,
@@ -144,6 +146,7 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
 export async function PUT(req: NextRequest) {
   try {
     const { userId } = await auth();

@@ -12,7 +12,7 @@ interface OrderItem {
   quantity: number;
   price: number;
   size: string | null;
-  color: string;
+  color: string | null;
   colorHex: string;
   category: string | null;
   image: string | null;
@@ -283,7 +283,7 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
-                   {/* Articles */}
+                  {/* Articles */}
 <div>
   <p className="text-white/60 text-xs sm:text-sm mb-2 sm:mb-4">ARTICLES ({order.items.length})</p>
   <div className="space-y-3 sm:space-y-4">
@@ -300,13 +300,15 @@ export default function AdminOrdersPage() {
           <p className="font-medium text-sm sm:text-base truncate">{item.productName}</p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs sm:text-sm text-white/60">
             {item.category && <span>{item.category}</span>}
-            <span className="flex items-center gap-1.5">
-              <span
-                className="w-3 h-3 rounded-full border border-white/20 inline-block"
-                style={{ backgroundColor: item.colorHex }}
-              />
-              {item.color}
-            </span>
+            {item.color && (
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="w-3 h-3 rounded-full border border-white/20 inline-block"
+                  style={{ backgroundColor: item.colorHex }}
+                />
+                {item.color}
+              </span>
+            )}
             {item.size && <span>Taille : {item.size}</span>}
             <span>Quantité : {item.quantity}</span>
           </div>
