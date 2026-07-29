@@ -78,28 +78,36 @@ export async function GET(req: NextRequest) {
       const delivery = parseDeliveryMethod(order.deliveryMethod ?? "PICKUP");
       const snapshot = snapshotByOrderId.get(order.id) ?? null;
 
-      return {
-        id:           order.id,
-        userId:       order.userId,
-        userName:     `${order.user.firstName || ""} ${order.user.lastName || ""}`.trim() || "Utilisateur",
-        userEmail:    order.user.email,
-        total:        order.total,
-        status:       order.status,
-        createdAt:    order.createdAt.toISOString(),
+    // ─── Méthode de livraison : le snapshot est la source de vérité ────
 
-        // ─── Infos livraison parsées (ancien système) ──────────────────────
-        deliveryMethod: delivery.method, // "PICKUP" | "DELIVERY"
-        deliveryInfo: delivery.method === "DELIVERY"
-          ? {
-              phone:       delivery.phone       ?? null,
-              address:     delivery.address     ?? null,
-              city:        delivery.city        ?? null,
-              governorate: delivery.governorate ?? null,
-              postalCode:  delivery.postalCode  ?? null,
-              country:     delivery.country     ?? null,
-              notes:       delivery.notes       ?? null,
-            }
-          : null,
+
+// ─── Méthode de livraison : le snapshot est la source de vérité ────
+const resolvedMethod = snapshot?.deliveryMethod === "DELIVERY" || snapshot?.deliveryMethod === "PICKUP"
+  ? snapshot.deliveryMethod
+  : delivery.method;
+
+return {
+  id:           order.id,
+  userId:       order.userId,
+  userName:     `${order.user.firstName || ""} ${order.user.lastName || ""}`.trim() || "Utilisateur",
+  userEmail:    order.user.email,
+  total:        order.total,
+  status:       order.status,
+  createdAt:    order.createdAt.toISOString(),
+
+  // ─── Méthode de livraison (priorité au snapshot) ───────────────────
+  deliveryMethod: resolvedMethod,
+  deliveryInfo: resolvedMethod === "DELIVERY"
+    ? {
+        phone:       snapshot?.customerPhone ?? delivery.phone       ?? null,
+        address:     snapshot?.address       ?? delivery.address     ?? null,
+        city:        snapshot?.city          ?? delivery.city        ?? null,
+        governorate: snapshot?.governorate   ?? delivery.governorate ?? null,
+        postalCode:  snapshot?.postalCode    ?? delivery.postalCode  ?? null,
+        country:     snapshot?.country       ?? delivery.country     ?? null,
+        notes:       snapshot?.notes         ?? delivery.notes       ?? null,
+      }
+    : null,
 
         // ─── Couleur affichée directement depuis le produit (fix) ──────────
         items: order.items.map((item) => ({
