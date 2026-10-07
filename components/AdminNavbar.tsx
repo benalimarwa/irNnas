@@ -72,9 +72,16 @@ export default function AdminNavbar() {
 
           {/* Logo */}
           <Link href="/admin" className="group flex items-center gap-2 flex-shrink-0">
-            
+            <Image
+              src="/llogo.png"
+              alt="IRNAS"
+              width={140}
+              height={50}
+              className="object-contain h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+              priority
+            />
             <span className="text-2xl md:text-3xl font-light tracking-[0.2em] text-white group-hover:text-[#3b82f6] transition duration-500">
-             Luna
+              IRNAS
             </span>
             <span className="text-[10px] uppercase tracking-[0.4em] text-[#60a5fa]/70 font-light hidden sm:block">
               Admin
