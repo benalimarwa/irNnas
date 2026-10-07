@@ -8,7 +8,7 @@ export default function Footer() {
                 </div>
 
                 <p className="text-[10px] text-[#4a6a8a] tracking-widest font-light">© 2020 IRNAS — Tous droits réservés</p>
-                   <p className="text-[10px] text-[#4a6a8a] tracking-widest font-light">27888827</p>
+                 
 
 
                 <div className="flex items-center gap-3">
