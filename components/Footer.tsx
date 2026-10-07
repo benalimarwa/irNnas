@@ -13,7 +13,7 @@ export default function Footer() {
 
                 <div className="flex items-center gap-3">
                     <a
-                        href="https://www.instagram.com/irnnas_/"
+                       
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Instagram"
@@ -24,7 +24,7 @@ export default function Footer() {
                         </svg>
                     </a>
                      <a
-                        href="https://www.facebook.com/profile.php?id=61566528102689&locale=fr_FR"
+                       
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Facebook"
@@ -34,7 +34,7 @@ export default function Footer() {
                             <path d="M22 12.06C22 6.51 17.52 2 12 2S2 6.51 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.84c0-2.51 1.49-3.9 3.77-3.9 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.88h2.78l-.44 2.91h-2.34V22c4.78-.76 8.44-4.92 8.44-9.94Z"/>
                         </svg>
 </a>
-<a href="https://www.tiktok.com/@irnas_1?_r=1&_t=ZS-97tmExXINfh"
+<a 
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="TikTok"
@@ -44,7 +44,7 @@ export default function Footer() {
                             <path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6c0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64c0 3.33 2.76 5.7 5.69 5.7c3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48Z"/>
                         </svg>
                     </a>
-                   <a href="https://wa.me/21627888827"
+                   <a
   target="_blank"
   rel="noopener noreferrer"
   className="inline-flex items-center gap-2 hover:text-[#d4af6a] transition"
