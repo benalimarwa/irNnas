@@ -212,15 +212,15 @@ export default function Navbar() {
 
       <Link href="/" className="group flex items-center gap-2 flex-shrink-0">
         <Image
-          src="/llogo.png"
-          alt="IRNAS"
+          src="/vermel.png"
+          alt="vermela"
           width={140}
           height={50}
           className="object-contain h-10 w-auto transition-transform duration-300 group-hover:scale-105"
           priority
         />
         <span className="text-2xl md:text-3xl font-light tracking-[0.2em] text-white group-hover:text-[#3b82f6] transition duration-500 hidden sm:inline">
-          IRNAS
+         VERMELA
         </span>
        
       </Link>
